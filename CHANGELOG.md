@@ -5,21 +5,22 @@ All notable changes to the DotNet Resilience Pipeline project are documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2026-03-16
+## [2.0.0] - 2026-05-16
 
 ### Added
-- Multi-stage Dockerfile with non-root user and HTTP-based HEALTHCHECK
-- Migration guide for upgrading from v1.x to v2.0 (`docs/MIGRATION_v2.md`)
+- Add chaos engineering toolkit with fault injection scenarios
+- Docker support with multi-stage builds
+- Health check endpoints (/health, /health/ready)
+- Integration test suite with xUnit
+- Migration guide from v1.x
 
 ### Changed
-- **BREAKING:** Default application port changed from 5000 to 8080
-- **BREAKING:** Docker base image switched from `dotnet/runtime` to `dotnet/aspnet` for HTTP health check support
-- **BREAKING:** Container now runs as non-root user (UID 1001)
-- Docker Compose passwords now use environment variable substitution with defaults
-- Removed pgAdmin from default Docker Compose stack to reduce footprint
+- Upgraded to .NET 10.0
+- Modern C# features (records, primary constructors)
+- Improved API consistency
 
 ### Fixed
-- Docker health check now verifies actual HTTP endpoint instead of `dotnet --version`
+- Various edge cases found through testing
 
 ## [1.0.0] - 2025-09-15
 
