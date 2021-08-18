@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -20,7 +21,7 @@ public static class ResiliencyHelper
     /// </summary>
     public static PolicyResult<T> CreateResultFromRecord<T>(ExecutionRecord record, T? data = null)
     {
-        if (record.IsSuccess && data != null)
+        if (record.IsSuccess && data is not null)
         {
             return PolicyResult<T>.Success(data, record.PolicyName, record.ExecutionTimeMs, record.AttemptCount);
         }
@@ -56,7 +57,7 @@ public static class ResiliencyHelper
     /// </summary>
     public static List<string> ValidatePolicy(ResiliencyPolicy policy)
     {
-        if (policy == null)
+        if (policy is null)
             throw new ArgumentNullException(nameof(policy));
 
         var errors = new List<string>();
@@ -101,7 +102,7 @@ public static class ResiliencyHelper
         ResiliencyPipelineService pipeline,
         ExecutionHistoryRepository history)
     {
-        if (pipeline == null)
+        if (pipeline is null)
             throw new ArgumentNullException(nameof(pipeline));
 
         var stats = pipeline.GetStatistics();
@@ -145,7 +146,7 @@ public static class ResiliencyHelper
     /// </summary>
     public static Dictionary<string, object> ExportPolicyConfig(ResiliencyPolicy policy)
     {
-        if (policy == null)
+        if (policy is null)
             throw new ArgumentNullException(nameof(policy));
 
         var config = new Dictionary<string, object>

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -21,7 +22,7 @@ public class TimeoutService
         TimeoutPolicy policy,
         Func<CancellationToken, Task<T>> operation)
     {
-        if (policy == null)
+        if (policy is null)
             throw new ArgumentNullException(nameof(policy));
 
         if (!policy.IsValidConfiguration(out var error))

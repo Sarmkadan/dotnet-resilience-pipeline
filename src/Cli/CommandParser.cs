@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -38,7 +39,7 @@ public class CommandParser
         if (_args.Length > 1 && !_args[1].StartsWith("-"))
             options.Subcommand = _args[1].ToLowerInvariant();
 
-        int startIndex = options.Subcommand != null ? 2 : 1;
+        int startIndex = options.Subcommand is not null ? 2 : 1;
 
         // Parse remaining arguments
         for (int i = startIndex; i < _args.Length; i++)
