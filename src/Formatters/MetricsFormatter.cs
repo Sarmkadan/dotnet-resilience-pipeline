@@ -13,7 +13,7 @@ namespace DotNetResiliencePipeline.Formatters;
 /// Formats performance metrics for human-readable console output.
 /// Provides colored ASCII tables, progress bars, and summary statistics.
 /// </summary>
-public class MetricsFormatter
+public sealed class MetricsFormatter
 {
     private const string Horizontal = "─";
     private const string Vertical = "│";

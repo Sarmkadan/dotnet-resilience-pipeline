@@ -14,7 +14,7 @@ namespace DotNetResiliencePipeline.Services;
 /// <summary>
 /// Service handling fallback policy execution for graceful degradation.
 /// </summary>
-public class FallbackService
+public sealed class FallbackService
 {
     /// <summary>
     /// Executes an operation with fallback support.

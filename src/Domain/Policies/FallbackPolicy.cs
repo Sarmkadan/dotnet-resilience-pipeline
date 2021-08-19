@@ -9,7 +9,7 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// <summary>
 /// Fallback policy that provides alternative execution paths when primary operations fail.
 /// </summary>
-public class FallbackPolicy : ResiliencyPolicy
+public sealed class FallbackPolicy : ResiliencyPolicy
 {
     /// <summary>
     /// Number of times fallback was invoked.

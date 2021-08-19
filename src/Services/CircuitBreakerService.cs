@@ -13,7 +13,7 @@ namespace DotNetResiliencePipeline.Services;
 /// <summary>
 /// Service handling circuit breaker policy execution and state management.
 /// </summary>
-public class CircuitBreakerService
+public sealed class CircuitBreakerService
 {
     /// <summary>
     /// Executes an operation through the circuit breaker policy.

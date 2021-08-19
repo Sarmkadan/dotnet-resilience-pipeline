@@ -9,7 +9,7 @@ namespace DotNetResiliencePipeline.Exceptions;
 /// <summary>
 /// Base exception for all resilience pipeline failures.
 /// </summary>
-public class ResiliencyException : Exception
+public sealed class ResiliencyException : Exception
 {
     public string PolicyName { get; set; }
     public string PolicyType { get; set; }
@@ -35,7 +35,7 @@ public class ResiliencyException : Exception
 /// <summary>
 /// Thrown when a circuit breaker is open and rejecting requests.
 /// </summary>
-public class CircuitBreakerOpenException : ResiliencyException
+public sealed class CircuitBreakerOpenException : ResiliencyException
 {
     public TimeSpan TimeUntilRetry { get; set; }
     public int ConsecutiveFailures { get; set; }
@@ -52,7 +52,7 @@ public class CircuitBreakerOpenException : ResiliencyException
 /// <summary>
 /// Thrown when the bulkhead limit is exceeded.
 /// </summary>
-public class BulkheadRejectedException : ResiliencyException
+public sealed class BulkheadRejectedException : ResiliencyException
 {
     public int CurrentExecutions { get; set; }
     public int MaxExecutions { get; set; }
@@ -71,7 +71,7 @@ public class BulkheadRejectedException : ResiliencyException
 /// <summary>
 /// Thrown when an operation exceeds its timeout.
 /// </summary>
-public class OperationTimeoutException : ResiliencyException
+public sealed class OperationTimeoutException : ResiliencyException
 {
     public TimeSpan Timeout { get; set; }
     public long ActualExecutionTimeMs { get; set; }
@@ -88,7 +88,7 @@ public class OperationTimeoutException : ResiliencyException
 /// <summary>
 /// Thrown when all retry attempts have been exhausted.
 /// </summary>
-public class MaxRetriesExceededException : ResiliencyException
+public sealed class MaxRetriesExceededException : ResiliencyException
 {
     public int AttemptCount { get; set; }
     public List<Exception> AttemptExceptions { get; set; } = new();
@@ -105,7 +105,7 @@ public class MaxRetriesExceededException : ResiliencyException
 /// <summary>
 /// Thrown when fallback execution fails.
 /// </summary>
-public class FallbackFailedException : ResiliencyException
+public sealed class FallbackFailedException : ResiliencyException
 {
     public Exception PrimaryException { get; set; }
     public Exception FallbackException { get; set; }
@@ -122,7 +122,7 @@ public class FallbackFailedException : ResiliencyException
 /// <summary>
 /// Thrown when a policy configuration is invalid.
 /// </summary>
-public class InvalidPolicyConfigurationException : ResiliencyException
+public sealed class InvalidPolicyConfigurationException : ResiliencyException
 {
     public List<string> ConfigurationErrors { get; set; } = new();
 
@@ -137,7 +137,7 @@ public class InvalidPolicyConfigurationException : ResiliencyException
 /// <summary>
 /// Thrown when pipeline execution encounters an unrecoverable error.
 /// </summary>
-public class PipelineExecutionException : ResiliencyException
+public sealed class PipelineExecutionException : ResiliencyException
 {
     public string ExecutionId { get; set; }
     public List<string> AppliedPolicies { get; set; } = new();

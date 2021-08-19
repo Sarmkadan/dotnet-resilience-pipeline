@@ -12,7 +12,7 @@ namespace DotNetResiliencePipeline.Events;
 /// Observer that listens to pipeline events and executes custom handlers.
 /// Provides hooks for monitoring, alerting, and custom business logic.
 /// </summary>
-public class PipelineEventObserver
+public sealed class PipelineEventObserver
 {
     private readonly ResiliencyEventPublisher _publisher;
     private readonly ConcurrentDictionary<string, EventHandler> _handlers = new();
@@ -151,7 +151,7 @@ public class PipelineEventObserver
 /// <summary>
 /// Represents a registered event handler.
 /// </summary>
-public class EventHandler
+public sealed class EventHandler
 {
     public string Id { get; set; } = string.Empty;
     public string EventType { get; set; } = string.Empty;
@@ -162,7 +162,7 @@ public class EventHandler
 /// <summary>
 /// Statistics about events emitted.
 /// </summary>
-public class EventStatistics
+public sealed class EventStatistics
 {
     public int TotalEventsEmitted { get; set; }
     public int SuccessfulExecutions { get; set; }

@@ -12,7 +12,7 @@ namespace DotNetResiliencePipeline.Caching;
 /// Caching service for policy lookup and configuration caching.
 /// Reduces repeated policy lookups and improves performance.
 /// </summary>
-public class PolicyCacheService
+public sealed class PolicyCacheService
 {
     private readonly ConcurrentDictionary<string, CachedPolicy> _cache = new();
     private readonly object _lockObj = new object();
@@ -133,7 +133,7 @@ public class PolicyCacheService
 /// <summary>
 /// Cached policy configuration.
 /// </summary>
-public class CachedPolicy
+public sealed class CachedPolicy
 {
     public string PolicyName { get; set; } = string.Empty;
     public object Config { get; set; } = new();
@@ -149,7 +149,7 @@ public class CachedPolicy
 /// <summary>
 /// Cache statistics and metrics.
 /// </summary>
-public class CacheStatistics
+public sealed class CacheStatistics
 {
     public int TotalEntries { get; set; }
     public int ValidEntries { get; set; }

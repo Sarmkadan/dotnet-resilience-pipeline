@@ -9,7 +9,7 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// <summary>
 /// Timeout policy that enforces maximum execution time for operations.
 /// </summary>
-public class TimeoutPolicy : ResiliencyPolicy
+public sealed class TimeoutPolicy : ResiliencyPolicy
 {
     /// <summary>
     /// Maximum allowed execution duration.

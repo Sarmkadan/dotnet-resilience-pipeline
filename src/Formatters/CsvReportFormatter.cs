@@ -14,7 +14,7 @@ namespace DotNetResiliencePipeline.Formatters;
 /// Formats execution metrics and reports as CSV for spreadsheet analysis.
 /// Supports metrics export, policy reports, and execution history.
 /// </summary>
-public class CsvReportFormatter
+public sealed class CsvReportFormatter
 {
     private const char Delimiter = ',';
     private const string Quote = "\"";
@@ -183,7 +183,7 @@ public class CsvReportFormatter
 /// <summary>
 /// Execution record for CSV export.
 /// </summary>
-public class ExecutionRecord
+public sealed class ExecutionRecord
 {
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public string PolicyName { get; set; } = string.Empty;

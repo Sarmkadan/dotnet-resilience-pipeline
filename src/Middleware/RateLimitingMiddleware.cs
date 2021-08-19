@@ -12,7 +12,7 @@ namespace DotNetResiliencePipeline.Middleware;
 /// Middleware for rate limiting API requests and policy executions.
 /// Implements token bucket algorithm with configurable limits per client/policy.
 /// </summary>
-public class RateLimitingMiddleware
+public sealed class RateLimitingMiddleware
 {
     private readonly ConcurrentDictionary<string, RateLimiter> _limiters = new();
     private int _defaultRequestsPerSecond = 100;
@@ -89,7 +89,7 @@ public class RateLimitingMiddleware
 /// <summary>
 /// Individual rate limiter using token bucket algorithm.
 /// </summary>
-public class RateLimiter
+public sealed class RateLimiter
 {
     private readonly int _tokensPerSecond;
     private readonly int _tokensPerMinute;
@@ -174,7 +174,7 @@ public class RateLimiter
 /// <summary>
 /// Rate limit status for a client.
 /// </summary>
-public class RateLimitStatus
+public sealed class RateLimitStatus
 {
     public string? ClientId { get; set; }
     public int RequestsPerSecond { get; set; }

@@ -9,7 +9,7 @@ using FluentAssertions;
 
 namespace DotNetResiliencePipeline.Tests;
 
-public class CircuitBreakerPolicyTests
+public sealed class CircuitBreakerPolicyTests
 {
     [Fact]
     public void Constructor_WithWhitespaceName_ThrowsArgumentException()

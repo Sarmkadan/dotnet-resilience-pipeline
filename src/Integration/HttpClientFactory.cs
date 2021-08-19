@@ -14,7 +14,7 @@ namespace DotNetResiliencePipeline.Integration;
 /// Factory for creating HTTP clients with integrated resilience policies.
 /// Manages client lifecycle and applies policies to all HTTP operations.
 /// </summary>
-public class HttpClientFactory
+public sealed class HttpClientFactory
 {
     private readonly ConcurrentDictionary<string, HttpClient> _clients = new();
     private readonly ResiliencyPipelineService _pipelineService;
@@ -167,7 +167,7 @@ public class HttpClientFactory
 /// <summary>
 /// Response from a resilient HTTP operation.
 /// </summary>
-public class ResilientHttpResponse
+public sealed class ResilientHttpResponse
 {
     public bool Success { get; set; }
     public System.Net.HttpStatusCode? StatusCode { get; set; }
