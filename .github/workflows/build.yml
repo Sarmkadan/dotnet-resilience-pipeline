@@ -118,7 +118,7 @@ jobs:
       run: dotnet pack -c ${{ env.CONFIGURATION }} -o ./nupkg
 
     - name: Upload NuGet artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: nupkg
         path: ./nupkg/**/*.nupkg
@@ -215,7 +215,7 @@ jobs:
       run: dotnet build -c ${{ env.CONFIGURATION }} /p:GenerateDocumentationFile=true
 
     - name: Upload documentation artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: documentation
         path: ./bin/Release/net10.0/**/*.xml
