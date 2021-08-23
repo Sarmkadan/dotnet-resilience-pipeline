@@ -61,6 +61,10 @@ Thumbs.db
 paket-files/
 .paket/paket.exe
 .paket/load-*.ps1
+packages/
+
+# Application settings
+appsettings.Development.json
 
 # Temp files
 *.tmp

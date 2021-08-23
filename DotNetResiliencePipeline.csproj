@@ -12,7 +12,8 @@
     <Authors>Vladyslav Zaiets</Authors>
     <Description>Advanced resilience pipeline for .NET with circuit breaker, bulkhead, retry, timeout, and fallback patterns</Description>
     <PackageProjectUrl>https://github.com/sarmkadan/dotnet-resilience-pipeline</PackageProjectUrl>
-    <License>MIT</License>
+    <RepositoryUrl>https://github.com/sarmkadan/dotnet-resilience-pipeline</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
