@@ -5,6 +5,22 @@ All notable changes to the DotNet Resilience Pipeline project are documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-03-16
+
+### Added
+- Multi-stage Dockerfile with non-root user and HTTP-based HEALTHCHECK
+- Migration guide for upgrading from v1.x to v2.0 (`docs/MIGRATION_v2.md`)
+
+### Changed
+- **BREAKING:** Default application port changed from 5000 to 8080
+- **BREAKING:** Docker base image switched from `dotnet/runtime` to `dotnet/aspnet` for HTTP health check support
+- **BREAKING:** Container now runs as non-root user (UID 1001)
+- Docker Compose passwords now use environment variable substitution with defaults
+- Removed pgAdmin from default Docker Compose stack to reduce footprint
+
+### Fixed
+- Docker health check now verifies actual HTTP endpoint instead of `dotnet --version`
+
 ## [1.0.0] - 2025-09-15
 
 ### Added
@@ -202,6 +218,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Release Notes
 
+### v2.0.0
+Docker and deployment overhaul. Port standardized to 8080, non-root container, HTTP health checks. Core library API remains backward-compatible. See `docs/MIGRATION_v2.md` for upgrade steps.
+
 ### v1.0.0
 Stable release. Adds distributed-circuit-breaker diagnostics, Kubernetes health-check integration, and comprehensive observability. No breaking changes from v0.9.0.
 
@@ -235,6 +254,9 @@ Initial release with circuit breaker implementation and core project scaffolding
 ---
 
 ## Upgrade Guide
+
+### From 1.0.0 to 2.0.0
+Port changed from 5000 to 8080. Docker base image changed to `aspnet`. Container runs as non-root. pgAdmin removed from default compose. See `docs/MIGRATION_v2.md` for full details.
 
 ### From 0.9.0 to 1.0.0
 No breaking changes. New observability and health-check features are additive and opt-in.
