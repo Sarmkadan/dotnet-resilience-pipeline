@@ -5,255 +5,256 @@ All notable changes to the DotNet Resilience Pipeline project are documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2026-01-15
+## [1.0.0] - 2025-09-15
 
 ### Added
-- Distributed circuit breaker support for multi-instance deployments
-- Circuit breaker diagnostics and detailed state information
+- Distributed circuit breaker diagnostics and detailed state information
 - Event-based observability with PolicyEvent publisher
-- Comprehensive health check support for Kubernetes
+- Comprehensive health check support for Kubernetes readiness/liveness probes
 - Rate limiting middleware integration
-- Performance monitoring dashboard example
-- Enhanced metrics aggregation with percentile calculations
-- Support for custom repository implementations
+- Performance monitoring and metrics dashboard example
+- Enhanced metrics aggregation with percentile calculations (p50, p95, p99)
+- Support for custom repository implementations via IRepository interface
 - Bulkhead queue visualization utilities
 - Extended timeout diagnostics with cancellation tracking
+- CircuitBreakerDiagnostics utility for state introspection
 
 ### Changed
 - Improved circuit breaker state transition logic for faster recovery detection
-- Optimized retry backoff calculations for better cache efficiency
-- Enhanced bulkhead slot management with dynamic adjustment
-- Better timeout enforcement with improved CancellationToken handling
-- Refactored policy composition for cleaner fluent API
+- Optimized retry backoff calculations for reduced memory pressure
+- Enhanced bulkhead slot management with accurate queue-length tracking
+- Better timeout enforcement with improved CancellationToken propagation
+- Refactored policy composition for cleaner fluent API surface
 
 ### Fixed
-- Circuit breaker stuck in half-open state under high load
-- Retry loop consuming excessive memory with large history buffers
+- Circuit breaker stuck in half-open state under sustained high load
+- Retry loop excessive memory use with large execution history buffers
 - Timeout exceptions not properly cascading through fallback policies
-- Bulkhead queue deadlock in concurrent scenarios
-- Memory leak in event subscriber lists
+- Bulkhead queue deadlock in highly concurrent scenarios
+- Memory leak in event subscriber lists on repeated subscription
 
 ### Security
-- Added input validation for all policy configurations
-- Implemented timeout protection for event subscribers
-- Enhanced logging security with sensitive data masking
+- Added input validation for all policy configuration parameters
+- Implemented timeout protection for event subscriber callbacks
+- Enhanced logging with sensitive data masking
 
-## [1.1.0] - 2025-10-20
+## [0.9.0] - 2025-08-25
 
 ### Added
-- Exponential backoff with jitter for retry policies
-- Linear backoff strategy option for gradual delays
-- Configurable retry exceptions filtering
-- Fallback execution timeout support
-- Execution history repository with query support
-- Metrics aggregation with success rate calculations
-- Health report generation utility
-- Policy validation helper methods
-- CSV report formatter for metrics export
-- JSON policy serialization support
-- Docker support with multi-stage builds
-- Docker Compose configuration with monitoring stack
-- Comprehensive API reference documentation
-- Architecture documentation with diagrams
-- Getting started guide with code examples
-- Deployment guide for production environments
-- FAQ document with troubleshooting
+- Adaptive timeout policy with automatic adjustment based on observed latency
+- AdaptiveTimeoutExtensions for DI registration
+- ThrottlingHelper utility for rate-throttle calculations
+- PolicyCacheService for fast in-process policy lookup
+- Webhook manager for outbound failure notifications
 
 ### Changed
-- Improved bulkhead performance with optimized semaphore usage
-- Enhanced circuit breaker state machine with better documentation
-- Streamlined DependencyInjection extension methods
-- Simplified PolicyResult generic wrapper interface
-- Better exception messages for all resilience patterns
+- Strengthened thread safety in CircuitBreakerService with CAS operations
+- Unified exception hierarchy under ResiliencyExceptions base type
+- Improved PolicyResult metadata — now includes RetryCount and CircuitBreakerState
 
 ### Fixed
-- Circuit breaker not transitioning from half-open to closed state
-- Retry delay calculation overflow on large backoff multipliers
-- Bulkhead queue length not properly tracked under concurrent load
-- Timeout not enforced on fallback operations
-- Event subscriber memory leaks on repeated subscription
+- Race condition in BulkheadService queue counter on thread contention
+- Fallback not executing when timeout and circuit breaker both triggered
+- PolicyNameGenerator producing duplicate names under concurrent registration
 
-### Documentation
-- Added comprehensive README with 2000+ words
-- Created 4 detailed documentation files
-- Added 6 runnable examples
-- Created API reference documentation
-
-## [1.0.0] - 2025-07-10
+## [0.8.0] - 2025-08-04
 
 ### Added
-- Circuit Breaker pattern implementation with three-state machine
-  - Closed: normal operation
-  - Open: reject requests
-  - Half-Open: test recovery
-- Configurable failure threshold and open duration
-- Automatic recovery detection in half-open state
+- CLI command handler and parser for running resilience checks from the terminal
+- CommandOptions and CommandValidator for structured CLI input
+- MetricsFormatter for human-readable console output
+- CsvReportFormatter for exporting execution history to CSV
+- JsonPolicySerializer for persisting and loading policy configurations
 
-- Retry policy with multiple backoff strategies
-  - Fixed delay between retries
-  - Linear increasing delays
-  - Exponential backoff (recommended)
-- Configurable max retries and initial delay
-- Support for retryable exception type filtering
-- Max delay capping to prevent excessive waits
+### Changed
+- PerformanceMonitor refactored to report sliding-window averages
+- MetricsAggregator now tracks per-policy breakdowns in addition to pipeline totals
 
-- Timeout enforcement using CancellationToken
-- Graceful timeout handling with low overhead
-- Integration with other policies
+### Fixed
+- CSV formatter escaping quotes incorrectly in exception messages
+- MetricsAggregator thread contention on high-frequency updates
 
-- Bulkhead pattern for resource isolation
-- Configurable max parallelization limits
-- Queue management for rejected requests
-- Semaphore-based slot acquisition/release
+## [0.7.0] - 2025-07-14
 
-- Fallback pattern for graceful degradation
-- Exception type-based fallback triggering
-- Timeout-aware fallback execution
-- Fallback result chaining
+### Added
+- Six runnable examples covering all pattern combinations
+  - BasicUsage.cs — simple circuit breaker and retry
+  - MicroserviceIntegration.cs — realistic upstream-service scenario
+  - CircuitBreakerSimulation.cs — state machine walkthrough
+  - BulkheadPatternExample.cs — resource isolation under load
+  - FallbackPatternExample.cs — graceful degradation flow
+  - MetricsMonitoringExample.cs — live performance tracking
+- Comprehensive API reference documentation (`docs/api-reference.md`)
+- Architecture overview with ASCII component diagram (`docs/architecture.md`)
+- Getting started guide with step-by-step walkthrough (`docs/getting-started.md`)
+- Deployment guide covering Docker, Docker Compose, and Kubernetes (`docs/deployment.md`)
+- FAQ with common troubleshooting scenarios (`docs/faq.md`)
+- QUICK_REFERENCE.md for at-a-glance API lookup
 
-- Fluent builder pattern for intuitive configuration
-  - Chainable method calls
-  - Inline policy configuration
-  - Type-safe policy definitions
+### Changed
+- README expanded with full policy documentation, benchmarks, and troubleshooting guide
 
-- Dependency Injection integration
-  - Microsoft.Extensions.DependencyInjection support
-  - Automatic service registration
-  - Policy repository injection
+## [0.6.0] - 2025-06-23
 
-- Comprehensive metrics and statistics
-  - Total execution count
-  - Success/failure rates
-  - Duration tracking (min, max, average)
-  - Circuit breaker state monitoring
+### Added
+- Docker multi-stage build with minimal runtime image
+- Docker Compose configuration with Prometheus monitoring stack
+- Kubernetes deployment manifest (`docs/kubernetes-deployment.yaml`)
+- Prometheus scrape configuration (`prometheus.yml`)
+- ResiliencyLoggingMiddleware for structured request/response logging
+- ErrorHandlingMiddleware for consistent API error responses
+- ExternalApiClient wrapper with built-in resilience policies
+- HttpClientFactory with pre-configured resilience defaults
+- HealthCheckWorker background service for continuous health polling
+- MetricsCollectorWorker background service for periodic metric snapshots
 
-- Thread-safe implementation
-  - Lock-based synchronization for shared state
-  - Atomic operations for counters
-  - Concurrent execution support
-  - No race conditions
+### Changed
+- Program.cs wired up with full middleware pipeline and background workers
+- DependencyInjectionExtensions extended to cover all new services
 
-- Generic PolicyResult<T> wrapper
-  - Success/failure indication
-  - Value and exception properties
-  - Metadata (duration, retry count, circuit state)
-  - Strongly-typed results
+## [0.5.0] - 2025-06-02
 
-- Policy persistence
-  - In-memory policy repository
-  - Policy CRUD operations
-  - Policy lookup by name
+### Added
+- ResiliencyEventPublisher with subscribe/unsubscribe support
+- PipelineEventObserver interface for custom observability hooks
+- MetricsAggregator with success rate, duration histograms, and execution counts
+- PerformanceMonitor with real-time throughput tracking
+- CircuitBreakerDiagnostics for detailed state and transition logging
+- ResiliencyHelper.GenerateHealthReport() for structured health summaries
+- PolicyControllers REST API (`src/Api/Controllers/`)
+- MetricsController REST API endpoint for Prometheus-compatible scraping
+- ExecutionHistoryRepository with query and filter support
 
-- Execution history tracking
-  - Failed and successful execution records
-  - Execution duration tracking
-  - Exception logging
-  - History queries and filtering
+### Changed
+- ResiliencyPipelineService now publishes events on all state transitions
+- PipelineStatistics extended with percentile duration fields
 
-- Utilities and helpers
-  - Policy validation helpers
-  - Policy name generation
-  - Performance monitoring
-  - Throttling helpers
-  - Diagnostic tools
+## [0.4.0] - 2025-05-12
 
-- Middleware for Web APIs
-  - Error handling middleware
-  - Resilience logging middleware
-  - Rate limiting middleware
+### Added
+- ResiliencyPipelineBuilder fluent API for chaining policy configuration
+- DependencyInjectionExtensions — `AddResiliencePipeline()` for IServiceCollection
+- PolicyRepository with CRUD operations and name-based lookup
+- IRepository generic interface for custom storage backends
+- PolicyValidationHelper with compile-time and runtime checks
+- PolicyNameGenerator for deterministic policy naming
+- ResiliencyConstants for shared configuration defaults
 
-- Integration utilities
-  - HTTP client factory
-  - External API client wrapper
-  - Webhook manager for notifications
+### Changed
+- All services now registered via DI rather than direct instantiation
+- PolicyResult<T> generic wrapper added with Value, Error, Duration, and RetryCount properties
 
-- Event-driven architecture
-  - Event publisher for policy events
-  - Pipeline event observer interface
-  - Extensible event system
+### Fixed
+- Service constructor parameter ordering causing DI resolution failures
+- Missing null checks in builder chain causing NullReferenceException on misconfigured pipelines
 
-### Technical Details
-- Target: .NET 10.0
-- Language: C# 13 with latest features
-- Dependencies: Microsoft.Extensions.* only
-- Thread-safe with proper synchronization
-- Zero external dependencies for core library
-- Minimal memory footprint
-- <1ms overhead per policy check
+## [0.3.0] - 2025-04-21
 
-### Project Structure
-- Domain layer: Policy implementations and contracts
-- Service layer: Policy execution orchestration
-- Data layer: Repository pattern for persistence
-- Configuration layer: Builder pattern setup
-- Utilities: Helpers and monitoring tools
-- Middleware: HTTP request/response handling
-- Integration: External service adapters
-- Events: Pub/sub event system
+### Added
+- BulkheadPolicy with configurable MaxParallelization and MaxQueueLength
+- BulkheadService with SemaphoreSlim-based slot management
+- BulkheadRejectedException when queue capacity is exceeded
+- FallbackPolicy with FallbackOnAnyException and FallbackTimeout options
+- FallbackService executing secondary delegate on primary failure
+- AdaptiveTimeoutPolicy initial scaffolding
 
-### Documentation
-- Inline XML documentation on all public APIs
-- Method-level comments explaining logic
-- README with feature overview
-- License file (MIT)
-- .gitignore for .NET projects
+### Changed
+- CircuitBreakerService refactored to share synchronization primitives with BulkheadService
+- RetryService now cancels pending retry attempts when CancellationToken fires
+
+### Fixed
+- BulkheadService not releasing semaphore on operation exception
+- Fallback not invoked when operation throws synchronously
+
+## [0.2.0] - 2025-04-02
+
+### Added
+- RetryPolicy supporting Fixed, Linear, and Exponential backoff strategies
+- RetryService with configurable MaxRetries, InitialDelay, BackoffMultiplier, and MaxDelay
+- Jitter applied to exponential backoff to prevent thundering herd
+- TimeoutPolicy enforcing maximum execution duration via CancellationToken
+- TimeoutService with OperationTimeoutException on breach
+- ResiliencyPipelineService as top-level orchestrator composing all policies
+- PolicyResult non-generic and generic variants
+- Basic execution history storage
+
+### Changed
+- CircuitBreakerPolicy now exposes CurrentState for external inspection
+- Project restructured into Domain, Services, Data, and Configuration layers
+
+### Fixed
+- CircuitBreakerService not resetting failure counter after successful half-open probe
+- RetryService not respecting CancellationToken between retry attempts
+
+## [0.1.0] - 2025-03-14
+
+### Added
+- CircuitBreakerPolicy with three-state machine (Closed → Open → Half-Open)
+- CircuitBreakerService with configurable FailureThreshold, OpenDuration, and SuccessThresholdInHalfOpen
+- CircuitBreakerOpenException thrown when circuit is open
+- ResiliencyPolicy base class and domain model
+- Initial project structure: DotNetResiliencePipeline.csproj targeting .NET 10.0
+- Solution file with test project reference
+- MIT License
+- Initial .gitignore for .NET projects
 
 ---
 
 ## Release Notes
 
-### v1.2.0
-Focus on observability and production-readiness. Added distributed circuit breaker support, enhanced health checks, and comprehensive monitoring capabilities.
-
-### v1.1.0
-Major documentation and deployment updates. Added complete documentation suite, Docker support, and six runnable examples demonstrating all patterns.
-
 ### v1.0.0
-Initial release with all core resilience patterns: circuit breaker, retry, timeout, bulkhead, and fallback with fluent configuration and full thread-safety.
+Stable release. Adds distributed-circuit-breaker diagnostics, Kubernetes health-check integration, and comprehensive observability. No breaking changes from v0.9.0.
+
+### v0.9.0
+Adaptive timeout, policy caching, and webhook notifications. Hardened thread safety across all services.
+
+### v0.8.0
+CLI tooling and reporting formatters — run resilience checks from the terminal and export metrics to CSV/JSON.
+
+### v0.7.0
+Full documentation suite and six runnable examples. Ready for early adopters.
+
+### v0.6.0
+Docker, Docker Compose, and Kubernetes support. Middleware pipeline and background workers wired up.
+
+### v0.5.0
+Observability layer: event publishing, metrics aggregation, performance monitoring, and REST API endpoints.
+
+### v0.4.0
+Fluent builder API and dependency injection integration. Policies now fully composable via `AddResiliencePipeline()`.
+
+### v0.3.0
+Bulkhead and fallback patterns added. All five core resilience patterns now implemented.
+
+### v0.2.0
+Retry and timeout policies added. Pipeline orchestrator introduced.
+
+### v0.1.0
+Initial release with circuit breaker implementation and core project scaffolding.
 
 ---
 
 ## Upgrade Guide
 
-### From 1.1.0 to 1.2.0
-No breaking changes. New features are additive and backward compatible.
+### From 0.9.0 to 1.0.0
+No breaking changes. New observability and health-check features are additive and opt-in.
 
-- New distributed circuit breaker features are optional
-- Existing code continues to work without changes
-- New metrics and observability features available for opt-in
+### From 0.8.0 to 0.9.0
+No breaking changes. Adaptive timeout is a new policy type; existing policies are unaffected.
 
-### From 1.0.0 to 1.1.0
-No breaking changes. All new features are additions.
+### From 0.7.0 to 0.8.0
+No breaking changes. CLI and formatter types are new additions.
 
-- Existing policies work unchanged
-- New backoff strategies available but optional
-- Event system is optional and backward compatible
-
----
-
-## Future Roadmap
-
-### Planned for v1.3.0
-- Async context management improvements
-- Custom metric exporters
-- OpenTelemetry integration
-- Advanced circuit breaker patterns (sliding window)
-- Policy composition validators
-
-### Planned for v2.0.0
-- Distributed tracing support
-- Policy versioning and migrations
-- Advanced scheduling for retry/backoff
-- Reactive policy triggers
-- Performance optimizations for ultra-high throughput
+### Earlier versions
+Each release from 0.1.0 to 0.7.0 is additive. Existing policy configuration code requires no changes across minor version bumps.
 
 ---
 
 ## Support
 
-For issues, feature requests, or questions, please visit:
+For issues, feature requests, or questions:
 - GitHub: https://github.com/sarmkadan/dotnet-resilience-pipeline
-- Documentation: See docs/ directory
+- Documentation: see the `docs/` directory
 
 ## License
 
