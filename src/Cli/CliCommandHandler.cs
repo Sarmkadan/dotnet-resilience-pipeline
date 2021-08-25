@@ -14,7 +14,7 @@ namespace DotNetResiliencePipeline.Cli;
 /// Executes CLI commands by delegating to appropriate service layer methods.
 /// Handles command routing, error handling, and output formatting.
 /// </summary>
-public class CliCommandHandler
+public sealed class CliCommandHandler
 {
     private readonly ResiliencyPipelineService _pipelineService;
     private readonly PolicyRepository _policyRepository;
@@ -240,7 +240,7 @@ public class CliCommandHandler
 /// <summary>
 /// Result of a CLI command execution.
 /// </summary>
-public class CommandExecutionResult
+public sealed class CommandExecutionResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;

@@ -10,7 +10,7 @@ namespace DotNetResiliencePipeline.Cli;
 /// Command-line options and arguments parser for CLI interface.
 /// Supports policy creation, monitoring, and configuration operations.
 /// </summary>
-public class CommandOptions
+public sealed class CommandOptions
 {
     public string Command { get; set; } = string.Empty;
     public string? Subcommand { get; set; }

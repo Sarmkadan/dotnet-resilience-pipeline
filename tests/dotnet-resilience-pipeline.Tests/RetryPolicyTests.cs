@@ -9,7 +9,7 @@ using FluentAssertions;
 
 namespace DotNetResiliencePipeline.Tests;
 
-public class RetryPolicyTests
+public sealed class RetryPolicyTests
 {
     [Fact]
     public void CalculateDelay_FixedStrategy_ReturnsSameDelayForEveryAttempt()

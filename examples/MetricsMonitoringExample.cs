@@ -15,7 +15,7 @@ namespace DotNetResiliencePipeline.Examples;
 /// <summary>
 /// Metrics and monitoring example showing performance tracking
 /// </summary>
-public class MetricsMonitoringExample
+public sealed class MetricsMonitoringExample
 {
     public static async Task Main()
     {

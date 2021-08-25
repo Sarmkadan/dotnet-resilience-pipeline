@@ -13,7 +13,7 @@ namespace DotNetResiliencePipeline.Middleware;
 /// Middleware for centralized error handling and error recovery strategies.
 /// Implements error classification, tracking, and recovery recommendations.
 /// </summary>
-public class ErrorHandlingMiddleware
+public sealed class ErrorHandlingMiddleware
 {
     private readonly ConcurrentDictionary<string, ErrorStatistics> _errorStats = new();
     private List<ErrorContext> _errorContexts = new();
@@ -146,7 +146,7 @@ public class ErrorHandlingMiddleware
 /// <summary>
 /// Context information for a handled error.
 /// </summary>
-public class ErrorContext
+public sealed class ErrorContext
 {
     public string Id { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; }
@@ -166,7 +166,7 @@ public class ErrorContext
 /// <summary>
 /// Statistics for a specific error type.
 /// </summary>
-public class ErrorStatistics
+public sealed class ErrorStatistics
 {
     public int Count { get; set; }
     public DateTime LastOccurrence { get; set; }

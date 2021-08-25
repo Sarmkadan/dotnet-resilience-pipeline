@@ -13,7 +13,7 @@ namespace DotNetResiliencePipeline.Services;
 /// <summary>
 /// Service handling retry policy execution with exponential backoff and jitter.
 /// </summary>
-public class RetryService
+public sealed class RetryService
 {
     /// <summary>
     /// Executes an operation with retry logic.

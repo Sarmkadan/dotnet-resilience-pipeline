@@ -154,7 +154,7 @@ public static class PolicyValidationHelper
 /// <summary>
 /// Detailed validation report for a policy.
 /// </summary>
-public class ValidationReport
+public sealed class ValidationReport
 {
     public string PolicyId { get; set; } = string.Empty;
     public string PolicyName { get; set; } = string.Empty;

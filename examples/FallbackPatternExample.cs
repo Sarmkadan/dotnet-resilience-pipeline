@@ -15,7 +15,7 @@ namespace DotNetResiliencePipeline.Examples;
 /// <summary>
 /// Fallback pattern example demonstrating graceful degradation
 /// </summary>
-public class FallbackPatternExample
+public sealed class FallbackPatternExample
 {
     private record UserProfile(int Id, string Name, string Status);
 

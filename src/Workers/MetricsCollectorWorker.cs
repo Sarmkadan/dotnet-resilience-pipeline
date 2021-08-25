@@ -13,7 +13,7 @@ namespace DotNetResiliencePipeline.Workers;
 /// Background worker that periodically collects and aggregates metrics.
 /// Maintains time-series data for trend analysis and reporting.
 /// </summary>
-public class MetricsCollectorWorker
+public sealed class MetricsCollectorWorker
 {
     private readonly ResiliencyPipelineService _pipelineService;
     private readonly MetricsAggregator _aggregator;
@@ -143,7 +143,7 @@ public class MetricsCollectorWorker
 /// <summary>
 /// Status of the metrics collector worker.
 /// </summary>
-public class MetricsCollectorStatus
+public sealed class MetricsCollectorStatus
 {
     public bool IsRunning { get; set; }
     public int TotalCollections { get; set; }
