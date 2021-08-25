@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -19,7 +20,7 @@ public static class AdaptiveTimeoutExtensions
     /// </summary>
     public static IServiceCollection AddAdaptiveTimeout(this IServiceCollection services)
     {
-        if (services == null)
+        if (services is null)
             throw new ArgumentNullException(nameof(services));
 
         services.AddSingleton<AdaptiveTimeoutService>();
@@ -40,7 +41,7 @@ public static class AdaptiveTimeoutExtensions
         TimeSpan initialTimeout,
         Action<AdaptiveTimeoutPolicy>? configure = null)
     {
-        if (services == null)
+        if (services is null)
             throw new ArgumentNullException(nameof(services));
 
         if (string.IsNullOrWhiteSpace(policyName))

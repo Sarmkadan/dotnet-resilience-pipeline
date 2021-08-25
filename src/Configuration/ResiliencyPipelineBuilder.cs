@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -32,7 +33,7 @@ public class ResiliencyPipelineBuilder
     {
         _circuitBreakerPolicy = new CircuitBreakerPolicy(name);
 
-        if (configure != null)
+        if (configure is not null)
             configure(_circuitBreakerPolicy);
 
         _pipelineService.RegisterPolicy(_circuitBreakerPolicy);
@@ -46,7 +47,7 @@ public class ResiliencyPipelineBuilder
     {
         _retryPolicy = new RetryPolicy(name);
 
-        if (configure != null)
+        if (configure is not null)
             configure(_retryPolicy);
 
         _pipelineService.RegisterPolicy(_retryPolicy);
@@ -60,7 +61,7 @@ public class ResiliencyPipelineBuilder
     {
         _timeoutPolicy = new TimeoutPolicy(name) { Timeout = timeout };
 
-        if (configure != null)
+        if (configure is not null)
             configure(_timeoutPolicy);
 
         _pipelineService.RegisterPolicy(_timeoutPolicy);
@@ -78,7 +79,7 @@ public class ResiliencyPipelineBuilder
             MaxQueueLength = maxQueueLength
         };
 
-        if (configure != null)
+        if (configure is not null)
             configure(_bulkheadPolicy);
 
         _pipelineService.RegisterPolicy(_bulkheadPolicy);
@@ -92,7 +93,7 @@ public class ResiliencyPipelineBuilder
     {
         _fallbackPolicy = new FallbackPolicy(name);
 
-        if (configure != null)
+        if (configure is not null)
             configure(_fallbackPolicy);
 
         _pipelineService.RegisterPolicy(_fallbackPolicy);

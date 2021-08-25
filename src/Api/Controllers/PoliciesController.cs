@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -49,7 +50,7 @@ public class PoliciesController
         try
         {
             var policy = _pipelineService.GetPolicy(id);
-            if (policy == null)
+            if (policy is null)
                 return new ApiResponse<PolicyDto> { Success = false, Message = "Policy not found" };
 
             return new ApiResponse<PolicyDto> { Success = true, Data = MapToPolicyDto(policy) };
@@ -97,7 +98,7 @@ public class PoliciesController
                 _ => null!
             };
 
-            if (policy == null)
+            if (policy is null)
                 return new ApiResponse<PolicyDto> { Success = false, Message = "Invalid policy type" };
 
             _pipelineService.RegisterPolicy(policy);
@@ -119,16 +120,16 @@ public class PoliciesController
         try
         {
             var policy = _pipelineService.GetPolicy(id);
-            if (policy == null)
+            if (policy is null)
                 return new ApiResponse<PolicyDto> { Success = false, Message = "Policy not found" };
 
             // Apply updates based on policy type
-            if (policy is CircuitBreakerPolicy cb && request.CircuitBreakerConfig != null)
+            if (policy is CircuitBreakerPolicy cb && request.CircuitBreakerConfig is not null)
             {
                 cb.FailureThreshold = request.CircuitBreakerConfig.FailureThreshold;
                 cb.OpenDuration = TimeSpan.FromSeconds(request.CircuitBreakerConfig.OpenDurationSeconds);
             }
-            else if (policy is RetryPolicy retry && request.RetryConfig != null)
+            else if (policy is RetryPolicy retry && request.RetryConfig is not null)
             {
                 retry.MaxRetries = request.RetryConfig.MaxRetries;
                 retry.InitialDelay = TimeSpan.FromMilliseconds(request.RetryConfig.InitialDelayMs);

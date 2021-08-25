@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -72,7 +73,7 @@ public class HttpClientFactory
         CancellationToken cancellationToken = default)
     {
         var client = GetClient(clientName);
-        if (client == null)
+        if (client is null)
             return new ResilientHttpResponse { Success = false, Message = "Client not found" };
 
         var policy = !string.IsNullOrEmpty(policyName)
@@ -114,7 +115,7 @@ public class HttpClientFactory
         CancellationToken cancellationToken = default)
     {
         var client = GetClient(clientName);
-        if (client == null)
+        if (client is null)
             return new ResilientHttpResponse { Success = false, Message = "Client not found" };
 
         try

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -84,7 +85,7 @@ public class FallbackPatternExample
                 fallbackPolicy
             );
 
-            if (profile != null)
+            if (profile is not null)
                 Console.WriteLine($"  ✓ {profile.Name} (Status: {profile.Status})");
             else
                 Console.WriteLine($"  ✗ Failed to retrieve profile");
@@ -104,7 +105,7 @@ public class FallbackPatternExample
             fallbackPolicy
         );
 
-        if (profile4 != null)
+        if (profile4 is not null)
         {
             Console.WriteLine($"✓ Using Fallback: {profile4.Name} (Status: {profile4.Status})");
         }

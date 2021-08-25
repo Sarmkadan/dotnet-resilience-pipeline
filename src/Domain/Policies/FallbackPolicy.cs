@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -57,7 +58,7 @@ public class FallbackPolicy : ResiliencyPolicy
     /// </summary>
     public bool ShouldTriggerFallback(Exception exception)
     {
-        if (exception == null)
+        if (exception is null)
             return false;
 
         if (FallbackOnAnyException)
@@ -134,7 +135,7 @@ public class FallbackPolicy : ResiliencyPolicy
     /// </summary>
     public void AddFallbackTrigger(Type exceptionType)
     {
-        if (exceptionType == null)
+        if (exceptionType is null)
             throw new ArgumentNullException(nameof(exceptionType));
 
         if (!typeof(Exception).IsAssignableFrom(exceptionType))

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -40,10 +41,10 @@ public class AdaptiveTimeoutService
         Func<CancellationToken, Task<T>> operation,
         CancellationToken cancellationToken = default)
     {
-        if (policy == null)
+        if (policy is null)
             throw new ArgumentNullException(nameof(policy));
 
-        if (operation == null)
+        if (operation is null)
             throw new ArgumentNullException(nameof(operation));
 
         if (!policy.IsValidConfiguration(out var error))
@@ -107,7 +108,7 @@ public class AdaptiveTimeoutService
     /// </summary>
     public TimeSpan GetCurrentTimeout(AdaptiveTimeoutPolicy policy)
     {
-        if (policy == null)
+        if (policy is null)
             throw new ArgumentNullException(nameof(policy));
 
         return policy.CurrentTimeout;
@@ -118,7 +119,7 @@ public class AdaptiveTimeoutService
     /// </summary>
     public Dictionary<string, object> GetAdaptationSummary(AdaptiveTimeoutPolicy policy)
     {
-        if (policy == null)
+        if (policy is null)
             throw new ArgumentNullException(nameof(policy));
 
         return new Dictionary<string, object>

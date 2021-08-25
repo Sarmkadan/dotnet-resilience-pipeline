@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -22,7 +23,7 @@ public static class DependencyInjectionExtensions
         this IServiceCollection services,
         Action<ResiliencyPipelineBuilder>? configureBuilder = null)
     {
-        if (services == null)
+        if (services is null)
             throw new ArgumentNullException(nameof(services));
 
         // Register repositories
@@ -56,13 +57,13 @@ public static class DependencyInjectionExtensions
         Action<TConfig, ResiliencyPipelineBuilder> configureBuilder)
         where TConfig : class
     {
-        if (services == null)
+        if (services is null)
             throw new ArgumentNullException(nameof(services));
 
-        if (config == null)
+        if (config is null)
             throw new ArgumentNullException(nameof(config));
 
-        if (configureBuilder == null)
+        if (configureBuilder is null)
             throw new ArgumentNullException(nameof(configureBuilder));
 
         // Register repositories
@@ -98,10 +99,10 @@ public static class DependencyInjectionExtensions
         Func<IServiceProvider, TPolicy> factory)
         where TPolicy : ResiliencyPolicy
     {
-        if (services == null)
+        if (services is null)
             throw new ArgumentNullException(nameof(services));
 
-        if (factory == null)
+        if (factory is null)
             throw new ArgumentNullException(nameof(factory));
 
         services.AddSingleton(provider =>
