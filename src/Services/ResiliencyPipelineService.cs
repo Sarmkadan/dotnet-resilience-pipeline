@@ -12,8 +12,26 @@ using DotNetResiliencePipeline.Exceptions;
 namespace DotNetResiliencePipeline.Services;
 
 /// <summary>
-/// Main orchestrator service that manages and coordinates all resilience policies.
+/// Main orchestrator that manages and coordinates all resilience policies in a composable pipeline.
+/// Wraps operations with retry, circuit breaker, timeout, bulkhead, and fallback strategies.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Policies are applied in the following order (outer to inner):
+/// <list type="number">
+///   <item>Fallback - provides a default value if all else fails</item>
+///   <item>Circuit Breaker - short-circuits if the downstream is unhealthy</item>
+///   <item>Bulkhead - limits concurrent executions to prevent resource exhaustion</item>
+///   <item>Timeout - cancels the operation if it exceeds the configured duration</item>
+///   <item>Retry - retries transient failures with configurable backoff</item>
+/// </list>
+/// </para>
+/// <para>
+/// Register policies via <see cref="RegisterPolicy"/> and execute operations via
+/// <c>ExecuteAsync</c>. The pipeline tracks success/failure counters and per-policy
+/// execution metrics accessible through the service's properties.
+/// </para>
+/// </remarks>
 public sealed class ResiliencyPipelineService
 {
     private readonly CircuitBreakerService _circuitBreakerService;
