@@ -81,8 +81,12 @@ public sealed class TimeoutService
     /// <summary>
     /// Gets timeout configuration in milliseconds.
     /// </summary>
+    /// <remarks>
+    /// Uses <see cref="TimeSpan.TotalMilliseconds"/> to return the full duration,
+    /// not <see cref="TimeSpan.Milliseconds"/> which only returns the ms component (0-999).
+    /// </remarks>
     public long GetTimeoutMilliseconds(TimeoutPolicy policy)
     {
-        return policy?.Timeout.Milliseconds ?? 0;
+        return (long)(policy?.Timeout.TotalMilliseconds ?? 0);
     }
 }
