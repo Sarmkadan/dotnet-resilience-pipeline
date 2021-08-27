@@ -20,7 +20,8 @@ public sealed class RetryService
     /// </summary>
     public async Task<T> ExecuteAsync<T>(
         RetryPolicy policy,
-        Func<CancellationToken, Task<T>> operation)
+        Func<CancellationToken, Task<T>> operation,
+        CancellationToken cancellationToken)
     {
         if (policy is null)
             throw new ArgumentNullException(nameof(policy));
@@ -29,7 +30,7 @@ public sealed class RetryService
             throw new InvalidPolicyConfigurationException(policy.Name, error ?? "Invalid retry configuration");
 
         if (!policy.IsEnabled)
-            return await operation(CancellationToken.None);
+            return await operation(cancellationToken); // Use the provided token
 
         var stopwatch = Stopwatch.StartNew();
         var exceptions = new List<Exception>();
@@ -38,7 +39,7 @@ public sealed class RetryService
         {
             try
             {
-                var result = await operation(CancellationToken.None);
+                var result = await operation(cancellationToken); // Use the provided token
                 stopwatch.Stop();
 
                 policy.RecordSuccess();
@@ -63,7 +64,7 @@ public sealed class RetryService
 
                 // Calculate backoff delay
                 var delayMs = policy.CalculateDelay(attempt);
-                await Task.Delay((int)delayMs.TotalMilliseconds);
+                await Task.Delay((int)delayMs.TotalMilliseconds, cancellationToken); // Pass token to Task.Delay
             }
         }
 
@@ -87,5 +88,16 @@ public sealed class RetryService
     public bool IsRetryable(RetryPolicy policy, Exception exception)
     {
         return policy?.IsRetryable(exception) ?? false;
+    }
+
+    /// <summary>
+    /// Executes an operation through the retry policy (without explicit cancellation token support).
+    /// </summary>
+    public async Task<T> ExecuteAsync<T>(
+        RetryPolicy policy,
+        Func<Task<T>> operation,
+        CancellationToken cancellationToken) // Added CancellationToken
+    {
+        return await ExecuteAsync(policy, _ => operation(), cancellationToken);
     }
 }
