@@ -36,7 +36,12 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
     /// <summary>
     /// Number of successful executions in half-open state to close the circuit.
     /// </summary>
-    public int SuccessThresholdInHalfOpen { get; set; } = 3;
+    public int SuccessThresholdInHalfOpen
+    {
+        get => _successThresholdInHalfOpen;
+        set => _successThresholdInHalfOpen = value <= 0 ? 1 : value; // Ensure it's at least 1
+    }
+    private int _successThresholdInHalfOpen = 3; // backing field
 
     /// <summary>
     /// Current state of the circuit.
