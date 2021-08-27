@@ -19,7 +19,7 @@ public static class ResiliencyHelper
     /// <summary>
     /// Creates a policy result from an execution record.
     /// </summary>
-    public static PolicyResult<T> CreateResultFromRecord<T>(ExecutionRecord record, T? data = null)
+    public static PolicyResult<T> CreateResultFromRecord<T>(ExecutionRecord record, T? data = default)
     {
         if (record.IsSuccess && data is not null)
         {
