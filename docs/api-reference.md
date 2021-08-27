@@ -196,9 +196,123 @@ var policy = new TimeoutPolicy("operations")
 };
 ```
 
-## BulkheadPolicy
+## AdaptiveTimeoutPolicy
 
-Resource isolation through parallelization limits.
+Timeout policy that automatically adjusts its deadline based on observed response-time
+percentiles within a sliding window of recent executions.
+
+### How it works
+
+1. Every completed execution (success or timeout) records its elapsed time into a fixed-size
+   **sliding window** (default: 100 entries).
+2. After the window contains at least `MinSampleSize` observations, the policy recalculates
+   the timeout every `AdjustmentInterval`.
+3. The new timeout is computed as:
+
+   ```
+   newTimeout = Percentile(window, TargetPercentile) × HeadroomFactor
+   ```
+
+   and then clamped to `[MinTimeout, MaxTimeout]`.
+
+Until enough samples are collected the policy uses `InitialTimeout` unchanged.
+
+### Properties
+
+```csharp
+public TimeSpan InitialTimeout { get; set; }     // Timeout before window fills (default: 10 s)
+public TimeSpan MinTimeout { get; set; }         // Floor for adaptive timeout (default: 200 ms)
+public TimeSpan MaxTimeout { get; set; }         // Ceiling for adaptive timeout (default: 60 s)
+public TimeSpan CurrentTimeout { get; }          // Effective timeout for the next execution
+public double   TargetPercentile { get; set; }   // Percentile to target, e.g. 95.0 or 99.0 (default: 95.0)
+public double   HeadroomFactor { get; set; }     // Multiplier above the percentile (default: 1.2)
+public int      WindowSize { get; set; }         // Max observations retained (default: 100)
+public int      MinSampleSize { get; set; }      // Samples required before first adaptation (default: 10)
+public TimeSpan AdjustmentInterval { get; set; } // Minimum time between adaptations (default: 30 s)
+public int      TotalAdjustments { get; }        // Number of adaptations performed so far
+public DateTime LastAdjustmentAt { get; }        // Timestamp of the most recent adaptation
+public long     TimeoutCount { get; }            // Total timeout events recorded
+```
+
+### Methods
+
+```csharp
+// Returns a named percentile (0–100) from the current observation window.
+long GetPercentileExecutionTime(double percentile)
+
+// Returns the fraction of operations that exceeded the current timeout.
+double GetTimeoutPercentage()
+
+// Resets all statistics and reverts CurrentTimeout to InitialTimeout.
+void ResetStatistics()
+
+// Returns a full snapshot including P50/P95/P99 latency values.
+PolicySnapshot GetSnapshot()
+```
+
+### Percentile support
+
+`GetPercentileExecutionTime` accepts any value in `[0, 100]`, so you can query p50, p95, p99, or
+any other percentile directly:
+
+```csharp
+long p50 = policy.GetPercentileExecutionTime(50);
+long p95 = policy.GetPercentileExecutionTime(95);
+long p99 = policy.GetPercentileExecutionTime(99);
+```
+
+`GetSnapshot()` always includes `P50ExecutionTimeMs`, `P95ExecutionTimeMs`, and
+`P99ExecutionTimeMs` in its `Metadata` dictionary.
+
+### P99-based configuration example
+
+```csharp
+var policy = new AdaptiveTimeoutPolicy("payment-api")
+{
+    InitialTimeout      = TimeSpan.FromSeconds(5),
+    MinTimeout          = TimeSpan.FromMilliseconds(500),
+    MaxTimeout          = TimeSpan.FromSeconds(30),
+    TargetPercentile    = 99.0,   // adapt to p99
+    HeadroomFactor      = 1.5,    // timeout = p99 × 1.5
+    WindowSize          = 200,
+    MinSampleSize       = 20,
+    AdjustmentInterval  = TimeSpan.FromSeconds(60),
+};
+```
+
+With these settings the timeout equals `p99 × 1.5`, bounded by `[500 ms, 30 s]`. The adaptation
+runs no more than once per minute and only after 20 observations have been collected.
+
+### DI registration
+
+```csharp
+// Register with default settings (P95 × 1.2 headroom)
+services.AddAdaptiveTimeout("payment-api", TimeSpan.FromSeconds(5));
+
+// Register with P99-based settings
+services.AddAdaptiveTimeout("payment-api", TimeSpan.FromSeconds(5), policy =>
+{
+    policy.TargetPercentile   = 99.0;
+    policy.HeadroomFactor     = 1.5;
+    policy.MinTimeout         = TimeSpan.FromMilliseconds(500);
+    policy.MaxTimeout         = TimeSpan.FromSeconds(30);
+    policy.AdjustmentInterval = TimeSpan.FromSeconds(60);
+});
+```
+
+### Monitoring the adaptation state
+
+`AdaptiveTimeoutService.GetAdaptationSummary(policy)` returns a dictionary suitable for
+logging or dashboards:
+
+```csharp
+var summary = adaptiveTimeoutService.GetAdaptationSummary(policy);
+// Keys: PolicyName, CurrentTimeoutMs, InitialTimeoutMs, TargetPercentile,
+//       TotalAdjustments, LastAdjustmentAt, TimeoutCount, TimeoutPercentage,
+//       P95ExecutionTimeMs, SuccessRate, TotalExecutions
+```
+
+## BulkheadPolicy
 
 ### Properties
 
