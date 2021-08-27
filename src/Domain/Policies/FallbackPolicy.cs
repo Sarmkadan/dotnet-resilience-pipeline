@@ -11,6 +11,37 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// </summary>
 public sealed class FallbackPolicy : ResiliencyPolicy
 {
+    // ... existing properties
+
+    private Func<CancellationToken, Task<object>>? _fallbackActionInternal;
+
+    /// <summary>
+    /// Sets the asynchronous fallback action.
+    /// </summary>
+    public void SetFallbackAction<T>(Func<CancellationToken, Task<T>> fallbackAction)
+    {
+        if (fallbackAction is null)
+        {
+            _fallbackActionInternal = null;
+        }
+        else
+        {
+            _fallbackActionInternal = async (cancellationToken) =>
+            {
+                T result = await fallbackAction(cancellationToken);
+                return result; // Autoboxes to object
+            };
+        }
+        ModifiedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Gets the asynchronous fallback action (internal use).
+    /// </summary>
+    internal Func<CancellationToken, Task<object>>? GetFallbackAction() => _fallbackActionInternal;
+
+    // ... rest of the class
+{
     /// <summary>
     /// Number of times fallback was invoked.
     /// </summary>
