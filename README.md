@@ -78,11 +78,28 @@ cd dotnet-resilience-pipeline
 dotnet build
 ```
 
-### Docker
+## Docker Usage
+
+To containerize the application, a `Dockerfile` and `docker-compose.yml` are provided.
+
+### Build the Image
 
 ```bash
-docker pull sarmkadan/dotnet-resilience-pipeline:latest
+docker build -t dotnet-resilience-pipeline .
 ```
+
+### Run with Docker Compose
+
+To start the application along with PostgreSQL and Prometheus:
+
+```bash
+docker-compose up -d
+```
+
+### Troubleshooting
+
+- Ensure Docker and Docker Compose are installed.
+- Check container logs with `docker-compose logs -f app`.
 
 ## Quick Start
 

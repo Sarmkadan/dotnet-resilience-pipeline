@@ -5,7 +5,7 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
     <RootNamespace>DotNetResiliencePipeline</RootNamespace>
     <AssemblyName>DotNetResiliencePipeline</AssemblyName>
     <PackageId>DotNetResiliencePipeline</PackageId>

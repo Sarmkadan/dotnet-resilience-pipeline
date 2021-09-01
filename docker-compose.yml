@@ -7,23 +7,14 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: dotnet-resilience-pipeline
-    ports:
-      - "8080:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ASPNETCORE_URLS=http://+:8080
+      - DOTNET_ENVIRONMENT=Production
       - DOTNET_EnableDiagnostics=0
     depends_on:
       postgres:
         condition: service_healthy
       prometheus:
         condition: service_started
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
     networks:
       - resilience-network
     restart: unless-stopped
