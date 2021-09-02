@@ -8,6 +8,7 @@ using DotNetResiliencePipeline.Services;
 using DotNetResiliencePipeline.Domain.Policies;
 using DotNetResiliencePipeline.Data;
 using DotNetResiliencePipeline.Formatters;
+using DotNetResiliencePipeline.Exceptions;
 
 namespace DotNetResiliencePipeline.Cli;
 
@@ -29,9 +30,9 @@ public sealed class CliCommandHandler
         ExecutionHistoryRepository historyRepository,
         CircuitBreakerService? circuitBreakerService = null)
     {
-        _pipelineService = pipelineService;
-        _policyRepository = policyRepository;
-        _historyRepository = historyRepository;
+        _pipelineService = pipelineService ?? throw new ArgumentNullException(nameof(pipelineService));
+        _policyRepository = policyRepository ?? throw new ArgumentNullException(nameof(policyRepository));
+        _historyRepository = historyRepository ?? throw new ArgumentNullException(nameof(historyRepository));
         _circuitBreakerService = circuitBreakerService ?? new CircuitBreakerService();
         _validator = new CliCommandValidator();
     }
@@ -39,18 +40,17 @@ public sealed class CliCommandHandler
     /// <summary>
     /// Executes a parsed command and returns the result.
     /// </summary>
+    /// <exception cref="ValidationException">Thrown when command validation fails.</exception>
     public async Task<CommandExecutionResult> ExecuteAsync(CommandOptions options)
     {
         // Validate command
         var validation = _validator.Validate(options);
         if (!validation.IsValid)
         {
-            return new CommandExecutionResult
-            {
-                Success = false,
-                Message = validation.ToString(),
-                ExitCode = 1
-            };
+            var errors = validation.Errors.ToDictionary(
+                e => e.PropertyName,
+                e => e.ErrorMessage);
+            throw new ValidationException("Command validation failed", errors);
         }
 
         try
@@ -119,10 +119,10 @@ public sealed class CliCommandHandler
     private async Task<CommandExecutionResult> CreatePolicyAsync(CommandOptions options)
     {
         if (string.IsNullOrEmpty(options.PolicyName))
-            return new CommandExecutionResult { Success = false, Message = "Policy name is required", ExitCode = 1 };
+            throw new ValidationException("Policy name is required", new Dictionary<string, string> { { nameof(options.PolicyName), "Policy name cannot be empty" } });
 
         if (string.IsNullOrEmpty(options.PolicyType))
-            return new CommandExecutionResult { Success = false, Message = "Policy type is required", ExitCode = 1 };
+            throw new ValidationException("Policy type is required", new Dictionary<string, string> { { nameof(options.PolicyType), "Policy type cannot be empty" } });
 
         ResiliencyPolicy policy = options.PolicyType.ToLowerInvariant() switch
         {
@@ -146,16 +146,13 @@ public sealed class CliCommandHandler
                 MaxQueueLength = 50
             },
             "fallback" => new FallbackPolicy(options.PolicyName),
-            _ => null!
+            _ => throw new ValidationException("Invalid policy type", new Dictionary<string, string> { { nameof(options.PolicyType), "Valid types: circuitbreaker, retry, timeout, bulkhead, fallback" } })
         };
-
-        if (policy is null)
-            return new CommandExecutionResult { Success = false, Message = "Invalid policy type", ExitCode = 1 };
 
         _pipelineService.RegisterPolicy(policy);
         await _policyRepository.SaveAsync(policy);
 
-        var message = $"✓ Policy '{options.PolicyName}' created successfully\n  Type: {options.PolicyType}\n  Id: {policy.Id}";
+        var message = $"✓ Policy '{options.PolicyName}' created successfully\n Type: {options.PolicyType}\n Id: {policy.Id}";
         return new CommandExecutionResult { Success = true, Message = message, ExitCode = 0 };
     }
 
@@ -172,9 +169,9 @@ public sealed class CliCommandHandler
 
         foreach (var policy in policies)
         {
-            message.AppendLine($"  • {policy.Name} ({policy.GetType().Name})");
-            message.AppendLine($"    ID: {policy.Id}");
-            message.AppendLine($"    Enabled: {policy.IsEnabled}");
+            message.AppendLine($" • {policy.Name} ({policy.GetType().Name})");
+            message.AppendLine($" ID: {policy.Id}");
+            message.AppendLine($" Enabled: {policy.IsEnabled}");
         }
 
         return new CommandExecutionResult { Success = true, Message = message.ToString(), ExitCode = 0 };
@@ -183,40 +180,40 @@ public sealed class CliCommandHandler
     private CommandExecutionResult GetPolicy(CommandOptions options)
     {
         if (string.IsNullOrEmpty(options.PolicyName))
-            return new CommandExecutionResult { Success = false, Message = "Policy name is required", ExitCode = 1 };
+            throw new ValidationException("Policy name is required", new Dictionary<string, string> { { nameof(options.PolicyName), "Policy name cannot be empty" } });
 
         var policy = _pipelineService.GetPolicyByName(options.PolicyName);
 
         if (policy is null)
-            return new CommandExecutionResult { Success = false, Message = $"Policy not found: {options.PolicyName}", ExitCode = 1 };
+            throw new ValidationException("Policy not found", new Dictionary<string, string> { { nameof(options.PolicyName), $"Policy not found: {options.PolicyName}" } });
 
-        var message = $"Policy: {policy.Name}\n  Type: {policy.GetType().Name}\n  ID: {policy.Id}\n  Enabled: {policy.IsEnabled}";
+        var message = $"Policy: {policy.Name}\n Type: {policy.GetType().Name}\n ID: {policy.Id}\n Enabled: {policy.IsEnabled}";
         return new CommandExecutionResult { Success = true, Message = message, ExitCode = 0 };
     }
 
     private CommandExecutionResult DeletePolicy(CommandOptions options)
     {
         if (string.IsNullOrEmpty(options.PolicyName))
-            return new CommandExecutionResult { Success = false, Message = "Policy name is required", ExitCode = 1 };
+            throw new ValidationException("Policy name is required", new Dictionary<string, string> { { nameof(options.PolicyName), "Policy name cannot be empty" } });
 
         var policy = _pipelineService.GetPolicyByName(options.PolicyName);
         if (policy is null)
-            return new CommandExecutionResult { Success = false, Message = $"Policy not found: {options.PolicyName}", ExitCode = 1 };
+            throw new ValidationException("Policy not found", new Dictionary<string, string> { { nameof(options.PolicyName), $"Policy not found: {options.PolicyName}" } });
 
         if (_pipelineService.RemovePolicy(policy.Id))
             return new CommandExecutionResult { Success = true, Message = $"✓ Policy '{options.PolicyName}' deleted", ExitCode = 0 };
 
-        return new CommandExecutionResult { Success = false, Message = "Failed to delete policy", ExitCode = 1 };
+        throw new InvalidOperationException("Failed to delete policy");
     }
 
     private CommandExecutionResult ValidatePolicy(CommandOptions options)
     {
         if (string.IsNullOrEmpty(options.PolicyName))
-            return new CommandExecutionResult { Success = false, Message = "Policy name is required", ExitCode = 1 };
+            throw new ValidationException("Policy name is required", new Dictionary<string, string> { { nameof(options.PolicyName), "Policy name cannot be empty" } });
 
         var policy = _pipelineService.GetPolicyByName(options.PolicyName);
         if (policy is null)
-            return new CommandExecutionResult { Success = false, Message = $"Policy not found: {options.PolicyName}", ExitCode = 1 };
+            throw new ValidationException("Policy not found", new Dictionary<string, string> { { nameof(options.PolicyName), $"Policy not found: {options.PolicyName}" } });
 
         // Basic validation
         var message = $"✓ Policy '{options.PolicyName}' is valid";
@@ -233,7 +230,7 @@ public sealed class CliCommandHandler
     private async Task<CommandExecutionResult> HandleMetricsCommandAsync(CommandOptions options)
     {
         var stats = _pipelineService.GetStatistics();
-        var message = $"Metrics:\n  Successful: {stats.SuccessfulExecutions}\n  Failed: {stats.FailedExecutions}\n  Success Rate: {stats.SuccessRate:F2}%";
+        var message = $"Metrics:\n Successful: {stats.SuccessfulExecutions}\n Failed: {stats.FailedExecutions}\n Success Rate: {stats.SuccessRate:F2}%";
         return new CommandExecutionResult { Success = true, Message = message, ExitCode = 0 };
     }
 
@@ -245,7 +242,7 @@ public sealed class CliCommandHandler
 
     /// <summary>
     /// Displays the circuit breaker dashboard for all registered breakers.
-    /// Usage: dashboard [--name &lt;policyName&gt;] [--reset]
+    /// Usage: dashboard [--name <policyName>] [--reset]
     /// </summary>
     private async Task<CommandExecutionResult> HandleDashboardCommandAsync(CommandOptions options)
     {
@@ -256,7 +253,7 @@ public sealed class CliCommandHandler
         {
             var resetResponse = await dashboardController.ResetBreakerAsync(options.PolicyName);
             if (!resetResponse.Success)
-                return new CommandExecutionResult { Success = false, Message = resetResponse.Message ?? "Reset failed", ExitCode = 1 };
+                throw new InvalidOperationException(resetResponse.Message ?? "Reset failed");
 
             return new CommandExecutionResult
             {
@@ -270,37 +267,37 @@ public sealed class CliCommandHandler
         {
             var statusResponse = await dashboardController.GetBreakerStatusAsync(options.PolicyName);
             if (!statusResponse.Success)
-                return new CommandExecutionResult { Success = false, Message = statusResponse.Message ?? "Not found", ExitCode = 1 };
+                throw new InvalidOperationException(statusResponse.Message ?? "Not found");
 
             var s = statusResponse.Data!;
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"Circuit Breaker: {s.Name}");
-            sb.AppendLine($"  State            : {s.State}");
-            sb.AppendLine($"  Trips            : {s.TripCount}");
-            sb.AppendLine($"  Consec. Failures : {s.ConsecutiveFailures}/{s.FailureThreshold}");
-            sb.AppendLine($"  Success Rate     : {s.SuccessRate:F2}%");
+            sb.AppendLine($" State : {s.State}");
+            sb.AppendLine($" Trips : {s.TripCount}");
+            sb.AppendLine($" Consec. Failures : {s.ConsecutiveFailures}/{s.FailureThreshold}");
+            sb.AppendLine($" Success Rate : {s.SuccessRate:F2}%");
             if (s.SecondsUntilHalfOpen.HasValue)
-                sb.AppendLine($"  Time to Half-Open: {s.SecondsUntilHalfOpen:F1}s");
+                sb.AppendLine($" Time to Half-Open: {s.SecondsUntilHalfOpen:F1}s");
 
             return new CommandExecutionResult { Success = true, Message = sb.ToString(), ExitCode = 0 };
         }
 
         var response = await dashboardController.GetDashboardAsync();
         if (!response.Success)
-            return new CommandExecutionResult { Success = false, Message = response.Message ?? "Dashboard error", ExitCode = 1 };
+            throw new InvalidOperationException(response.Message ?? "Dashboard error");
 
         var d = response.Data!;
         var msg = new System.Text.StringBuilder();
-        msg.AppendLine($"Circuit Breaker Dashboard  [{d.GeneratedAt:HH:mm:ss} UTC]");
-        msg.AppendLine($"  Overall Health : {d.OverallHealth}");
-        msg.AppendLine($"  Total Breakers : {d.TotalBreakers}  (Closed={d.ClosedCount}  Open={d.OpenCount}  HalfOpen={d.HalfOpenCount})");
-        msg.AppendLine($"  Total Trips    : {d.TotalTrips}");
+        msg.AppendLine($"Circuit Breaker Dashboard [{d.GeneratedAt:HH:mm:ss} UTC]");
+        msg.AppendLine($" Overall Health : {d.OverallHealth}");
+        msg.AppendLine($" Total Breakers : {d.TotalBreakers} (Closed={d.ClosedCount} Open={d.OpenCount} HalfOpen={d.HalfOpenCount})");
+        msg.AppendLine($" Total Trips : {d.TotalTrips}");
         msg.AppendLine();
 
         foreach (var b in d.Breakers)
         {
             var stateIcon = b.State switch { "Open" => "✗", "HalfOpen" => "◑", _ => "✓" };
-            msg.AppendLine($"  {stateIcon} {b.Name,-30} {b.State,-10}  trips={b.TripCount}  rate={b.SuccessRate:F1}%");
+            msg.AppendLine($" {stateIcon} {b.Name,-30} {b.State,-10} trips={b.TripCount} rate={b.SuccessRate:F1}%");
         }
 
         return new CommandExecutionResult { Success = true, Message = msg.ToString(), ExitCode = 0 };
@@ -308,42 +305,38 @@ public sealed class CliCommandHandler
 
     /// <summary>
     /// Provides information about the failure injection feature.
-    /// Usage: inject --rule &lt;key&gt; --type &lt;exception|latency|timeout&gt; [--rate &lt;0.0-1.0&gt;]
+    /// Usage: inject --rule <key> --type <exception|latency|timeout> [--rate <0.0-1.0>]
     /// </summary>
     private CommandExecutionResult HandleInjectCommand(CommandOptions options)
     {
         var ruleKey = options.GetArgument("rule");
         if (string.IsNullOrWhiteSpace(ruleKey))
-            return new CommandExecutionResult
-            {
-                Success = false,
-                Message = "Usage: inject --rule <key> --type <exception|latency|timeout> [--rate <0.0-1.0>]\n" +
-                          "Use the FailureInjectionService API to register rules programmatically.",
-                ExitCode = 1
-            };
+            throw new ValidationException(
+                "Usage: inject --rule <key> --type <exception|latency|timeout> [--rate <0.0-1.0>]\n" +
+                "Use the FailureInjectionService API to register rules programmatically.",
+                new Dictionary<string, string> { { nameof(ruleKey), "Rule key is required" } });
 
         var typeArg = options.GetArgument("type", "exception");
         var rateArg = options.GetArgument("rate", "1.0");
 
         if (!Enum.TryParse<InjectionType>(typeArg, ignoreCase: true, out var injType))
-            return new CommandExecutionResult { Success = false, Message = $"Unknown injection type: {typeArg}", ExitCode = 1 };
+            throw new ValidationException("Unknown injection type", new Dictionary<string, string> { { nameof(typeArg), $"Unknown injection type: {typeArg}" } });
 
-        if (!double.TryParse(rateArg, System.Globalization.NumberStyles.Float,
-                System.Globalization.CultureInfo.InvariantCulture, out var rate))
-            rate = 1.0;
+        if (!double.TryParse(rateArg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var rate))
+            throw new ValidationException("Invalid rate format", new Dictionary<string, string> { { nameof(rateArg), $"Rate must be a number: {rateArg}" } });
 
         return new CommandExecutionResult
         {
             Success = true,
-            Message = $"Injection rule summary:\n  Rule key : {ruleKey}\n  Type     : {injType}\n  Rate     : {rate:P0}\n" +
-                      "Register this rule via FailureInjectionService.AddRule() to activate it.",
+            Message = $"Injection rule summary:\n Rule key : {ruleKey}\n Type : {injType}\n Rate : {rate:P0}\n" +
+                     "Register this rule via FailureInjectionService.AddRule() to activate it.",
             ExitCode = 0
         };
     }
 
     /// <summary>
     /// Exports resilience metrics.
-    /// Usage: export [--format json|csv|prometheus] [--output &lt;file&gt;]
+    /// Usage: export [--format json|csv|prometheus] [--output <file>]
     /// </summary>
     private async Task<CommandExecutionResult> HandleExportCommandAsync(CommandOptions options)
     {
@@ -356,14 +349,14 @@ public sealed class CliCommandHandler
         {
             exported = format switch
             {
-                "csv"        => exporter.ExportCsv(snapshot),
+                "csv" => exporter.ExportCsv(snapshot),
                 "prometheus" => exporter.ExportPrometheus(snapshot),
-                _            => exporter.ExportJson(snapshot)
+                _ => exporter.ExportJson(snapshot)
             };
         }
         catch (Exception ex)
         {
-            return new CommandExecutionResult { Success = false, Message = $"Export failed: {ex.Message}", ExitCode = 1 };
+            throw new InvalidOperationException($"Export failed: {ex.Message}");
         }
 
         if (options.OutputFile is not null)

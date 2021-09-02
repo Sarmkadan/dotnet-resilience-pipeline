@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System.Collections.Concurrent;
+using DotNetResiliencePipeline.Exceptions;
 
 namespace DotNetResiliencePipeline.Caching;
 
@@ -23,8 +24,12 @@ public sealed class PolicyCacheService
     /// <summary>
     /// Gets a cached policy by name.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when policyName is null.</exception>
     public CachedPolicy? Get(string policyName)
     {
+        if (string.IsNullOrWhiteSpace(policyName))
+            throw new ArgumentNullException(nameof(policyName), "Policy name cannot be null or whitespace");
+
         if (_cache.TryGetValue(policyName, out var cached))
         {
             if (!cached.IsExpired)
@@ -44,8 +49,16 @@ public sealed class PolicyCacheService
     /// <summary>
     /// Caches a policy configuration.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when policyName or policyConfig is null.</exception>
+    /// <exception cref="ConfigurationException">Thrown when cache size limit is exceeded.</exception>
     public void Set(string policyName, object policyConfig, TimeSpan? ttl = null)
     {
+        if (string.IsNullOrWhiteSpace(policyName))
+            throw new ArgumentNullException(nameof(policyName), "Policy name cannot be null or whitespace");
+
+        if (policyConfig is null)
+            throw new ArgumentNullException(nameof(policyConfig));
+
         lock (_lockObj)
         {
             // Enforce size limit
@@ -68,8 +81,12 @@ public sealed class PolicyCacheService
     /// <summary>
     /// Invalidates a cached policy.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when policyName is null.</exception>
     public bool Invalidate(string policyName)
     {
+        if (string.IsNullOrWhiteSpace(policyName))
+            throw new ArgumentNullException(nameof(policyName), "Policy name cannot be null or whitespace");
+
         return _cache.TryRemove(policyName, out _);
     }
 
@@ -111,6 +128,7 @@ public sealed class PolicyCacheService
     /// <summary>
     /// Removes expired entries.
     /// </summary>
+    /// <returns>Number of expired entries removed.</returns>
     public int CleanupExpired()
     {
         var expiredKeys = _cache.Where(x => x.Value.IsExpired).Select(x => x.Key).ToList();
