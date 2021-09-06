@@ -9,7 +9,7 @@
     <RootNamespace>DotNetResiliencePipeline</RootNamespace>
     <AssemblyName>DotNetResiliencePipeline</AssemblyName>
     <PackageId>Zaiets.dotnet.resilience.pipeline</PackageId>
-    <Version>2.0.0</Version>
+    <Version>2.0.2</Version>
     <Authors>Vladyslav Zaiets</Authors>
     <Description>Resilience pipeline for .NET - circuit breaker, bulkhead, retry, timeout, fallback with fluent configuration</Description>
     <PackageTags>dotnet resilience pipeline circuit-breaker bulkhead retry timeout fallback</PackageTags>
