@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -124,7 +125,7 @@ public class PolicyCacheService
     {
         // Evict least recently used entry
         var lru = _cache.Values.OrderBy(c => c.LastAccessTime).FirstOrDefault();
-        if (lru != null)
+        if (lru is not null)
             _cache.TryRemove(lru.PolicyName, out _);
     }
 }

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -58,7 +59,7 @@ public class CommandOptions
         if (Command == "policy" && string.IsNullOrWhiteSpace(PolicyName))
             errors.Add("Policy name is required for policy operations");
 
-        if (PolicyType != null && !IsValidPolicyType(PolicyType))
+        if (PolicyType is not null && !IsValidPolicyType(PolicyType))
             errors.Add($"Invalid policy type: {PolicyType}");
 
         if (MaxRetries < 0)

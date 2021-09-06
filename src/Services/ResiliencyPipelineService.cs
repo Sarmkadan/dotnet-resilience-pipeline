@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -44,7 +45,7 @@ public class ResiliencyPipelineService
     /// </summary>
     public void RegisterPolicy(ResiliencyPolicy policy)
     {
-        if (policy == null)
+        if (policy is null)
             throw new ArgumentNullException(nameof(policy));
 
         lock (_lockObj)

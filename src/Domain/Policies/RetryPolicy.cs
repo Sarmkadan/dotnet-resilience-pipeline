@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -67,7 +68,7 @@ public class RetryPolicy : ResiliencyPolicy
     /// </summary>
     public bool IsRetryable(Exception exception)
     {
-        if (exception == null)
+        if (exception is null)
             return false;
 
         if (RetryableExceptions.Count == 0)
