@@ -14,7 +14,7 @@ namespace DotNetResiliencePipeline.Services;
 /// <summary>
 /// Main orchestrator service that manages and coordinates all resilience policies.
 /// </summary>
-public class ResiliencyPipelineService
+public sealed class ResiliencyPipelineService
 {
     private readonly CircuitBreakerService _circuitBreakerService;
     private readonly RetryService _retryService;
@@ -278,7 +278,7 @@ public class ResiliencyPipelineService
 /// <summary>
 /// Statistics snapshot for the entire pipeline.
 /// </summary>
-public class PipelineStatistics
+public sealed class PipelineStatistics
 {
     public string PipelineId { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }

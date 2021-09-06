@@ -11,7 +11,7 @@ namespace DotNetResiliencePipeline.Domain;
 /// <summary>
 /// Encapsulates the result of a resilience policy execution with status and metadata.
 /// </summary>
-public class PolicyResult<T>
+public sealed class PolicyResult<T>
 {
     public bool IsSuccess { get; set; }
     public T? Data { get; set; }
@@ -111,7 +111,7 @@ public class PolicyResult<T>
 /// <summary>
 /// Non-generic variant for void operations.
 /// </summary>
-public class PolicyResult
+public sealed class PolicyResult
 {
     public bool IsSuccess { get; set; }
     public Exception? Exception { get; set; }

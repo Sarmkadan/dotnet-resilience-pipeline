@@ -13,7 +13,7 @@ namespace DotNetResiliencePipeline.Services;
 /// <summary>
 /// Service handling bulkhead policy execution for resource isolation.
 /// </summary>
-public class BulkheadService
+public sealed class BulkheadService
 {
     /// <summary>
     /// Attempts to acquire a slot in the bulkhead.

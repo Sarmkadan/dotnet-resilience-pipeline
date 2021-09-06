@@ -13,7 +13,7 @@ namespace DotNetResiliencePipeline.Formatters;
 /// Serializes and deserializes policies to/from JSON format.
 /// Supports configuration persistence and API data exchange.
 /// </summary>
-public class JsonPolicySerializer
+public sealed class JsonPolicySerializer
 {
     private readonly JsonSerializerOptions _options;
 
@@ -122,7 +122,7 @@ public class JsonPolicySerializer
 /// <summary>
 /// JSON representation of a policy for serialization.
 /// </summary>
-public class PolicyJson
+public sealed class PolicyJson
 {
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;

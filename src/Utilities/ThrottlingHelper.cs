@@ -13,7 +13,7 @@ namespace DotNetResiliencePipeline.Utilities;
 /// Helper class for throttling and rate limiting at the policy level.
 /// Provides leaky bucket and sliding window algorithms for flow control.
 /// </summary>
-public class ThrottlingHelper
+public sealed class ThrottlingHelper
 {
     private readonly ConcurrentDictionary<string, Throttle> _throttles = new();
 
@@ -77,7 +77,7 @@ public class ThrottlingHelper
 /// <summary>
 /// Individual throttle implementation using leaky bucket algorithm.
 /// </summary>
-public class Throttle
+public sealed class Throttle
 {
     private readonly int _maxRate;
     private readonly int _burstSize;
@@ -158,7 +158,7 @@ public class Throttle
 /// <summary>
 /// Statistics for a throttle.
 /// </summary>
-public class ThrottleStatistics
+public sealed class ThrottleStatistics
 {
     public string? PolicyName { get; set; }
     public int MaxRate { get; set; }

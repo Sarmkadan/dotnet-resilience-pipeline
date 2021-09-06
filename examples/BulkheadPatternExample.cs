@@ -15,7 +15,7 @@ namespace DotNetResiliencePipeline.Examples;
 /// <summary>
 /// Bulkhead pattern example demonstrating resource isolation
 /// </summary>
-public class BulkheadPatternExample
+public sealed class BulkheadPatternExample
 {
     public static async Task Main()
     {

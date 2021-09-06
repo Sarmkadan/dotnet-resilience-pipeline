@@ -10,7 +10,7 @@ namespace DotNetResiliencePipeline.Cli;
 /// Validates CLI commands and their arguments before execution.
 /// Ensures all required parameters are present and values are within acceptable ranges.
 /// </summary>
-public class CliCommandValidator
+public sealed class CliCommandValidator
 {
     private readonly List<string> _errors = new();
     private readonly List<string> _warnings = new();
@@ -145,7 +145,7 @@ public class CliCommandValidator
 /// <summary>
 /// Result of command validation with errors and warnings.
 /// </summary>
-public class ValidationResult
+public sealed class ValidationResult
 {
     public bool IsValid { get; set; }
     public List<string> Errors { get; set; } = new();

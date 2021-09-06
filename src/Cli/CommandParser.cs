@@ -12,7 +12,7 @@ namespace DotNetResiliencePipeline.Cli;
 /// Parses command-line arguments into structured CommandOptions.
 /// Handles both short (-) and long (--) flags with value assignments.
 /// </summary>
-public class CommandParser
+public sealed class CommandParser
 {
     private readonly string[] _args;
 

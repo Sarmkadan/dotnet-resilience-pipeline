@@ -13,7 +13,7 @@ namespace DotNetResiliencePipeline.Api.Controllers;
 /// REST API controller for metrics and monitoring.
 /// Provides endpoints for retrieving execution statistics and health metrics.
 /// </summary>
-public class MetricsController
+public sealed class MetricsController
 {
     private readonly ResiliencyPipelineService _pipelineService;
     private readonly ExecutionHistoryRepository _historyRepository;
@@ -152,7 +152,7 @@ public class MetricsController
 /// <summary>
 /// Pipeline-level metrics data transfer object.
 /// </summary>
-public class PipelineMetricsDto
+public sealed class PipelineMetricsDto
 {
     public string PipelineId { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
@@ -167,7 +167,7 @@ public class PipelineMetricsDto
 /// <summary>
 /// Per-policy metrics data transfer object.
 /// </summary>
-public class PolicyMetricsDto
+public sealed class PolicyMetricsDto
 {
     public string PolicyId { get; set; } = string.Empty;
     public string PolicyName { get; set; } = string.Empty;
@@ -182,7 +182,7 @@ public class PolicyMetricsDto
 /// <summary>
 /// Health status data transfer object.
 /// </summary>
-public class HealthStatusDto
+public sealed class HealthStatusDto
 {
     public string Status { get; set; } = string.Empty;
     public double SuccessRate { get; set; }
@@ -195,7 +195,7 @@ public class HealthStatusDto
 /// <summary>
 /// Execution record data transfer object.
 /// </summary>
-public class ExecutionRecordDto
+public sealed class ExecutionRecordDto
 {
     public string Id { get; set; } = string.Empty;
     public string PolicyName { get; set; } = string.Empty;

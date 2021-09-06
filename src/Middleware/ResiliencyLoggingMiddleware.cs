@@ -13,7 +13,7 @@ namespace DotNetResiliencePipeline.Middleware;
 /// Middleware that logs all resilience pipeline operations with detailed metrics.
 /// Tracks execution time, success/failure, and policy types involved.
 /// </summary>
-public class ResiliencyLoggingMiddleware
+public sealed class ResiliencyLoggingMiddleware
 {
     private readonly ResiliencyPipelineService _pipelineService;
     private List<LogEntry> _logs = new();
@@ -130,7 +130,7 @@ public class ResiliencyLoggingMiddleware
 /// <summary>
 /// Individual log entry for an operation.
 /// </summary>
-public class LogEntry
+public sealed class LogEntry
 {
     public string Id { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; }
@@ -151,7 +151,7 @@ public class LogEntry
 /// <summary>
 /// Summary statistics for logging.
 /// </summary>
-public class LogSummary
+public sealed class LogSummary
 {
     public int TotalEntries { get; set; }
     public int SuccessfulExecutions { get; set; }

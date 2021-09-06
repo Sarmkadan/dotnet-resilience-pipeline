@@ -13,7 +13,7 @@ namespace DotNetResiliencePipeline.Integration;
 /// Manages webhook subscriptions and deliveries for pipeline events.
 /// Handles registration, delivery, retry logic, and event notifications.
 /// </summary>
-public class WebhookManager
+public sealed class WebhookManager
 {
     private readonly ConcurrentDictionary<string, WebhookSubscription> _subscriptions = new();
     private readonly List<WebhookDelivery> _deliveryHistory = new();
@@ -188,7 +188,7 @@ public class WebhookManager
 /// <summary>
 /// Webhook subscription configuration.
 /// </summary>
-public class WebhookSubscription
+public sealed class WebhookSubscription
 {
     public string Id { get; set; } = string.Empty;
     public string Url { get; set; } = string.Empty;
@@ -201,7 +201,7 @@ public class WebhookSubscription
 /// <summary>
 /// Record of a webhook delivery attempt.
 /// </summary>
-public class WebhookDelivery
+public sealed class WebhookDelivery
 {
     public string Id { get; set; } = string.Empty;
     public string WebhookId { get; set; } = string.Empty;
@@ -217,7 +217,7 @@ public class WebhookDelivery
 /// <summary>
 /// Statistics for webhook deliveries.
 /// </summary>
-public class WebhookStatistics
+public sealed class WebhookStatistics
 {
     public int TotalDeliveries { get; set; }
     public int SuccessfulDeliveries { get; set; }

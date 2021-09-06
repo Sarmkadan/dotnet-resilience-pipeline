@@ -14,7 +14,7 @@ namespace DotNetResiliencePipeline.Api.Controllers;
 /// REST API controller for managing resilience policies.
 /// Provides endpoints for CRUD operations on policies and policy configurations.
 /// </summary>
-public class PoliciesController
+public sealed class PoliciesController
 {
     private readonly ResiliencyPipelineService _pipelineService;
     private readonly PolicyRepository _policyRepository;
@@ -233,7 +233,7 @@ public class PoliciesController
 /// <summary>
 /// Request model for creating a new policy.
 /// </summary>
-public class CreatePolicyRequest
+public sealed class CreatePolicyRequest
 {
     public string Name { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
@@ -249,7 +249,7 @@ public class CreatePolicyRequest
 /// <summary>
 /// Request model for updating a policy.
 /// </summary>
-public class UpdatePolicyRequest
+public sealed class UpdatePolicyRequest
 {
     public bool IsEnabled { get; set; } = true;
     public CircuitBreakerConfigDto? CircuitBreakerConfig { get; set; }
@@ -259,7 +259,7 @@ public class UpdatePolicyRequest
 /// <summary>
 /// Circuit breaker configuration for updates.
 /// </summary>
-public class CircuitBreakerConfigDto
+public sealed class CircuitBreakerConfigDto
 {
     public int FailureThreshold { get; set; }
     public int OpenDurationSeconds { get; set; }
@@ -268,7 +268,7 @@ public class CircuitBreakerConfigDto
 /// <summary>
 /// Retry configuration for updates.
 /// </summary>
-public class RetryConfigDto
+public sealed class RetryConfigDto
 {
     public int MaxRetries { get; set; }
     public int InitialDelayMs { get; set; }
@@ -277,7 +277,7 @@ public class RetryConfigDto
 /// <summary>
 /// Request model for policy validation.
 /// </summary>
-public class ValidatePolicyRequest
+public sealed class ValidatePolicyRequest
 {
     public string Name { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
@@ -290,7 +290,7 @@ public class ValidatePolicyRequest
 /// <summary>
 /// Validation result data transfer object.
 /// </summary>
-public class ValidationResultDto
+public sealed class ValidationResultDto
 {
     public bool IsValid { get; set; }
     public List<string> Errors { get; set; } = new();
@@ -299,7 +299,7 @@ public class ValidationResultDto
 /// <summary>
 /// Policy data transfer object.
 /// </summary>
-public class PolicyDto
+public sealed class PolicyDto
 {
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
@@ -311,7 +311,7 @@ public class PolicyDto
 /// <summary>
 /// Generic API response wrapper.
 /// </summary>
-public class ApiResponse<T>
+public sealed class ApiResponse<T>
 {
     public bool Success { get; set; }
     public T? Data { get; set; }

@@ -13,7 +13,7 @@ using Moq;
 
 namespace DotNetResiliencePipeline.Tests;
 
-public class ResiliencyServiceTests
+public sealed class ResiliencyServiceTests
 {
     // Local stub interface used to verify operation invocation via Moq
     private interface IAsyncOperation
