@@ -20,7 +20,8 @@ public sealed class TimeoutService
     /// </summary>
     public async Task<T> ExecuteAsync<T>(
         TimeoutPolicy policy,
-        Func<CancellationToken, Task<T>> operation)
+        Func<CancellationToken, Task<T>> operation,
+        CancellationToken cancellationToken = default)
     {
         if (policy is null)
             throw new ArgumentNullException(nameof(policy));
@@ -29,10 +30,11 @@ public sealed class TimeoutService
             throw new InvalidPolicyConfigurationException(policy.Name, error ?? "Invalid timeout configuration");
 
         if (!policy.IsEnabled)
-            return await operation(CancellationToken.None);
+            return await operation(cancellationToken);
 
         var stopwatch = Stopwatch.StartNew();
-        var cts = new CancellationTokenSource(policy.Timeout);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(policy.Timeout);
 
         try
         {
@@ -43,6 +45,12 @@ public sealed class TimeoutService
             policy.RecordSuccess();
 
             return result;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            stopwatch.Stop();
+            // External cancellation - rethrow without recording as timeout
+            throw;
         }
         catch (OperationCanceledException ex) when (cts.Token.IsCancellationRequested)
         {
@@ -66,7 +74,7 @@ public sealed class TimeoutService
         }
         finally
         {
-            cts?.Dispose();
+            stopwatch.Stop();
         }
     }
 
