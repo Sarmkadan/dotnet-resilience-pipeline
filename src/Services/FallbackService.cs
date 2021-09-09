@@ -23,7 +23,8 @@ public sealed class FallbackService
         FallbackPolicy policy,
         Func<CancellationToken, Task<T>> operation,
         Exception primaryException,
-        long primaryExecutionTimeMs)
+        long primaryExecutionTimeMs,
+        CancellationToken cancellationToken) // ADDED
     {
         if (policy is null)
             throw new ArgumentNullException(nameof(policy));
@@ -37,7 +38,9 @@ public sealed class FallbackService
         }
 
         var fallbackStopwatch = Stopwatch.StartNew();
-        var cts = new CancellationTokenSource(policy.FallbackTimeout);
+        // Link with the incoming cancellationToken
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(policy.FallbackTimeout);
 
         try
         {

@@ -103,6 +103,7 @@ public sealed class ResiliencyPipelineService
     /// </summary>
     public async Task<PolicyResult<T>> ExecuteAsync<T>(
         Func<CancellationToken, Task<T>> operation,
+        CancellationToken cancellationToken = default, // ADDED
         CircuitBreakerPolicy? circuitBreaker = null,
         RetryPolicy? retry = null,
         TimeoutPolicy? timeout = null,
@@ -119,7 +120,8 @@ public sealed class ResiliencyPipelineService
             {
                 var cbResult = await _circuitBreakerService.ExecuteAsync(
                     circuitBreaker,
-                    () => _executeWithRetryTimeoutBulkhead(operation, retry, timeout, bulkhead));
+                    () => _executeWithRetryTimeoutBulkhead(operation, cancellationToken, retry, timeout, bulkhead), // UPDATED
+                    cancellationToken); // ADDED
 
                 stopwatch.Stop();
                 return cbResult is T result
@@ -128,7 +130,7 @@ public sealed class ResiliencyPipelineService
             }
 
             // Direct execution with retry, timeout, bulkhead
-            var result = await _executeWithRetryTimeoutBulkhead(operation, retry, timeout, bulkhead);
+            var result = await _executeWithRetryTimeoutBulkhead(operation, cancellationToken, retry, timeout, bulkhead); // UPDATED
             stopwatch.Stop();
 
             lock (_lockObj)
@@ -146,7 +148,8 @@ public sealed class ResiliencyPipelineService
             // Try fallback
             if (fallback?.IsEnabled == true)
             {
-                return await _fallbackService.ExecuteAsync<T>(fallback, operation, ex, stopwatch.ElapsedMilliseconds);
+                // Fallback service needs the CancellationToken too
+                return await _fallbackService.ExecuteAsync<T>(fallback, operation, ex, stopwatch.ElapsedMilliseconds, cancellationToken); // UPDATED - ADDED cancellationToken
             }
 
             lock (_lockObj)
@@ -164,6 +167,7 @@ public sealed class ResiliencyPipelineService
     /// </summary>
     public async Task<PolicyResult> ExecuteAsync(
         Func<CancellationToken, Task> operation,
+        CancellationToken cancellationToken = default, // ADDED
         CircuitBreakerPolicy? circuitBreaker = null,
         RetryPolicy? retry = null,
         TimeoutPolicy? timeout = null,
@@ -178,12 +182,14 @@ public sealed class ResiliencyPipelineService
             {
                 await _circuitBreakerService.ExecuteAsync(
                     circuitBreaker,
-                    async () => { await operation(CancellationToken.None); return (object)null!; });
+                    async () => { await operation(CancellationToken.None); return (object)null!; },
+                    cancellationToken); // ADDED
             }
             else
             {
                 await _executeWithRetryTimeoutBulkhead(
                     ct => operation(ct),
+                    cancellationToken, // UPDATED
                     retry, timeout, bulkhead);
             }
 
@@ -250,6 +256,7 @@ public sealed class ResiliencyPipelineService
 
     private async Task<T> _executeWithRetryTimeoutBulkhead<T>(
         Func<CancellationToken, Task<T>> operation,
+        CancellationToken cancellationToken, // Already correct
         RetryPolicy? retry = null,
         TimeoutPolicy? timeout = null,
         BulkheadPolicy? bulkhead = null)
@@ -260,12 +267,12 @@ public sealed class ResiliencyPipelineService
         try
         {
             if (timeout?.IsEnabled == true)
-                return await _timeoutService.ExecuteAsync(timeout, operation);
+                return await _timeoutService.ExecuteAsync(timeout, operation, cancellationToken); // Correct
 
             if (retry?.IsEnabled == true)
-                return await _retryService.ExecuteAsync(retry, operation);
+                return await _retryService.ExecuteAsync(retry, operation, cancellationToken); // Correct
 
-            return await operation(CancellationToken.None);
+            return await operation(cancellationToken); // Correct
         }
         finally
         {
