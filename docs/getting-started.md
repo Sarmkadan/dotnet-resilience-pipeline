@@ -326,6 +326,62 @@ eventPublisher.Subscribe((PolicyEvent @event) =>
 });
 ```
 
+## Policy Composition and Order
+
+When combining multiple resilience policies, the order in which they are applied is crucial and defines their interaction. Policies are composed in an "outermost to innermost" fashion. This means the policy configured first in the `ResiliencyPipelineBuilder` acts as the outermost wrapper, and the policy configured last acts as the innermost.
+
+Consider a typical scenario where you want to apply a Circuit Breaker, then a Bulkhead, then a Retry policy, and finally a Timeout.
+
+**Example Pipeline Configuration:**
+
+```csharp
+builder.Services.AddResiliencePipeline(pipelineBuilder =>
+{
+    pipelineBuilder
+        .WithCircuitBreaker("outer-cb", cbOptions => { /* ... */ })      // Outermost
+        .WithBulkhead("capacity-limit", maxParallelization: 10)         // Second layer
+        .WithRetry("api-retry", retryOptions => { /* ... */ })          // Third layer
+        .WithTimeout("per-attempt-timeout", TimeSpan.FromSeconds(5));   // Innermost
+});
+```
+
+In this setup:
+1.  **Circuit Breaker (`outer-cb`)** is the first line of defense. If the circuit is open, the operation is rejected immediately without engaging other policies.
+2.  If the circuit is closed, the request proceeds to the **Bulkhead (`capacity-limit`)**. If the bulkhead is full, the request is rejected or queued, again preventing further policies from being invoked.
+3.  If a slot is available in the bulkhead, the request then proceeds to the **Retry (`api-retry`)** policy.
+4.  Finally, the actual operation is executed, and each *individual attempt* made by the Retry policy will be subject to the **Timeout (`per-attempt-timeout`)** policy.
+
+### Semantic Implications of Policy Order
+
+The placement of policies like Timeout relative to Retry is particularly important:
+
+-   **Timeout *inside* Retry (as shown above):** Each individual retry attempt will have its own timeout. If an attempt takes longer than the timeout, it will be cancelled, and the Retry policy can then decide whether to make another attempt. This is generally the recommended approach for transient network operations.
+
+-   **Timeout *outside* Retry:** If you configure the Timeout policy *before* the Retry policy in the builder chain, the entire sequence of retries will be subject to a single, cumulative timeout. If the total time spent across all retry attempts (including delays) exceeds this outer timeout, the entire operation will be cancelled. This is useful for enforcing a total deadline for an operation that might involve multiple retries.
+
+**Example: Timeout Outside Retry (Total Deadline)**
+
+```csharp
+builder.Services.AddResiliencePipeline(pipelineBuilder =>
+{
+    pipelineBuilder
+        .WithTimeout("total-deadline", TimeSpan.FromSeconds(30)) // Outer Timeout (Total Deadline)
+        .WithRetry("api-retry", retryOptions => { /* ... */ });  // Inner Retry
+});
+```
+
+In this case, the `api-retry` policy will perform its retries, but if the accumulated time exceeds 30 seconds, the outer `total-deadline` timeout will cancel the entire operation, regardless of how many retries are left.
+
+## Shared Telemetry and Observability
+
+All policies registered within the `ResiliencyPipelineService` contribute to the overall pipeline statistics and emit events. You can monitor the health and performance of your composed policies through:
+
+-   **Pipeline Statistics**: Use `pipeline.GetStatistics()` to get aggregated metrics across all policies, including total executions, success rates, and average durations. Individual policy snapshots provide detailed insights per policy.
+-   **Policy Events**: Subscribe to the `ResiliencyEventPublisher` to receive events about state changes (e.g., Circuit Breaker Opened/Closed), retries, timeouts, and fallbacks. This allows for real-time monitoring and integration with external logging or observability platforms.
+-   **Logging**: The library integrates with `Microsoft.Extensions.Logging`. Ensure your logging is configured (as shown in "Monitoring and Observability" section) to capture detailed logs from policy executions.
+
+By understanding policy composition and leveraging the built-in telemetry, you can effectively build and monitor robust, fault-tolerant applications.
+
 ## Next Steps
 
 - Explore the [Architecture Guide](architecture.md) for deeper understanding
