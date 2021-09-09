@@ -47,8 +47,17 @@ public sealed class RetryPolicy : ResiliencyPolicy
 
 
     /// <summary>
-    /// Types of exceptions that trigger a retry.
+    /// Whether to apply jitter to exponential backoff strategies.
+    /// Set to false for deterministic delays (useful in tests).
     /// </summary>
+    public bool UseJitter { get; set; } = true;
+
+    /// <summary>
+    /// Random jitter factor applied to exponential backoff (0.0 = no jitter, 1.0 = full jitter).
+    /// </summary>
+    public double JitterFactor { get; set; } = 1.0;
+
+    private static readonly Random _random = new();
     public List<Type> RetryableExceptions { get; set; } = new();
 
     /// <summary>
@@ -88,28 +97,31 @@ public sealed class RetryPolicy : ResiliencyPolicy
         switch (Strategy)
         {
             case BackoffStrategy.Fixed:
-                delay = BaseDelay;
+                delay = InitialDelay;
                 break;
             case BackoffStrategy.Linear:
-                delay = TimeSpan.FromMilliseconds(BaseDelay.TotalMilliseconds * (attemptNumber + 1));
+                delay = TimeSpan.FromMilliseconds(InitialDelay.TotalMilliseconds * (attemptNumber + 1));
                 break;
             case BackoffStrategy.Exponential:
-                delay = TimeSpan.FromMilliseconds(BaseDelay.TotalMilliseconds * Math.Pow(BackoffMultiplier, attemptNumber));
+                delay = TimeSpan.FromMilliseconds(InitialDelay.TotalMilliseconds * Math.Pow(BackoffMultiplier, attemptNumber));
                 break;
             case BackoffStrategy.ExponentialWithJitter:
                 // AWS 'full jitter' algorithm: sleep = random_between(0, min(cap, base * 2 ** attempt))
                 double cap = MaxDelay.TotalMilliseconds;
-                double baseDelayMs = BaseDelay.TotalMilliseconds;
+                double baseDelayMs = InitialDelay.TotalMilliseconds;
                 double exponentialBackoff = baseDelayMs * Math.Pow(2, attemptNumber);
                 double maxJitteredDelay = Math.Min(cap, exponentialBackoff);
 
                 // Apply JitterFactor: scale the random range
                 // If JitterFactor is 0, no jitter (random range is 0 to 0).
                 // If JitterFactor is 1 (full jitter), random range is 0 to maxJitteredDelay.
-                delay = TimeSpan.FromMilliseconds(_random.NextDouble() * maxJitteredDelay * JitterFactor);
+                delay = TimeSpan.FromMilliseconds(
+                    UseJitter
+                        ? _random.NextDouble() * maxJitteredDelay * JitterFactor
+                        : maxJitteredDelay);
                 break;
             default:
-                delay = BaseDelay;
+                delay = InitialDelay;
                 break;
         }
 
@@ -180,17 +192,11 @@ public sealed class RetryPolicy : ResiliencyPolicy
         baseSnapshot.Metadata = new Dictionary<string, object>
         {
             { "MaxRetries", MaxRetries },
-            { "BaseDelay", BaseDelay.TotalMilliseconds },
+            { "BaseDelayMs", InitialDelay.TotalMilliseconds },
             { "Strategy", Strategy },
             { "TotalRetryAttempts", TotalRetryAttempts },
             { "BackoffMultiplier", BackoffMultiplier },
             { "JitterFactor", JitterFactor }
-        };
-        return baseSnapshot;
-    }
-}
-lRetryAttempts", TotalRetryAttempts },
-            { "BackoffMultiplier", BackoffMultiplier }
         };
         return baseSnapshot;
     }

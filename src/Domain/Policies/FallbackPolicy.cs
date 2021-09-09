@@ -40,8 +40,6 @@ public sealed class FallbackPolicy : ResiliencyPolicy
     /// </summary>
     internal Func<CancellationToken, Task<object>>? GetFallbackAction() => _fallbackActionInternal;
 
-    // ... rest of the class
-{
     /// <summary>
     /// Number of times fallback was invoked.
     /// </summary>

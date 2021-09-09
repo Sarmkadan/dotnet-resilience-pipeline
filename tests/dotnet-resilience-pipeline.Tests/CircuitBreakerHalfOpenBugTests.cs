@@ -6,6 +6,7 @@
 
 using DotNetResiliencePipeline.Domain.Policies;
 using FluentAssertions;
+using Xunit;
 
 namespace DotNetResiliencePipeline.Tests;
 

@@ -60,7 +60,12 @@ public sealed class HttpClientFactory
     /// </summary>
     public bool RemoveClient(string clientName)
     {
-        return _clients.TryRemove(clientName, out var client) && (client?.Dispose(), true).Item2;
+        if (_clients.TryRemove(clientName, out var client))
+        {
+            client?.Dispose();
+            return true;
+        }
+        return false;
     }
 
     /// <summary>

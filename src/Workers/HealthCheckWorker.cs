@@ -103,12 +103,11 @@ public sealed class HealthCheckWorker
 
     private string DetermineHealth(double successRate)
     {
-        return successRate switch
-        {
-            >= HealthyThreshold * 100 => "Healthy",
-            >= DegradedThreshold * 100 => "Degraded",
-            _ => "Unhealthy"
-        };
+        if (successRate >= HealthyThreshold * 100)
+            return "Healthy";
+        if (successRate >= DegradedThreshold * 100)
+            return "Degraded";
+        return "Unhealthy";
     }
 
     /// <summary>
