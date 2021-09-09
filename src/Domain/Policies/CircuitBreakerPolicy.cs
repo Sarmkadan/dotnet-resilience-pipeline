@@ -22,6 +22,7 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
     private CircuitState _state = CircuitState.Closed;
     private DateTime _lastStateChange = DateTime.UtcNow;
     private int _consecutiveFailures = 0;
+    private long _circuitBreakerTrips = 0;
 
     /// <summary>
     /// Number of consecutive failures before opening the circuit.
@@ -59,6 +60,11 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
             }
         }
     }
+
+    /// <summary>
+    /// Total number of times the circuit has tripped to the Open state.
+    /// </summary>
+    public long CircuitBreakerTrips => _circuitBreakerTrips;
 
     /// <summary>
     /// Number of consecutive failures recorded.
@@ -152,6 +158,7 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
     /// </summary>
     private void OpenCircuit()
     {
+        _circuitBreakerTrips++;
         CurrentState = CircuitState.Open;
         Metadata["CircuitState"] = CurrentState;
         Metadata["OpenedAt"] = DateTime.UtcNow;
@@ -198,6 +205,7 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
             { "CircuitState", CurrentState },
             { "ConsecutiveFailures", ConsecutiveFailures },
             { "FailureThreshold", FailureThreshold },
+            { "CircuitBreakerTrips", CircuitBreakerTrips },
             { "TimeUntilHalfOpen", TimeUntilHalfOpen?.TotalSeconds ?? -1 }
         };
         return baseSnapshot;
