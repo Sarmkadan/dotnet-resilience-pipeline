@@ -149,7 +149,7 @@ public sealed class ResiliencyPipelineService
             if (fallback?.IsEnabled == true)
             {
                 // Fallback service needs the CancellationToken too
-                return await _fallbackService.ExecuteAsync<T>(fallback, operation, ex, stopwatch.ElapsedMilliseconds, cancellationToken); // UPDATED - ADDED cancellationToken
+                return await _fallbackService.ExecuteAsync<T>(fallback, ex, stopwatch.ElapsedMilliseconds, cancellationToken); // UPDATED - REMOVED operation
             }
 
             lock (_lockObj)
