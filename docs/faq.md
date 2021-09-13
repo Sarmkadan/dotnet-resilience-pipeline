@@ -362,6 +362,93 @@ services.AddAdaptiveTimeout("payment-api", TimeSpan.FromSeconds(5), policy =>
 });
 ```
 
+## Policy Composition Questions
+
+### What is the recommended order for combining retry, circuit breaker, and timeout?
+
+Use: **Timeout → CircuitBreaker → Retry → operation** (outermost to innermost).
+
+In the pipeline this is expressed as:
+
+```csharp
+var result = await pipeline.ExecuteAsync(
+    async ct => await operation(ct),
+    circuitBreaker: cbPolicy,   // wraps retry
+    retry: retryPolicy,         // wraps operation
+    timeout: timeoutPolicy      // applied per attempt inside the retry loop
+);
+```
+
+The execution order is:
+
+```
+CircuitBreaker.Check → [Retry loop: Timeout → Operation]
+```
+
+Specifically:
+1. **Circuit breaker** short-circuits immediately if the circuit is open — no retries wasted.
+2. **Retry loop** restarts the operation on transient failures.
+3. **Timeout** is applied per attempt inside the retry loop; if an attempt times out,
+   `OperationTimeoutException` is thrown and the retry policy retries (if it is configured
+   to retry that exception type).
+
+An outer wall-clock timeout (cancelling the whole retry loop) can be added by passing a
+`CancellationToken` with a timeout to `ExecuteAsync`:
+
+```csharp
+using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60)); // total budget
+var result = await pipeline.ExecuteAsync(
+    async ct => await operation(ct),
+    cancellationToken: cts.Token,
+    circuitBreaker: cbPolicy,
+    retry: retryPolicy,
+    timeout: timeoutPolicy
+);
+```
+
+### Does MaxRetriesExceededException count as a single circuit breaker failure?
+
+**Yes.** The circuit breaker sees the operation as a black box. When the retry policy exhausts
+all attempts it throws `MaxRetriesExceededException`, which the circuit breaker catches as a
+single failure event and increments `ConsecutiveFailures` by one.
+
+This is intentional: the circuit breaker tracks *service availability*, not individual attempt
+counts. If you want the circuit to open faster during a prolonged outage, lower
+`FailureThreshold` rather than letting the retry policy amplify failure counts.
+
+### Should I retry CircuitBreakerOpenException?
+
+No. Add `CircuitBreakerOpenException` to a **non-retryable** list (or do not include it in
+`RetryableExceptions`) so the retry policy does not burn attempts when the circuit is open:
+
+```csharp
+var retryPolicy = new RetryPolicy("api-retry")
+{
+    MaxRetries = 3,
+    RetryableExceptions = new List<Type>
+    {
+        typeof(HttpRequestException),
+        typeof(TimeoutException),
+        // CircuitBreakerOpenException is NOT listed here
+    }
+};
+```
+
+### What are recommended thresholds for a typical microservice?
+
+| Policy | Recommended starting value |
+|--------|---------------------------|
+| `RetryPolicy.MaxRetries` | 3 |
+| `RetryPolicy.Strategy` | `Exponential` |
+| `RetryPolicy.InitialDelay` | 100 ms |
+| `RetryPolicy.MaxDelay` | 10 s |
+| `TimeoutPolicy.Timeout` | 5–10 s per attempt |
+| `CircuitBreakerPolicy.FailureThreshold` | 5 consecutive failures |
+| `CircuitBreakerPolicy.OpenDuration` | 30 s |
+| `CircuitBreakerPolicy.SuccessThresholdInHalfOpen` | 2–3 |
+
+Tune these values with load testing and real traffic data.
+
 ## Troubleshooting Questions
 
 ### Why is the circuit breaker staying open?
