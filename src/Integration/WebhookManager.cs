@@ -2,10 +2,11 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// ===========================================================================
 
 using System.Collections.Concurrent;
 using System.Text.Json;
+using DotNetResiliencePipeline.Exceptions;
 
 namespace DotNetResiliencePipeline.Integration;
 
@@ -23,8 +24,19 @@ public sealed class WebhookManager
     /// <summary>
     /// Registers a webhook subscription.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when url or events is null.</exception>
+    /// <exception cref="WebhookRegistrationException">Thrown when registration fails.</exception>
     public string RegisterWebhook(string url, string[] events, Dictionary<string, string>? headers = null)
     {
+        if (string.IsNullOrWhiteSpace(url))
+            throw new ArgumentNullException(nameof(url), "Webhook URL cannot be null or whitespace");
+
+        if (events is null || events.Length == 0)
+            throw new ArgumentNullException(nameof(events), "At least one event type must be specified");
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || !uri.Scheme.StartsWith("http"))
+            throw new WebhookRegistrationException("Invalid webhook URL format. Must be an absolute HTTP/HTTPS URL", url);
+
         var subscription = new WebhookSubscription
         {
             Id = Guid.NewGuid().ToString(),
@@ -35,40 +47,62 @@ public sealed class WebhookManager
             IsActive = true
         };
 
-        _subscriptions.TryAdd(subscription.Id, subscription);
+        if (!_subscriptions.TryAdd(subscription.Id, subscription))
+            throw new WebhookRegistrationException("Failed to register webhook subscription", url);
+
         return subscription.Id;
     }
 
     /// <summary>
     /// Unregisters a webhook subscription.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when webhookId is null.</exception>
     public bool UnregisterWebhook(string webhookId)
     {
+        if (string.IsNullOrWhiteSpace(webhookId))
+            throw new ArgumentNullException(nameof(webhookId), "Webhook ID cannot be null or whitespace");
+
         return _subscriptions.TryRemove(webhookId, out _);
     }
 
     /// <summary>
     /// Triggers a webhook event.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when eventType is null.</exception>
+    /// <exception cref="WebhookDeliveryFailedException">Thrown when delivery fails after retries.</exception>
     public async Task TriggerEventAsync(string eventType, object eventData, CancellationToken cancellationToken = default)
     {
-        var applicableWebhooks = _subscriptions.Values.Where(w => w.IsActive && w.Events.Contains(eventType)).ToList();
+        if (string.IsNullOrWhiteSpace(eventType))
+            throw new ArgumentNullException(nameof(eventType), "Event type cannot be null or whitespace");
 
-        foreach (var webhook in applicableWebhooks)
-        {
-            await DeliverWebhookAsync(webhook, eventType, eventData, cancellationToken);
-        }
+        var applicableWebhooks = _subscriptions.Values
+            .Where(w => w.IsActive && w.Events.Contains(eventType))
+            .ToList();
+
+        if (applicableWebhooks.Count == 0)
+            return;
+
+        var deliveryTasks = applicableWebhooks.Select(webhook =>
+            DeliverWebhookWithRetryAsync(webhook, eventType, eventData, cancellationToken));
+
+        await Task.WhenAll(deliveryTasks);
     }
 
     /// <summary>
     /// Delivers a webhook with retry logic.
     /// </summary>
-    private async Task DeliverWebhookAsync(
+    private async Task DeliverWebhookWithRetryAsync(
         WebhookSubscription webhook,
         string eventType,
         object eventData,
         CancellationToken cancellationToken)
     {
+        if (webhook is null)
+            throw new ArgumentNullException(nameof(webhook));
+
+        if (string.IsNullOrWhiteSpace(webhook.Url))
+            throw new InvalidWebhookException("Webhook URL is required", webhook.Id, webhook.Url);
+
         var delivery = new WebhookDelivery
         {
             Id = Guid.NewGuid().ToString(),
@@ -78,35 +112,90 @@ public sealed class WebhookManager
             Timestamp = DateTime.UtcNow
         };
 
-        try
-        {
-            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+        int attemptCount = 0;
+        const int maxAttempts = 3;
+        Exception? lastException = null;
 
-            var payload = new
+        while (attemptCount < maxAttempts && !cancellationToken.IsCancellationRequested)
+        {
+            attemptCount++;
+            delivery.AttemptCount = attemptCount;
+
+            try
             {
-                id = delivery.Id,
-                eventType,
-                timestamp = DateTime.UtcNow,
-                data = eventData
-            };
+                using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
 
-            var json = JsonSerializer.Serialize(payload);
-            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                var payload = new
+                {
+                    id = delivery.Id,
+                    eventType,
+                    timestamp = DateTime.UtcNow,
+                    data = eventData
+                };
 
-            // Apply custom headers
-            foreach (var header in webhook.CustomHeaders)
-                client.DefaultRequestHeaders.Add(header.Key, header.Value);
+                var json = JsonSerializer.Serialize(payload);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-            var response = await client.PostAsync(webhook.Url, content, cancellationToken);
-            delivery.StatusCode = response.StatusCode;
-            delivery.Success = response.IsSuccessStatusCode;
-            delivery.AttemptCount = 1;
+                // Apply custom headers
+                foreach (var header in webhook.CustomHeaders)
+                    client.DefaultRequestHeaders.Add(header.Key, header.Value);
+
+                var response = await client.PostAsync(webhook.Url, content, cancellationToken);
+                delivery.StatusCode = response.StatusCode;
+                delivery.Success = response.IsSuccessStatusCode;
+
+                if (response.IsSuccessStatusCode)
+                    break;
+
+                lastException = new HttpRequestException($"HTTP {(int)response.StatusCode}: {response.StatusCode}");
+            }
+            catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
+            {
+                lastException = new WebhookDeliveryFailedException(
+                    webhook.Id,
+                    webhook.Url,
+                    eventType,
+                    attemptCount,
+                    new OperationCanceledException("Webhook delivery was cancelled", ex));
+                delivery.ErrorMessage = "Cancelled";
+                delivery.Success = false;
+                break;
+            }
+            catch (HttpRequestException ex)
+            {
+                lastException = ex;
+                delivery.ErrorMessage = ex.Message;
+                delivery.Success = false;
+            }
+            catch (Exception ex)
+            {
+                lastException = new WebhookDeliveryFailedException(
+                    webhook.Id,
+                    webhook.Url,
+                    eventType,
+                    attemptCount,
+                    ex);
+                delivery.ErrorMessage = ex.Message;
+                delivery.Success = false;
+                break;
+            }
+
+            if (!delivery.Success && attemptCount < maxAttempts)
+            {
+                // Exponential backoff
+                var delay = TimeSpan.FromSeconds(Math.Pow(2, attemptCount));
+                await Task.Delay(delay, cancellationToken);
+            }
         }
-        catch (Exception ex)
+
+        if (!delivery.Success && lastException is not OperationCanceledException)
         {
-            delivery.Success = false;
-            delivery.ErrorMessage = ex.Message;
-            delivery.AttemptCount = 1;
+            throw new WebhookDeliveryFailedException(
+                webhook.Id,
+                webhook.Url,
+                eventType,
+                attemptCount,
+                lastException ?? new Exception("Unknown delivery failure"));
         }
 
         lock (_lockObj)
@@ -128,16 +217,24 @@ public sealed class WebhookManager
     /// <summary>
     /// Gets a specific webhook subscription.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when webhookId is null.</exception>
     public WebhookSubscription? GetWebhook(string webhookId)
     {
+        if (string.IsNullOrWhiteSpace(webhookId))
+            throw new ArgumentNullException(nameof(webhookId), "Webhook ID cannot be null or whitespace");
+
         return _subscriptions.TryGetValue(webhookId, out var webhook) ? webhook : null;
     }
 
     /// <summary>
     /// Enables/disables a webhook.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when webhookId is null.</exception>
     public bool SetWebhookActive(string webhookId, bool isActive)
     {
+        if (string.IsNullOrWhiteSpace(webhookId))
+            throw new ArgumentNullException(nameof(webhookId), "Webhook ID cannot be null or whitespace");
+
         if (_subscriptions.TryGetValue(webhookId, out var webhook))
         {
             webhook.IsActive = isActive;
@@ -152,6 +249,9 @@ public sealed class WebhookManager
     /// </summary>
     public List<WebhookDelivery> GetDeliveryHistory(string? webhookId = null, int limit = 100)
     {
+        if (limit <= 0)
+            throw new ArgumentException("Limit must be greater than 0", nameof(limit));
+
         lock (_lockObj)
         {
             var query = _deliveryHistory.AsEnumerable();
