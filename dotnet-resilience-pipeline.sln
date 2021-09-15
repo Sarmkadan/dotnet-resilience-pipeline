@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNetResiliencePipeline", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dotnet-resilience-pipeline.Tests", "tests\dotnet-resilience-pipeline.Tests\dotnet-resilience-pipeline.Tests.csproj", "{C2D3E4F5-A6B7-C8D9-E0F1-A2B3C4D5E6F7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dotnet-resilience-pipeline.Benchmarks", "benchmarks\dotnet-resilience-pipeline.Benchmarks.csproj", "{D3E4F5A6-B7C8-D9E0-F1A2-B3C4D5E6F7A8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,3 +48,12 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal
+	{D3E4F5A6-B7C8-D9E0-F1A2-B3C4D5E6F7A8}.Debug|x64.ActiveCfg = Debug|Any CPU
+	{D3E4F5A6-B7C8-D9E0-F1A2-B3C4D5E6F7A8}.Debug|x64.Build.0 = Debug|Any CPU
+	{D3E4F5A6-B7C8-D9E0-F1A2-B3C4D5E6F7A8}.Debug|x86.ActiveCfg = Debug|Any CPU
+	{D3E4F5A6-B7C8-D9E0-F1A2-B3C4D5E6F7A8}.Debug|x86.Build.0 = Debug|Any CPU
+	{D3E4F5A6-B7C8-D9E0-F1A2-B3C4D5E6F7A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	{D3E4F5A6-B7C8-D9E0-F1A2-B3C4D5E6F7A8}.Release|Any CPU.Build.0 = Release|Any CPU
+	{D3E4F5A6-B7C8-D9E0-F1A2-B3C4D5E6F7A8}.Release|x64.ActiveCfg = Release|Any CPU
+	{D3E4F5A6-B7C8-D9E0-F1A2-B3C4D5E6F7A8}.Release|x86.ActiveCfg = Release|Any CPU
+EndGlobalSection
