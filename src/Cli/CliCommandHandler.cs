@@ -47,9 +47,9 @@ public sealed class CliCommandHandler
         var validation = _validator.Validate(options);
         if (!validation.IsValid)
         {
-            var errors = validation.Errors.ToDictionary(
-                e => e.PropertyName,
-                e => e.ErrorMessage);
+            var errors = validation.Errors
+                .Select((message, index) => new { message, index })
+                .ToDictionary(e => $"error_{e.index}", e => e.message);
             throw new ValidationException("Command validation failed", errors);
         }
 

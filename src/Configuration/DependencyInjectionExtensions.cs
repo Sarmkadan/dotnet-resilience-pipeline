@@ -102,11 +102,32 @@ public static class DependencyInjectionExtensions
             var builder = new ResiliencyPipelineBuilder();
 
             // Add policies from options
-            builder.WithCircuitBreaker("default-circuit-breaker", options.CircuitBreaker.ToPolicy);
-            builder.WithRetry("default-retry", options.Retry.ToPolicy);
-            builder.WithTimeout("default-timeout", options.Timeout.ToPolicy);
+            builder.WithCircuitBreaker("default-circuit-breaker", policy =>
+            {
+                var configured = options.CircuitBreaker.ToPolicy(policy.Name);
+                policy.FailureThreshold = configured.FailureThreshold;
+                policy.OpenDuration = configured.OpenDuration;
+                policy.SuccessThresholdInHalfOpen = configured.SuccessThresholdInHalfOpen;
+            });
+            builder.WithRetry("default-retry", policy =>
+            {
+                var configured = options.Retry.ToPolicy(policy.Name);
+                policy.MaxRetries = configured.MaxRetries;
+                policy.InitialDelay = configured.InitialDelay;
+                policy.Strategy = configured.Strategy;
+                policy.MaxDelay = configured.MaxDelay;
+                policy.BackoffMultiplier = configured.BackoffMultiplier;
+                policy.UseJitter = configured.UseJitter;
+                policy.JitterFactor = configured.JitterFactor;
+            });
+            builder.WithTimeout("default-timeout", TimeSpan.FromSeconds(options.Timeout.TimeoutSeconds));
             builder.WithBulkhead("default-bulkhead", options.Bulkhead.MaxParallelization, options.Bulkhead.MaxQueueLength);
-            builder.WithFallback("default-fallback", options.Fallback.ToPolicy);
+            builder.WithFallback("default-fallback", policy =>
+            {
+                var configured = options.Fallback.ToPolicy(policy.Name);
+                policy.FallbackOnAnyException = configured.FallbackOnAnyException;
+                policy.FallbackTimeout = configured.FallbackTimeout;
+            });
 
             return builder.Build();
         });

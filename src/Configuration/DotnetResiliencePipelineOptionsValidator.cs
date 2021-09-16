@@ -5,6 +5,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Options;
 using ValidateOptionsResult = Microsoft.Extensions.Options.ValidateOptionsResult;
 
