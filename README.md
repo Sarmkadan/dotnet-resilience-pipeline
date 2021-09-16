@@ -851,6 +851,17 @@ The test suite covers:
 
 Benchmarks measured on .NET 10.0, single core (Intel Core i7-12700K), 50,000 warm-up iterations.
 
+### Running Benchmarks
+
+To run the benchmarks:
+
+```bash
+cd benchmarks
+dotnet run -c Release
+```
+
+The benchmarks are configured with [BenchmarkDotNet](https://benchmarkdotnet.org/) and will automatically generate a summary table in the console and the `artifacts/benchmarks` directory.
+
 | Operation | Throughput | Latency (p50) | Latency (p99) |
 |---|---|---|---|
 | Circuit breaker (Closed state) | 12M ops/sec | 42 ns | 95 ns |

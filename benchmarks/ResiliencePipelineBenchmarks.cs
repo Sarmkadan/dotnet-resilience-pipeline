@@ -1,12 +1,13 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Diagnosers;
+using DotNetResiliencePipeline.Domain;
 using DotNetResiliencePipeline.Domain.Policies;
 using DotNetResiliencePipeline.Services;
 
 namespace DotNetResiliencePipeline.Benchmarks;
 
 /// <summary>
-/// Benchmarks for complete ResiliencePipelineService performance
+/// Benchmarks for complete ResiliencyPipelineService performance
 /// Measures end-to-end pipeline execution with all policy types combined
 /// </summary>
 [MemoryDiagnoser]
@@ -14,7 +15,7 @@ namespace DotNetResiliencePipeline.Benchmarks;
 [RankColumn]
 public class ResiliencePipelineBenchmarks
 {
-    private ResiliencePipelineService _pipelineService;
+    private ResiliencyPipelineService _pipelineService;
     private CircuitBreakerPolicy _circuitBreakerPolicy;
     private RetryPolicy _retryPolicy;
     private TimeoutPolicy _timeoutPolicy;
@@ -59,13 +60,7 @@ public class ResiliencePipelineBenchmarks
         };
 
         // Create pipeline service
-        _pipelineService = new ResiliencePipelineService(
-            new[] { _circuitBreakerPolicy },
-            new[] { _retryPolicy },
-            new[] { _timeoutPolicy },
-            new[] { _bulkheadPolicy },
-            new[] { _fallbackPolicy }
-        );
+        _pipelineService = new ResiliencyPipelineService();
     }
 
     [Benchmark]
@@ -150,7 +145,7 @@ public class ResiliencePipelineBenchmarks
     [Benchmark]
     public async Task ResiliencePipeline_Execute_Multiple_Operations_Parallel()
     {
-        var tasks = new List<Task<int>>();
+        var tasks = new List<Task<PolicyResult<int>>>();
         for (int i = 0; i < 100; i++)
         {
             tasks.Add(_pipelineService.ExecuteAsync(
