@@ -11,11 +11,11 @@ namespace DotNetResiliencePipeline.Exceptions;
 /// </summary>
 public class ResiliencyException : Exception
 {
-    public string PolicyName { get; set; }
-    public string PolicyType { get; set; }
+    public string? PolicyName { get; set; }
+    public string? PolicyType { get; set; }
     public DateTime OccurredAt { get; set; }
 
-    public ResiliencyException(string message, string policyName = "", string policyType = "")
+    public ResiliencyException(string? message, string? policyName = null, string? policyType = null)
         : base(message)
     {
         PolicyName = policyName;
@@ -23,7 +23,7 @@ public class ResiliencyException : Exception
         OccurredAt = DateTime.UtcNow;
     }
 
-    public ResiliencyException(string message, Exception innerException, string policyName = "", string policyType = "")
+    public ResiliencyException(string? message, Exception? innerException, string? policyName = null, string? policyType = null)
         : base(message, innerException)
     {
         PolicyName = policyName;
@@ -91,9 +91,9 @@ public sealed class OperationTimeoutException : ResiliencyException
 public sealed class MaxRetriesExceededException : ResiliencyException
 {
     public int AttemptCount { get; set; }
-    public List<Exception> AttemptExceptions { get; set; } = new();
+    public List<Exception>? AttemptExceptions { get; set; } = new();
 
-    public MaxRetriesExceededException(string policyName, int attemptCount, List<Exception> exceptions)
+    public MaxRetriesExceededException(string policyName, int attemptCount, List<Exception>? exceptions)
         : base($"All {attemptCount} retry attempts failed.",
             policyName, "Retry")
     {
@@ -107,11 +107,11 @@ public sealed class MaxRetriesExceededException : ResiliencyException
 /// </summary>
 public sealed class FallbackFailedException : ResiliencyException
 {
-    public Exception PrimaryException { get; set; }
-    public Exception FallbackException { get; set; }
+    public Exception? PrimaryException { get; set; }
+    public Exception? FallbackException { get; set; }
 
-    public FallbackFailedException(string policyName, Exception primaryEx, Exception fallbackEx)
-        : base($"Both primary operation and fallback failed. Primary: {primaryEx.Message}, Fallback: {fallbackEx.Message}",
+    public FallbackFailedException(string policyName, Exception? primaryEx, Exception? fallbackEx)
+        : base($"Both primary operation and fallback failed. Primary: {primaryEx?.Message}, Fallback: {fallbackEx?.Message}",
             policyName, "Fallback")
     {
         PrimaryException = primaryEx;
@@ -124,7 +124,7 @@ public sealed class FallbackFailedException : ResiliencyException
 /// </summary>
 public sealed class InvalidPolicyConfigurationException : ResiliencyException
 {
-    public List<string> ConfigurationErrors { get; set; } = new();
+    public List<string>? ConfigurationErrors { get; set; } = new();
 
     public InvalidPolicyConfigurationException(string policyName, string message, List<string>? errors = null)
         : base(message, policyName, "Configuration")
@@ -139,10 +139,10 @@ public sealed class InvalidPolicyConfigurationException : ResiliencyException
 /// </summary>
 public sealed class PipelineExecutionException : ResiliencyException
 {
-    public string ExecutionId { get; set; }
-    public List<string> AppliedPolicies { get; set; } = new();
+    public string? ExecutionId { get; set; }
+    public List<string>? AppliedPolicies { get; set; } = new();
 
-    public PipelineExecutionException(string message, string executionId, List<string> appliedPolicies)
+    public PipelineExecutionException(string message, string executionId, List<string>? appliedPolicies)
         : base(message, "", "Pipeline")
     {
         ExecutionId = executionId;
