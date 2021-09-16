@@ -9,7 +9,7 @@ namespace DotNetResiliencePipeline.Exceptions;
 /// <summary>
 /// Thrown when there is a configuration-related error.
 /// </summary>
-public sealed class ConfigurationException : ResiliencyException
+public sealed class ConfigurationException : DotnetResiliencePipelineException
 {
     public string ConfigurationKey { get; set; }
 

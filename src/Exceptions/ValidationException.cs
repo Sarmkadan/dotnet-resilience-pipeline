@@ -9,7 +9,7 @@ namespace DotNetResiliencePipeline.Exceptions;
 /// <summary>
 /// Thrown when validation of input parameters or configuration fails.
 /// </summary>
-public sealed class ValidationException : ResiliencyException
+public sealed class ValidationException : DotnetResiliencePipelineException
 {
     public Dictionary<string, string> ValidationErrors { get; set; } = new();
 
