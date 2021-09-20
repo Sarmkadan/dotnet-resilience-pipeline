@@ -3,10 +3,18 @@ using DotNetResiliencePipeline.Utilities;
 using FluentAssertions;
 using Xunit;
 
-namespace DotNetResiliencePipeline.Tests;
-
+/// <summary>
+/// Tests for the MetricsAggregator class.
+/// </summary>
 public sealed class MetricsAggregatorTests
 {
+    /// <summary>
+    /// Creates a new MetricsSnapshot with the specified success rate, average execution time, and total executions.
+    /// </summary>
+    /// <param name="successRate">The success rate of the snapshot.</param>
+    /// <param name="avgExecutionMs">The average execution time of the snapshot in milliseconds (default is 50).</param>
+    /// <param name="total">The total number of executions (default is 100).</param>
+    /// <returns>A new MetricsSnapshot.</returns>
     private static MetricsSnapshot MakeSnapshot(double successRate, double avgExecutionMs = 50, long total = 100) =>
         new MetricsSnapshot
         {
@@ -18,6 +26,9 @@ public sealed class MetricsAggregatorTests
             FailedExecutions = (long)(total * (1 - successRate / 100))
         };
 
+    /// <summary>
+    /// Verifies that recording a snapshot adds it to the history.
+    /// </summary>
     [Fact]
     public void RecordSnapshot_AddsSnapshotToHistory()
     {
@@ -29,6 +40,9 @@ public sealed class MetricsAggregatorTests
         metrics.SnapshotCount.Should().Be(1);
     }
 
+    /// <summary>
+    /// Verifies that getting aggregated metrics with an empty history returns default aggregated metrics.
+    /// </summary>
     [Fact]
     public void GetAggregatedMetrics_EmptyHistory_ReturnsDefaultAggregatedMetrics()
     {
@@ -40,6 +54,9 @@ public sealed class MetricsAggregatorTests
         metrics.AverageSuccessRate.Should().Be(0);
     }
 
+    /// <summary>
+    /// Verifies that getting aggregated metrics with multiple snapshots averages the success rate.
+    /// </summary>
     [Fact]
     public void GetAggregatedMetrics_MultipleSnapshots_AveragesSuccessRate()
     {
@@ -53,6 +70,9 @@ public sealed class MetricsAggregatorTests
         metrics.AverageSuccessRate.Should().BeApproximately(80, 0.01);
     }
 
+    /// <summary>
+    /// Verifies that getting aggregated metrics sums the total executions.
+    /// </summary>
     [Fact]
     public void GetAggregatedMetrics_SumsTotalExecutions()
     {
@@ -65,6 +85,9 @@ public sealed class MetricsAggregatorTests
         metrics.TotalExecutions.Should().Be(125);
     }
 
+    /// <summary>
+    /// Verifies that getting aggregated metrics tracks the peak executions.
+    /// </summary>
     [Fact]
     public void GetAggregatedMetrics_TracksPeakExecutions()
     {
@@ -78,6 +101,9 @@ public sealed class MetricsAggregatorTests
         metrics.PeakExecutions.Should().Be(500);
     }
 
+    /// <summary>
+    /// Verifies that getting aggregated metrics tracks the min and max success rate.
+    /// </summary>
     [Fact]
     public void GetAggregatedMetrics_TracksMinAndMaxSuccessRate()
     {
@@ -92,6 +118,9 @@ public sealed class MetricsAggregatorTests
         metrics.MaxSuccessRate.Should().BeApproximately(98, 0.01);
     }
 
+    /// <summary>
+    /// Verifies that when the max snapshots is exceeded, the oldest snapshot is evicted.
+    /// </summary>
     [Fact]
     public void MaxSnapshots_WhenExceeded_EvictsOldestSnapshot()
     {
@@ -107,6 +136,9 @@ public sealed class MetricsAggregatorTests
         metrics.MinSuccessRate.Should().BeApproximately(20, 0.01);
     }
 
+    /// <summary>
+    /// Verifies that analyzing the trend with insufficient data returns an empty trend.
+    /// </summary>
     [Fact]
     public void AnalyzeTrend_InsufficientData_ReturnsEmptyTrend()
     {
@@ -119,6 +151,9 @@ public sealed class MetricsAggregatorTests
         trend.Direction.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Verifies that analyzing the trend with improving success rate returns an increasing direction.
+    /// </summary>
     [Fact]
     public void AnalyzeTrend_ImprovingSuccessRate_ReturnsIncreasingDirection()
     {
@@ -132,6 +167,9 @@ public sealed class MetricsAggregatorTests
         trend.DataPoints.Should().Be(4);
     }
 
+    /// <summary>
+    /// Verifies that analyzing the trend with declining success rate returns a decreasing direction.
+    /// </summary>
     [Fact]
     public void AnalyzeTrend_DecliningSuccessRate_ReturnsDecreasingDirection()
     {
@@ -144,6 +182,9 @@ public sealed class MetricsAggregatorTests
         trend.Direction.Should().Be("Decreasing");
     }
 
+    /// <summary>
+    /// Verifies that analyzing the trend with a large change percentage marks it as an anomaly.
+    /// </summary>
     [Fact]
     public void AnalyzeTrend_LargeChangePercentage_MarksAsAnomaly()
     {
@@ -158,6 +199,9 @@ public sealed class MetricsAggregatorTests
         trend.IsAnomaly.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that clearing the aggregator removes all snapshots.
+    /// </summary>
     [Fact]
     public void Clear_RemovesAllSnapshots()
     {
