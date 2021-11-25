@@ -24,7 +24,7 @@ public sealed class TimeoutPolicy : ResiliencyPolicy
     /// <summary>
     /// Average execution time of non-timed-out operations in milliseconds.
     /// </summary>
-    public double AverageExecutionTimeMs { get; private set; }
+    public double AverageExecutionTimeMs { get; private set; } = 0.0;
 
     /// <summary>
     /// Longest execution time recorded (in milliseconds).

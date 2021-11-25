@@ -1,135 +1,73 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace DotNetResiliencePipeline.Benchmarks;
 
 /// <summary>
-/// Extension methods for TimeoutBenchmarks to provide additional utility functionality
+/// Extension methods for TimeoutBenchmarks to provide additional utility functionality.
 /// </summary>
 public static class TimeoutBenchmarksExtensions
 {
     /// <summary>
-    /// Calculates the average execution time from recorded execution times
+    /// Gets the average execution time from the timeout policy.
     /// </summary>
-    /// <param name="benchmarks">The TimeoutBenchmarks instance</param>
-    /// <returns>The average execution time in milliseconds</returns>
+    /// <param name="benchmarks">The TimeoutBenchmarks instance. Cannot be null.</param>
+    /// <returns>The average execution time in milliseconds, or 0 if no data is available.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="benchmarks"/> is null.</exception>
     public static double TimeoutPolicy_GetAverageExecutionTime(this TimeoutBenchmarks benchmarks)
     {
-        if (benchmarks == null)
-            throw new ArgumentNullException(nameof(benchmarks));
+        ArgumentNullException.ThrowIfNull(benchmarks);
 
-        // Use reflection to get the private _timeoutPolicy field
-        var timeoutPolicyField = typeof(TimeoutBenchmarks).GetField(
-            "_timeoutPolicy",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-        if (timeoutPolicyField == null)
-            return 0;
-
-        var timeoutPolicy = timeoutPolicyField.GetValue(benchmarks) as TimeoutPolicy;
-
-        if (timeoutPolicy == null)
-            return 0;
-
-        // Access the execution times through reflection
-        var executionTimesField = typeof(TimeoutPolicy).GetField(
-            "_executionTimes",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-        if (executionTimesField == null)
-            return 0;
-
-        var executionTimes = executionTimesField.GetValue(timeoutPolicy) as List<long>;
-
-        if (executionTimes == null || executionTimes.Count == 0)
-            return 0;
-
-        return executionTimes.Average();
+        return benchmarks._timeoutPolicy?.AverageExecutionTimeMs ?? 0.0;
     }
 
     /// <summary>
-    /// Gets the maximum execution time from recorded execution times
+    /// Gets the maximum execution time from recorded execution times.
     /// </summary>
-    /// <param name="benchmarks">The TimeoutBenchmarks instance</param>
-    /// <returns>The maximum execution time in milliseconds</returns>
+    /// <param name="benchmarks">The TimeoutBenchmarks instance. Cannot be null.</param>
+    /// <returns>The maximum execution time in milliseconds, or 0 if no data is available.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="benchmarks"/> is null.</exception>
     public static long TimeoutPolicy_GetMaxExecutionTime(this TimeoutBenchmarks benchmarks)
     {
-        if (benchmarks == null)
-            throw new ArgumentNullException(nameof(benchmarks));
+        ArgumentNullException.ThrowIfNull(benchmarks);
 
-        var timeoutPolicyField = typeof(TimeoutBenchmarks).GetField(
-            "_timeoutPolicy",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-        if (timeoutPolicyField == null)
-            return 0;
-
-        var timeoutPolicy = timeoutPolicyField.GetValue(benchmarks) as TimeoutPolicy;
-
-        if (timeoutPolicy == null)
-            return 0;
-
-        var executionTimesField = typeof(TimeoutPolicy).GetField(
-            "_executionTimes",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-        if (executionTimesField == null)
-            return 0;
-
-        var executionTimes = executionTimesField.GetValue(timeoutPolicy) as List<long>;
-
-        return executionTimes?.Max() ?? 0;
+        return benchmarks._timeoutPolicy?.LongestExecutionTimeMs ?? 0L;
     }
 
     /// <summary>
-    /// Gets the minimum execution time from recorded execution times
+    /// Gets the minimum execution time from recorded execution times.
     /// </summary>
-    /// <param name="benchmarks">The TimeoutBenchmarks instance</param>
-    /// <returns>The minimum execution time in milliseconds</returns>
+    /// <param name="benchmarks">The TimeoutBenchmarks instance. Cannot be null.</param>
+    /// <returns>The minimum execution time in milliseconds, or 0 if no data is available.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="benchmarks"/> is null.</exception>
     public static long TimeoutPolicy_GetMinExecutionTime(this TimeoutBenchmarks benchmarks)
     {
-        if (benchmarks == null)
-            throw new ArgumentNullException(nameof(benchmarks));
+        ArgumentNullException.ThrowIfNull(benchmarks);
 
-        var timeoutPolicyField = typeof(TimeoutBenchmarks).GetField(
-            "_timeoutPolicy",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-        if (timeoutPolicyField == null)
-            return 0;
-
-        var timeoutPolicy = timeoutPolicyField.GetValue(benchmarks) as TimeoutPolicy;
-
-        if (timeoutPolicy == null)
-            return 0;
-
-        var executionTimesField = typeof(TimeoutPolicy).GetField(
-            "_executionTimes",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-        if (executionTimesField == null)
-            return 0;
-
-        var executionTimes = executionTimesField.GetValue(timeoutPolicy) as List<long>;
-
-        return executionTimes?.Min() ?? 0;
+        return benchmarks._timeoutPolicy?.ShortestExecutionTimeMs ?? 0L;
     }
 
     /// <summary>
-    /// Calculates the success rate based on timeout occurrences
+    /// Calculates the success rate based on timeout occurrences.
     /// </summary>
-    /// <param name="benchmarks">The TimeoutBenchmarks instance</param>
-    /// <returns>Success rate (1.0 = 100% success, 0.0 = 0% success)</returns>
+    /// <param name="benchmarks">The TimeoutBenchmarks instance. Cannot be null.</param>
+    /// <returns>Success rate (1.0 = 100% success, 0.0 = 0% success).</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="benchmarks"/> is null.</exception>
     public static double TimeoutPolicy_GetSuccessRate(this TimeoutBenchmarks benchmarks)
     {
-        if (benchmarks == null)
-            throw new ArgumentNullException(nameof(benchmarks));
+        ArgumentNullException.ThrowIfNull(benchmarks);
 
-        var timeoutCount = benchmarks.TimeoutPolicy_Get_TimeoutCount();
-        var totalOperations = benchmarks.TimeoutPolicy_GetPercentile99ExecutionTime() > 0 ?
-            Math.Max(1, benchmarks.TimeoutPolicy_GetPercentile99ExecutionTime() / 100) : 1;
+        var timeoutPolicy = benchmarks._timeoutPolicy;
+        if (timeoutPolicy == null)
+        {
+            return 0.0;
+        }
 
-        return Math.Max(0, 1.0 - (double)timeoutCount / totalOperations);
+        var totalOperations = timeoutPolicy.TotalExecutions;
+        if (totalOperations == 0)
+        {
+            return 0.0;
+        }
+
+        return Math.Max(0.0, 1.0 - (double)timeoutPolicy.TimeoutCount / totalOperations);
     }
 }
