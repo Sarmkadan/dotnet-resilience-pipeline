@@ -11,12 +11,16 @@ namespace DotNetResiliencePipeline.Benchmarks;
 public static class ConcurrencyBenchmarksExtensions
 {
     /// <summary>
-    /// Executes all benchmark methods concurrently and returns execution statistics
+    /// Executes all benchmark methods concurrently and returns execution statistics.
     /// </summary>
-    /// <param name="benchmarks">The ConcurrencyBenchmarks instance</param>
-    /// <returns>Dictionary with benchmark names and their execution times in milliseconds</returns>
+    /// <param name="benchmarks">The ConcurrencyBenchmarks instance. Cannot be null.</param>
+    /// <returns>Dictionary with benchmark names and their execution times in milliseconds.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="benchmarks"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when one or more benchmark executions fail.</exception>
     public static Dictionary<string, double> ExecuteAllBenchmarks(this ConcurrencyBenchmarks benchmarks)
     {
+        ArgumentNullException.ThrowIfNull(benchmarks);
+
         var results = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         var tasks = new List<Task>();
 
@@ -110,35 +114,51 @@ public static class ConcurrencyBenchmarksExtensions
             results["All_Policies_Concurrent_Mixed_Operations"] = (DateTime.UtcNow - start).TotalMilliseconds;
         }));
 
-        Task.WaitAll(tasks.ToArray());
+        try
+        {
+            Task.WaitAll([.. tasks]);
+        }
+        catch (AggregateException ae)
+        {
+            throw new InvalidOperationException("One or more benchmark executions failed", ae);
+        }
 
         return results;
     }
 
     /// <summary>
-    /// Gets aggregated statistics from all circuit breaker related benchmarks
+    /// Gets aggregated statistics from all circuit breaker related benchmarks.
     /// </summary>
-    /// <param name="benchmarks">The ConcurrencyBenchmarks instance</param>
-    /// <returns>Tuple containing success rate, failure rate, and state access count</returns>
+    /// <param name="benchmarks">The ConcurrencyBenchmarks instance. Cannot be null.</param>
+    /// <returns>Tuple containing success rate, failure rate, and state access count.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="benchmarks"/> is null.</exception>
     public static (double SuccessRate, double FailureRate, long StateAccessCount) GetCircuitBreakerStatistics(this ConcurrencyBenchmarks benchmarks)
     {
-        var successRate = benchmarks.CircuitBreaker_Get_CircuitBreakerTrips_Concurrent() / 1000.0;
+        ArgumentNullException.ThrowIfNull(benchmarks);
+
+        var trips = benchmarks.CircuitBreaker_Get_CircuitBreakerTrips_Concurrent();
+        var stateAccessCount = benchmarks.CircuitBreaker_Concurrent_State_Access();
+        var successRate = trips > 0 ? 0.0 : 1.0;
         var failureRate = 1.0 - successRate;
-        var stateAccessCount = 1000; // Known from benchmark implementation
 
         return (successRate, failureRate, stateAccessCount);
     }
 
     /// <summary>
-    /// Gets bulkhead utilization statistics across multiple concurrent measurements
+    /// Gets bulkhead utilization statistics across multiple concurrent measurements.
     /// </summary>
-    /// <param name="benchmarks">The ConcurrencyBenchmarks instance</param>
-    /// <param name="measurementCount">Number of measurements to take</param>
-    /// <returns>Average utilization percentage</returns>
+    /// <param name="benchmarks">The ConcurrencyBenchmarks instance. Cannot be null.</param>
+    /// <param name="measurementCount">Number of measurements to take. Must be greater than 0.</param>
+    /// <returns>Average utilization percentage.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="benchmarks"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="measurementCount"/> is less than or equal to 0.</exception>
     public static double GetAverageBulkheadUtilization(this ConcurrencyBenchmarks benchmarks, int measurementCount = 10)
     {
+        ArgumentNullException.ThrowIfNull(benchmarks);
         if (measurementCount <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(measurementCount), "Must be greater than 0");
+        }
 
         double totalUtilization = 0;
 
@@ -151,15 +171,23 @@ public static class ConcurrencyBenchmarksExtensions
     }
 
     /// <summary>
-    /// Executes a stress test combining all policies with configurable parallelism
+    /// Executes a stress test combining all policies with configurable parallelism.
     /// </summary>
-    /// <param name="benchmarks">The ConcurrencyBenchmarks instance</param>
-    /// <param name="parallelism">Number of parallel operations</param>
-    /// <returns>Tuple with success count, failure count, and total execution time</returns>
+    /// <param name="benchmarks">The ConcurrencyBenchmarks instance. Cannot be null.</param>
+    /// <param name="parallelism">Number of parallel operations. Must be greater than 0.</param>
+    /// <returns>Tuple with success count, failure count, and total execution time.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="benchmarks"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="parallelism"/> is less than or equal to 0.</exception>
     public static (int SuccessCount, int FailureCount, TimeSpan ExecutionTime) RunStressTest(
         this ConcurrencyBenchmarks benchmarks,
         int parallelism = 1000)
     {
+        ArgumentNullException.ThrowIfNull(benchmarks);
+        if (parallelism <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(parallelism), "Must be greater than 0");
+        }
+
         var startTime = DateTime.UtcNow;
         int successCount = 0;
         int failureCount = 0;
@@ -194,7 +222,7 @@ public static class ConcurrencyBenchmarksExtensions
                 }
                 else if (i % 7 == 5)
                 {
-                    var state = benchmarks._circuitBreaker.CurrentState;
+                    var _ = benchmarks._circuitBreaker.CurrentState;
                 }
                 else
                 {
