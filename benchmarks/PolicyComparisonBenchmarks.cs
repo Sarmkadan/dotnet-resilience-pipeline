@@ -151,6 +151,13 @@ public class PolicyComparisonBenchmarks
         _exponentialWithJitterRetry.RecordRetryAttempt();
     }
 
+    [Benchmark]
+    public long RetryComparison_GetTotalRetryAttempts()
+    {
+        return _fixedRetry.TotalRetryAttempts + _linearRetry.TotalRetryAttempts +
+               _exponentialRetry.TotalRetryAttempts + _exponentialWithJitterRetry.TotalRetryAttempts;
+    }
+
     #endregion
 
     #region Circuit Breaker Comparisons
