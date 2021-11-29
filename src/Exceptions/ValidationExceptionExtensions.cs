@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace DotNetResiliencePipeline.Exceptions
 {
@@ -14,46 +13,33 @@ namespace DotNetResiliencePipeline.Exceptions
         /// </summary>
         /// <param name="exception">The validation exception.</param>
         /// <param name="fieldName">Name of the field to check.</param>
-        /// <returns>True if the field has validation errors; otherwise, false.</returns>
+        /// <returns><see langword="true"/> if the field has validation errors; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="exception"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="fieldName"/> is <see langword="null"/>, empty, or consists only of whitespace.</exception>
         public static bool HasErrorFor(this ValidationException exception, string fieldName)
         {
-            if (exception is null)
-            {
-                throw new ArgumentNullException(nameof(exception));
-            }
-
-            if (string.IsNullOrWhiteSpace(fieldName))
-            {
-                throw new ArgumentException("Field name cannot be null or whitespace.", nameof(fieldName));
-            }
+            ArgumentNullException.ThrowIfNull(exception);
+            ArgumentException.ThrowIfNullOrWhiteSpace(fieldName);
 
             return exception.ValidationErrors.ContainsKey(fieldName);
         }
 
         /// <summary>
-        /// Gets the error message for the specified field, or null if the field has no errors.
+        /// Gets the error message for the specified field, or <see langword="null"/> if the field has no errors.
         /// </summary>
         /// <param name="exception">The validation exception.</param>
         /// <param name="fieldName">Name of the field.</param>
-        /// <returns>The error message, or null if no error exists for the field.</returns>
-        public static string GetErrorMessage(this ValidationException exception, string fieldName)
+        /// <returns>The error message, or <see langword="null"/> if no error exists for the field.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="exception"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="fieldName"/> is <see langword="null"/>, empty, or consists only of whitespace.</exception>
+        public static string? GetErrorMessage(this ValidationException exception, string fieldName)
         {
-            if (exception is null)
-            {
-                throw new ArgumentNullException(nameof(exception));
-            }
+            ArgumentNullException.ThrowIfNull(exception);
+            ArgumentException.ThrowIfNullOrWhiteSpace(fieldName);
 
-            if (string.IsNullOrWhiteSpace(fieldName))
-            {
-                throw new ArgumentException("Field name cannot be null or whitespace.", nameof(fieldName));
-            }
-
-            if (exception.ValidationErrors.TryGetValue(fieldName, out var errorMessage))
-            {
-                return errorMessage;
-            }
-
-            return null;
+            return exception.ValidationErrors.TryGetValue(fieldName, out var errorMessage)
+                ? errorMessage
+                : null;
         }
 
         /// <summary>
@@ -61,12 +47,10 @@ namespace DotNetResiliencePipeline.Exceptions
         /// </summary>
         /// <param name="exception">The validation exception.</param>
         /// <returns>An enumerable of field names with errors.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="exception"/> is <see langword="null"/>.</exception>
         public static IEnumerable<string> GetErrorFields(this ValidationException exception)
         {
-            if (exception is null)
-            {
-                throw new ArgumentNullException(nameof(exception));
-            }
+            ArgumentNullException.ThrowIfNull(exception);
 
             return exception.ValidationErrors.Keys;
         }
@@ -76,13 +60,11 @@ namespace DotNetResiliencePipeline.Exceptions
         /// </summary>
         /// <param name="exception">The original validation exception.</param>
         /// <param name="additionalErrors">Dictionary of additional validation errors to merge.</param>
-        /// <returns>A new ValidationException with merged errors.</returns>
-        public static ValidationException WithAdditionalErrors(this ValidationException exception, Dictionary<string, string> additionalErrors)
+        /// <returns>A new ValidationException with merged errors, or the original exception if <paramref name="additionalErrors"/> is <see langword="null"/> or empty.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="exception"/> is <see langword="null"/>.</exception>
+        public static ValidationException WithAdditionalErrors(this ValidationException exception, Dictionary<string, string>? additionalErrors)
         {
-            if (exception is null)
-            {
-                throw new ArgumentNullException(nameof(exception));
-            }
+            ArgumentNullException.ThrowIfNull(exception);
 
             if (additionalErrors is null || additionalErrors.Count == 0)
             {
