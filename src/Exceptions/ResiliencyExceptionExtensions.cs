@@ -13,6 +13,7 @@ namespace DotNetResiliencePipeline.Exceptions;
 /// Extension methods for <see cref="ResiliencyException"/> and its derived types.
 /// Provides utility methods for formatting, analyzing, and working with resilience exceptions.
 /// </summary>
+/// <exception cref="ArgumentNullException">Thrown when the <paramref name="exception"/> parameter is <see langword="null"/>.</exception>
 public static class ResiliencyExceptionExtensions
 {
     /// <summary>
@@ -20,12 +21,10 @@ public static class ResiliencyExceptionExtensions
     /// </summary>
     /// <param name="exception">The resilience exception to format.</param>
     /// <returns>A formatted error message with policy details, timestamps, and exception information.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when the <paramref name="exception"/> parameter is <see langword="null"/>.</exception>
     public static string ToDetailedErrorMessage(this ResiliencyException exception)
     {
-        if (exception is null)
-        {
-            throw new ArgumentNullException(nameof(exception));
-        }
+        ArgumentNullException.ThrowIfNull(exception);
 
         var builder = new StringBuilder();
         builder.AppendLine("=== Resilience Pipeline Error Report ===");
@@ -82,11 +81,11 @@ public static class ResiliencyExceptionExtensions
                     for (int i = 0; i < Math.Min(mrEx.AttemptExceptions.Count, 5); i++)
                     {
                         var ex = mrEx.AttemptExceptions[i];
-                        builder.AppendLine($"  Attempt {i + 1}: {ex.GetType().Name} - {ex.Message}");
+                        builder.AppendLine($" Attempt {i + 1}: {ex.GetType().Name} - {ex.Message}");
                     }
                     if (mrEx.AttemptExceptions.Count > 5)
                     {
-                        builder.AppendLine($"  ... and {mrEx.AttemptExceptions.Count - 5} more exceptions");
+                        builder.AppendLine($" ... and {mrEx.AttemptExceptions.Count - 5} more exceptions");
                     }
                 }
                 break;
@@ -105,7 +104,7 @@ public static class ResiliencyExceptionExtensions
                     builder.AppendLine("Applied Policies:");
                     foreach (var policy in peEx.AppliedPolicies)
                     {
-                        builder.AppendLine($"  - {policy}");
+                        builder.AppendLine($" - {policy}");
                     }
                 }
                 break;
@@ -122,57 +121,22 @@ public static class ResiliencyExceptionExtensions
     /// </summary>
     /// <param name="exception">The resilience exception to check.</param>
     /// <returns>True if the exception indicates a retryable failure; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when the <paramref name="exception"/> parameter is <see langword="null"/>.</exception>
     public static bool IsRetryable(this ResiliencyException exception)
     {
-        if (exception is null)
-        {
-            throw new ArgumentNullException(nameof(exception));
-        }
+        ArgumentNullException.ThrowIfNull(exception);
 
-        // Circuit breaker is open - not retryable until timeout passes
-        if (exception is CircuitBreakerOpenException)
+        return exception switch
         {
-            return false;
-        }
-
-        // Bulkhead rejected - retryable after waiting
-        if (exception is BulkheadRejectedException)
-        {
-            return true;
-        }
-
-        // Timeout - retryable
-        if (exception is OperationTimeoutException)
-        {
-            return true;
-        }
-
-        // Max retries exceeded - not retryable
-        if (exception is MaxRetriesExceededException)
-        {
-            return false;
-        }
-
-        // Fallback failed - depends on the underlying exception
-        if (exception is FallbackFailedException ffEx)
-        {
-            return ffEx.PrimaryException is not CircuitBreakerOpenException;
-        }
-
-        // Configuration errors are not retryable
-        if (exception is InvalidPolicyConfigurationException)
-        {
-            return false;
-        }
-
-        // Pipeline execution errors - retryable if not a terminal state
-        if (exception is PipelineExecutionException)
-        {
-            return true;
-        }
-
-        // Default: retryable
-        return true;
+            CircuitBreakerOpenException => false,                      // Circuit breaker is open - not retryable until timeout passes
+            BulkheadRejectedException => true,                        // Bulkhead rejected - retryable after waiting
+            OperationTimeoutException => true,                         // Timeout - retryable
+            MaxRetriesExceededException => false,                      // Max retries exceeded - not retryable
+            InvalidPolicyConfigurationException => false,                // Configuration errors are not retryable
+            PipelineExecutionException => true,                        // Pipeline execution errors - retryable if not a terminal state
+            FallbackFailedException ffEx => ffEx.PrimaryException is not CircuitBreakerOpenException, // Fallback failed - depends on the underlying exception
+            _ => true                                                // Default: retryable
+        };
     }
 
     /// <summary>
@@ -180,12 +144,10 @@ public static class ResiliencyExceptionExtensions
     /// </summary>
     /// <param name="exception">The resilience exception.</param>
     /// <returns>A friendly name describing the exception type.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when the <paramref name="exception"/> parameter is <see langword="null"/>.</exception>
     public static string GetFriendlyName(this ResiliencyException exception)
     {
-        if (exception is null)
-        {
-            throw new ArgumentNullException(nameof(exception));
-        }
+        ArgumentNullException.ThrowIfNull(exception);
 
         return exception switch
         {
@@ -205,26 +167,21 @@ public static class ResiliencyExceptionExtensions
     /// </summary>
     /// <param name="exception">The resilience exception.</param>
     /// <returns>A severity level: Critical, High, Medium, or Low.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when the <paramref name="exception"/> parameter is <see langword="null"/>.</exception>
     public static string GetSeverityLevel(this ResiliencyException exception)
     {
-        if (exception is null)
-        {
-            throw new ArgumentNullException(nameof(exception));
-        }
+        ArgumentNullException.ThrowIfNull(exception);
 
         return exception switch
         {
             // Critical: Circuit breaker open, configuration errors
-            CircuitBreakerOpenException => "Critical",
-            InvalidPolicyConfigurationException => "Critical",
+            CircuitBreakerOpenException or InvalidPolicyConfigurationException => "Critical",
 
             // High: Max retries exceeded, fallback failed
-            MaxRetriesExceededException => "High",
-            FallbackFailedException => "High",
+            MaxRetriesExceededException or FallbackFailedException => "High",
 
             // Medium: Timeout, Bulkhead rejected
-            OperationTimeoutException => "Medium",
-            BulkheadRejectedException => "Medium",
+            OperationTimeoutException or BulkheadRejectedException => "Medium",
 
             // Default for base exception and others
             _ => "Low"
