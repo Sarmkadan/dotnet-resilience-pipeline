@@ -26,7 +26,8 @@ public static class HttpClientFactoryExtensions
     /// <param name="policyName">Optional name of the resiliency policy to apply.</param>
     /// <param name="cancellationToken">Cancellation token for the operation.</param>
     /// <returns>The response content as a string.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when clientName or url is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="clientName"/> or <paramref name="url"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="clientName"/> or <paramref name="url"/> is empty or whitespace.</exception>
     /// <exception cref="HttpClientException">Thrown when client is not found or request fails.</exception>
     public static async Task<string> GetStringAsync(
         this HttpClientFactory factory,
@@ -35,27 +36,26 @@ public static class HttpClientFactoryExtensions
         string? policyName = null,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(clientName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(url);
+
         var response = await factory.GetAsync(clientName, url, policyName, cancellationToken);
 
-        if (!response.Success && response.StatusCode.HasValue)
+        return response switch
         {
-            throw new HttpResponseException(
-                $"GET request failed with status {(int)response.StatusCode}: {response.Content}",
-                (int)response.StatusCode,
+            { Success: true } => response.Content ?? string.Empty,
+            { StatusCode: var statusCode } when statusCode.HasValue => throw new HttpResponseException(
+                $"GET request failed with status {(int)statusCode}: {response.Content}",
+                (int)statusCode,
                 response.Exception,
                 clientName,
-                url);
-        }
-        else if (!response.Success)
-        {
-            throw new HttpClientException(
+                url),
+            _ => throw new HttpClientException(
                 $"GET request failed: {response.Message}",
                 response.Exception,
                 clientName,
-                url);
-        }
-
-        return response.Content ?? string.Empty;
+                url)
+        };
     }
 
     /// <summary>
@@ -69,7 +69,8 @@ public static class HttpClientFactoryExtensions
     /// <param name="policyName">Optional name of the resiliency policy to apply.</param>
     /// <param name="cancellationToken">Cancellation token for the operation.</param>
     /// <returns>Deserialized object of type T.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when clientName or url is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="clientName"/> or <paramref name="url"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="clientName"/> or <paramref name="url"/> is empty or whitespace.</exception>
     /// <exception cref="HttpClientException">Thrown when client is not found or request fails.</exception>
     /// <exception cref="JsonException">Thrown when response cannot be deserialized.</exception>
     public static async Task<T> GetFromJsonAsync<T>(
@@ -79,43 +80,26 @@ public static class HttpClientFactoryExtensions
         string? policyName = null,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(clientName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(url);
+
         var response = await factory.GetAsync(clientName, url, policyName, cancellationToken);
 
-        if (!response.Success && response.StatusCode.HasValue)
+        return response switch
         {
-            throw new HttpResponseException(
-                $"GET request failed with status {(int)response.StatusCode}: {response.Content}",
-                (int)response.StatusCode,
+            { Success: true } => DeserializeResponse<T>(response, clientName, url),
+            { StatusCode: var statusCode } when statusCode.HasValue => throw new HttpResponseException(
+                $"GET request failed with status {(int)statusCode}: {response.Content}",
+                (int)statusCode,
                 response.Exception,
                 clientName,
-                url);
-        }
-        else if (!response.Success)
-        {
-            throw new HttpClientException(
+                url),
+            _ => throw new HttpClientException(
                 $"GET request failed: {response.Message}",
                 response.Exception,
                 clientName,
-                url);
-        }
-
-        try
-        {
-            return System.Text.Json.JsonSerializer.Deserialize<T>(
-                response.Content ?? "{}",
-                new System.Text.Json.JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                })!;
-        }
-        catch (Exception ex)
-        {
-            throw new HttpClientException(
-                $"Failed to deserialize response to {typeof(T).Name}",
-                ex,
-                clientName,
-                url);
-        }
+                url)
+        };
     }
 
     /// <summary>
@@ -130,7 +114,8 @@ public static class HttpClientFactoryExtensions
     /// <param name="policyName">Optional name of the resiliency policy to apply.</param>
     /// <param name="cancellationToken">Cancellation token for the operation.</param>
     /// <returns>The response content as a string.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when clientName, url, or request is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="clientName"/>, <paramref name="url"/>, or <paramref name="request"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="clientName"/> or <paramref name="url"/> is empty or whitespace.</exception>
     /// <exception cref="HttpClientException">Thrown when client is not found or request fails.</exception>
     public static async Task<string> PostAsJsonAsync<TRequest>(
         this HttpClientFactory factory,
@@ -140,35 +125,30 @@ public static class HttpClientFactoryExtensions
         string? policyName = null,
         CancellationToken cancellationToken = default)
     {
-        if (request is null)
-        {
-            throw new ArgumentNullException(nameof(request));
-        }
+        ArgumentNullException.ThrowIfNull(clientName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(url);
+        ArgumentNullException.ThrowIfNull(request);
 
         var json = System.Text.Json.JsonSerializer.Serialize(request);
         var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
         var response = await factory.PostAsync(clientName, url, content, policyName, cancellationToken);
 
-        if (!response.Success && response.StatusCode.HasValue)
+        return response switch
         {
-            throw new HttpResponseException(
-                $"POST request failed with status {(int)response.StatusCode}: {response.Content}",
-                (int)response.StatusCode,
+            { Success: true } => response.Content ?? string.Empty,
+            { StatusCode: var statusCode } when statusCode.HasValue => throw new HttpResponseException(
+                $"POST request failed with status {(int)statusCode}: {response.Content}",
+                (int)statusCode,
                 response.Exception,
                 clientName,
-                url);
-        }
-        else if (!response.Success)
-        {
-            throw new HttpClientException(
+                url),
+            _ => throw new HttpClientException(
                 $"POST request failed: {response.Message}",
                 response.Exception,
                 clientName,
-                url);
-        }
-
-        return response.Content ?? string.Empty;
+                url)
+        };
     }
 
     /// <summary>
@@ -184,7 +164,8 @@ public static class HttpClientFactoryExtensions
     /// <param name="policyName">Optional name of the resiliency policy to apply.</param>
     /// <param name="cancellationToken">Cancellation token for the operation.</param>
     /// <returns>Deserialized response object of type TResponse.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when clientName, url, or request is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="clientName"/>, <paramref name="url"/>, or <paramref name="request"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="clientName"/> or <paramref name="url"/> is empty or whitespace.</exception>
     /// <exception cref="HttpClientException">Thrown when client is not found or request fails.</exception>
     /// <exception cref="JsonException">Thrown when response cannot be deserialized.</exception>
     public static async Task<TResponse> PostAsJsonAndGetAsync<TRequest, TResponse>(
@@ -195,51 +176,30 @@ public static class HttpClientFactoryExtensions
         string? policyName = null,
         CancellationToken cancellationToken = default)
     {
-        if (request is null)
-        {
-            throw new ArgumentNullException(nameof(request));
-        }
+        ArgumentNullException.ThrowIfNull(clientName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(url);
+        ArgumentNullException.ThrowIfNull(request);
 
         var json = System.Text.Json.JsonSerializer.Serialize(request);
         var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
         var response = await factory.PostAsync(clientName, url, content, policyName, cancellationToken);
 
-        if (!response.Success && response.StatusCode.HasValue)
+        return response switch
         {
-            throw new HttpResponseException(
-                $"POST request failed with status {(int)response.StatusCode}: {response.Content}",
-                (int)response.StatusCode,
+            { Success: true } => DeserializeResponse<TResponse>(response, clientName, url),
+            { StatusCode: var statusCode } when statusCode.HasValue => throw new HttpResponseException(
+                $"POST request failed with status {(int)statusCode}: {response.Content}",
+                (int)statusCode,
                 response.Exception,
                 clientName,
-                url);
-        }
-        else if (!response.Success)
-        {
-            throw new HttpClientException(
+                url),
+            _ => throw new HttpClientException(
                 $"POST request failed: {response.Message}",
                 response.Exception,
                 clientName,
-                url);
-        }
-
-        try
-        {
-            return System.Text.Json.JsonSerializer.Deserialize<TResponse>(
-                response.Content ?? "{}",
-                new System.Text.Json.JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                })!;
-        }
-        catch (Exception ex)
-        {
-            throw new HttpClientException(
-                $"Failed to deserialize response to {typeof(TResponse).Name}",
-                ex,
-                clientName,
-                url);
-        }
+                url)
+        };
     }
 
     /// <summary>
@@ -248,15 +208,14 @@ public static class HttpClientFactoryExtensions
     /// <param name="factory">The HTTP client factory instance.</param>
     /// <param name="clientName">Name of the client to check.</param>
     /// <returns>True if the client exists; otherwise, false.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when clientName is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="clientName"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="clientName"/> is empty or whitespace.</exception>
     public static bool HasClient(
         this HttpClientFactory factory,
         string clientName)
     {
-        if (string.IsNullOrWhiteSpace(clientName))
-        {
-            throw new ArgumentNullException(nameof(clientName), "Client name cannot be null or whitespace");
-        }
+        ArgumentNullException.ThrowIfNull(clientName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(clientName);
 
         return factory.GetClient(clientName) is not null;
     }
@@ -271,7 +230,8 @@ public static class HttpClientFactoryExtensions
     /// <param name="policyName">Optional name of the resiliency policy to apply.</param>
     /// <param name="cancellationToken">Cancellation token for the operation.</param>
     /// <returns>The HTTP status code from the response.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when clientName or url is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="clientName"/> or <paramref name="url"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="clientName"/> or <paramref name="url"/> is empty or whitespace.</exception>
     /// <exception cref="HttpClientException">Thrown when client is not found or request fails.</exception>
     public static async Task<HttpStatusCode> GetStatusCodeAsync(
         this HttpClientFactory factory,
@@ -280,7 +240,37 @@ public static class HttpClientFactoryExtensions
         string? policyName = null,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(clientName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(url);
+
         var response = await factory.GetAsync(clientName, url, policyName, cancellationToken);
-        return response.StatusCode.HasValue ? (HttpStatusCode)response.StatusCode.Value : HttpStatusCode.InternalServerError;
+
+        return response.StatusCode.HasValue
+            ? (HttpStatusCode)response.StatusCode.Value
+            : HttpStatusCode.InternalServerError;
+    }
+
+    private static T DeserializeResponse<T>(
+        object response,
+        string clientName,
+        string url)
+    {
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<T>(
+                response.GetType().GetProperty("Content")?.GetValue(response) as string ?? "{}",
+                new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                })!;
+        }
+        catch (Exception ex)
+        {
+            throw new HttpClientException(
+                $"Failed to deserialize response to {typeof(T).Name}",
+                ex,
+                clientName,
+                url);
+        }
     }
 }
