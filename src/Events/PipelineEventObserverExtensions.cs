@@ -19,13 +19,11 @@ public static class PipelineEventObserverExtensions
     /// Gets the number of active handlers currently registered.
     /// </summary>
     /// <param name="observer">The observer instance</param>
+    /// <exception cref="ArgumentNullException"><paramref name="observer"/> is null.</exception>
     /// <returns>Count of active handlers</returns>
     public static int GetActiveHandlersCount(this PipelineEventObserver observer)
     {
-        if (observer == null)
-        {
-            throw new ArgumentNullException(nameof(observer));
-        }
+        ArgumentNullException.ThrowIfNull(observer);
 
         return observer.GetHandlers().Count(h => h.IsActive);
     }
@@ -34,13 +32,11 @@ public static class PipelineEventObserverExtensions
     /// Gets the number of inactive handlers currently registered.
     /// </summary>
     /// <param name="observer">The observer instance</param>
+    /// <exception cref="ArgumentNullException"><paramref name="observer"/> is null.</exception>
     /// <returns>Count of inactive handlers</returns>
     public static int GetInactiveHandlersCount(this PipelineEventObserver observer)
     {
-        if (observer == null)
-        {
-            throw new ArgumentNullException(nameof(observer));
-        }
+        ArgumentNullException.ThrowIfNull(observer);
 
         return observer.GetHandlers().Count(h => !h.IsActive);
     }
@@ -50,18 +46,13 @@ public static class PipelineEventObserverExtensions
     /// </summary>
     /// <param name="observer">The observer instance</param>
     /// <param name="handlerId">The handler ID to find</param>
+    /// <exception cref="ArgumentNullException"><paramref name="observer"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="handlerId"/> is null or whitespace.</exception>
     /// <returns>The handler if found, otherwise null</returns>
     public static EventHandler? FindHandler(this PipelineEventObserver observer, string handlerId)
     {
-        if (observer == null)
-        {
-            throw new ArgumentNullException(nameof(observer));
-        }
-
-        if (string.IsNullOrWhiteSpace(handlerId))
-        {
-            throw new ArgumentException("Handler ID cannot be null or empty", nameof(handlerId));
-        }
+        ArgumentNullException.ThrowIfNull(observer);
+        ArgumentException.ThrowIfNullOrWhiteSpace(handlerId);
 
         return observer.GetHandlers().FirstOrDefault(h => h.Id.Equals(handlerId, StringComparison.Ordinal));
     }
@@ -70,13 +61,11 @@ public static class PipelineEventObserverExtensions
     /// Gets statistics formatted as a human-readable string.
     /// </summary>
     /// <param name="observer">The observer instance</param>
+    /// <exception cref="ArgumentNullException"><paramref name="observer"/> is null.</exception>
     /// <returns>Formatted statistics string</returns>
     public static string GetStatisticsFormatted(this PipelineEventObserver observer)
     {
-        if (observer == null)
-        {
-            throw new ArgumentNullException(nameof(observer));
-        }
+        ArgumentNullException.ThrowIfNull(observer);
 
         var stats = observer.GetStatistics();
         var sb = new StringBuilder();
@@ -97,14 +86,11 @@ public static class PipelineEventObserverExtensions
     /// <summary>
     /// Checks if any handlers are currently active.
     /// </summary>
-    /// <param name="observer">The observer instance</param>
+    /// <exception cref="ArgumentNullException"><paramref name="observer"/> is null.</exception>
     /// <returns>True if at least one handler is active, otherwise false</returns>
     public static bool HasActiveHandlers(this PipelineEventObserver observer)
     {
-        if (observer == null)
-        {
-            throw new ArgumentNullException(nameof(observer));
-        }
+        ArgumentNullException.ThrowIfNull(observer);
 
         return observer.GetHandlers().Any(h => h.IsActive);
     }
@@ -114,18 +100,13 @@ public static class PipelineEventObserverExtensions
     /// </summary>
     /// <param name="observer">The observer instance</param>
     /// <param name="eventType">The event type to filter by</param>
+    /// <exception cref="ArgumentNullException"><paramref name="observer"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="eventType"/> is null or whitespace.</exception>
     /// <returns>List of handlers matching the event type</returns>
     public static List<EventHandler> GetHandlersByEventType(this PipelineEventObserver observer, string eventType)
     {
-        if (observer == null)
-        {
-            throw new ArgumentNullException(nameof(observer));
-        }
-
-        if (string.IsNullOrWhiteSpace(eventType))
-        {
-            throw new ArgumentException("Event type cannot be null or empty", nameof(eventType));
-        }
+        ArgumentNullException.ThrowIfNull(observer);
+        ArgumentException.ThrowIfNullOrWhiteSpace(eventType);
 
         return observer.GetHandlers()
             .Where(h => h.EventType.Equals(eventType, StringComparison.Ordinal))
@@ -137,13 +118,11 @@ public static class PipelineEventObserverExtensions
     /// </summary>
     /// <param name="observer">The observer instance</param>
     /// <param name="handlerId">The handler ID to toggle</param>
+    /// <exception cref="ArgumentNullException"><paramref name="observer"/> is null.</exception>
     /// <returns>True if the handler was found and state was toggled, otherwise false</returns>
     public static bool ToggleHandlerActive(this PipelineEventObserver observer, string handlerId)
     {
-        if (observer == null)
-        {
-            throw new ArgumentNullException(nameof(observer));
-        }
+        ArgumentNullException.ThrowIfNull(observer);
 
         var handler = observer.FindHandler(handlerId);
         if (handler != null)
@@ -158,13 +137,11 @@ public static class PipelineEventObserverExtensions
     /// Gets a summary of all handlers with their status.
     /// </summary>
     /// <param name="observer">The observer instance</param>
+    /// <exception cref="ArgumentNullException"><paramref name="observer"/> is null.</exception>
     /// <returns>Formatted string with handler summary</returns>
     public static string GetHandlersSummary(this PipelineEventObserver observer)
     {
-        if (observer == null)
-        {
-            throw new ArgumentNullException(nameof(observer));
-        }
+        ArgumentNullException.ThrowIfNull(observer);
 
         var handlers = observer.GetHandlers();
         var activeCount = handlers.Count(h => h.IsActive);
@@ -183,7 +160,7 @@ public static class PipelineEventObserverExtensions
             sb.AppendLine("Handlers:");
             foreach (var handler in handlers.OrderBy(h => h.CreatedAt))
             {
-                sb.AppendLine($"  [{(handler.IsActive ? "✓" : "✗")}] {handler.Id} - {handler.EventType} (Created: {handler.CreatedAt:yyyy-MM-dd})");
+                sb.AppendLine($" [{(handler.IsActive ? "✓" : "✗")}] {handler.Id} - {handler.EventType} (Created: {handler.CreatedAt:yyyy-MM-dd})");
             }
         }
 
