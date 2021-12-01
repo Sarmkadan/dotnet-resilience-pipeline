@@ -3,7 +3,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using System.Text;
 
@@ -18,9 +18,11 @@ public static class ErrorHandlingMiddlewareExtensions
     /// <summary>
     /// Filters error contexts by exception type.
     /// </summary>
-    /// <param name="middleware">The middleware instance</param>
-    /// <param name="exceptionType">Exception type to filter by (e.g., "TimeoutException")</param>
-    /// <returns>Filtered list of error contexts</returns>
+    /// <param name="middleware">The middleware instance.</param>
+    /// <param name="exceptionType">Exception type to filter by (e.g., "TimeoutException").</param>
+    /// <returns>Filtered list of error contexts.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="middleware"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="exceptionType"/> is null or whitespace.</exception>
     public static List<ErrorContext> GetErrorsByType(this ErrorHandlingMiddleware middleware, string exceptionType)
     {
         ArgumentNullException.ThrowIfNull(middleware);
@@ -34,9 +36,10 @@ public static class ErrorHandlingMiddlewareExtensions
     /// <summary>
     /// Filters error contexts by recoverability status.
     /// </summary>
-    /// <param name="middleware">The middleware instance</param>
-    /// <param name="recoverableOnly">True to get only recoverable errors, false for non-recoverable</param>
-    /// <returns>Filtered list of error contexts</returns>
+    /// <param name="middleware">The middleware instance.</param>
+    /// <param name="recoverableOnly">True to get only recoverable errors, false for non-recoverable.</param>
+    /// <returns>Filtered list of error contexts.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="middleware"/> is null.</exception>
     public static List<ErrorContext> GetErrorsByRecoverability(this ErrorHandlingMiddleware middleware, bool recoverableOnly = true)
     {
         ArgumentNullException.ThrowIfNull(middleware);
@@ -49,9 +52,11 @@ public static class ErrorHandlingMiddlewareExtensions
     /// <summary>
     /// Gets error contexts for a specific operation name.
     /// </summary>
-    /// <param name="middleware">The middleware instance</param>
-    /// <param name="operationName">Operation name to filter by</param>
-    /// <returns>Filtered list of error contexts</returns>
+    /// <param name="middleware">The middleware instance.</param>
+    /// <param name="operationName">Operation name to filter by.</param>
+    /// <returns>Filtered list of error contexts.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="middleware"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="operationName"/> is null or whitespace.</exception>
     public static List<ErrorContext> GetErrorsForOperation(this ErrorHandlingMiddleware middleware, string operationName)
     {
         ArgumentNullException.ThrowIfNull(middleware);
@@ -65,9 +70,10 @@ public static class ErrorHandlingMiddlewareExtensions
     /// <summary>
     /// Generates a formatted error report string containing statistics and common errors.
     /// </summary>
-    /// <param name="middleware">The middleware instance</param>
-    /// <param name="includeContexts">Whether to include detailed error contexts in the report</param>
-    /// <returns>Formatted error report string</returns>
+    /// <param name="middleware">The middleware instance.</param>
+    /// <param name="includeContexts">Whether to include detailed error contexts in the report.</param>
+    /// <returns>Formatted error report string.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="middleware"/> is null.</exception>
     public static string GenerateErrorReport(this ErrorHandlingMiddleware middleware, bool includeContexts = false)
     {
         ArgumentNullException.ThrowIfNull(middleware);
@@ -98,10 +104,10 @@ public static class ErrorHandlingMiddlewareExtensions
             foreach (var context in middleware.GetErrorContexts().OrderByDescending(c => c.Timestamp).Take(20))
             {
                 sb.AppendLine(context.ToString());
-                sb.AppendLine($"  Policy: {context.PolicyName}");
-                sb.AppendLine($"  Operation: {context.OperationName}");
-                sb.AppendLine($"  Recoverable: {context.IsRecoverable}");
-                sb.AppendLine($"  Recommendation: {context.RecoveryRecommendation}");
+                sb.AppendLine($" Policy: {context.PolicyName}");
+                sb.AppendLine($" Operation: {context.OperationName}");
+                sb.AppendLine($" Recoverable: {context.IsRecoverable}");
+                sb.AppendLine($" Recommendation: {context.RecoveryRecommendation}");
                 sb.AppendLine();
             }
         }
@@ -112,10 +118,13 @@ public static class ErrorHandlingMiddlewareExtensions
     /// <summary>
     /// Checks if a specific error type has occurred within a time window.
     /// </summary>
-    /// <param name="middleware">The middleware instance</param>
-    /// <param name="exceptionType">Exception type to check</param>
-    /// <param name="timeWindowMinutes">Time window in minutes to check within</param>
-    /// <returns>True if error occurred within the time window</returns>
+    /// <param name="middleware">The middleware instance.</param>
+    /// <param name="exceptionType">Exception type to check.</param>
+    /// <param name="timeWindowMinutes">Time window in minutes to check within.</param>
+    /// <returns>True if error occurred within the time window.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="middleware"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="exceptionType"/> is null or whitespace.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="timeWindowMinutes"/> is not positive.</exception>
     public static bool HasErrorOccurredRecently(this ErrorHandlingMiddleware middleware, string exceptionType, int timeWindowMinutes = 60)
     {
         ArgumentNullException.ThrowIfNull(middleware);
@@ -133,8 +142,9 @@ public static class ErrorHandlingMiddlewareExtensions
     /// <summary>
     /// Gets the total count of all error occurrences across all error types.
     /// </summary>
-    /// <param name="middleware">The middleware instance</param>
-    /// <returns>Total error count</returns>
+    /// <param name="middleware">The middleware instance.</param>
+    /// <returns>Total error count.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="middleware"/> is null.</exception>
     public static int GetTotalErrorCount(this ErrorHandlingMiddleware middleware)
     {
         ArgumentNullException.ThrowIfNull(middleware);
