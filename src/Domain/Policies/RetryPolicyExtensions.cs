@@ -3,9 +3,10 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace DotNetResiliencePipeline.Domain.Policies;
 
@@ -13,14 +14,19 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// Extension methods for <see cref="RetryPolicy"/> providing additional functionality
 /// for retry policy configuration, monitoring, and execution.
 /// </summary>
+/// <remarks>
+/// All extension methods validate their parameters using <see cref="ArgumentNullException.ThrowIfNull"/>
+/// and follow the fluent interface pattern by returning the policy instance for method chaining.
+/// </remarks>
 public static class RetryPolicyExtensions
 {
     /// <summary>
     /// Adds a specific exception type to the list of retryable exceptions.
     /// </summary>
-    /// <param name="policy">The retry policy instance.</param>
     /// <typeparam name="TException">The exception type to add.</typeparam>
+    /// <param name="policy">The retry policy instance.</param>
     /// <returns>The same policy instance for method chaining.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="policy"/> is null.</exception>
     public static RetryPolicy AddRetryableException<TException>(this RetryPolicy policy) where TException : Exception
     {
         ArgumentNullException.ThrowIfNull(policy);
@@ -40,35 +46,44 @@ public static class RetryPolicyExtensions
     /// <param name="policy">The retry policy instance.</param>
     /// <param name="exceptionTypes">Collection of exception types to add.</param>
     /// <returns>The same policy instance for method chaining.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="policy"/> or <paramref name="exceptionTypes"/> is null.</exception>
     public static RetryPolicy AddRetryableExceptions(this RetryPolicy policy, IEnumerable<Type> exceptionTypes)
     {
         ArgumentNullException.ThrowIfNull(policy);
         ArgumentNullException.ThrowIfNull(exceptionTypes);
 
+        var added = false;
         foreach (var exceptionType in exceptionTypes)
         {
             if (exceptionType != null && !policy.RetryableExceptions.Contains(exceptionType))
             {
                 policy.RetryableExceptions.Add(exceptionType);
+                added = true;
             }
         }
 
-        policy.ModifiedAt = DateTime.UtcNow;
+        if (added)
+        {
+            policy.ModifiedAt = DateTime.UtcNow;
+        }
         return policy;
     }
 
     /// <summary>
     /// Removes a specific exception type from the list of retryable exceptions.
     /// </summary>
-    /// <param name="policy">The retry policy instance.</param>
     /// <typeparam name="TException">The exception type to remove.</typeparam>
+    /// <param name="policy">The retry policy instance.</param>
     /// <returns>The same policy instance for method chaining.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="policy"/> is null.</exception>
     public static RetryPolicy RemoveRetryableException<TException>(this RetryPolicy policy) where TException : Exception
     {
         ArgumentNullException.ThrowIfNull(policy);
 
-        policy.RetryableExceptions.RemoveAll(t => t == typeof(TException));
-        policy.ModifiedAt = DateTime.UtcNow;
+        if (policy.RetryableExceptions.Remove(typeof(TException)))
+        {
+            policy.ModifiedAt = DateTime.UtcNow;
+        }
         return policy;
     }
 
@@ -78,12 +93,16 @@ public static class RetryPolicyExtensions
     /// </summary>
     /// <param name="policy">The retry policy instance.</param>
     /// <returns>The same policy instance for method chaining.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="policy"/> is null.</exception>
     public static RetryPolicy ClearRetryableExceptions(this RetryPolicy policy)
     {
         ArgumentNullException.ThrowIfNull(policy);
 
-        policy.RetryableExceptions.Clear();
-        policy.ModifiedAt = DateTime.UtcNow;
+        if (policy.RetryableExceptions.Count > 0)
+        {
+            policy.RetryableExceptions.Clear();
+            policy.ModifiedAt = DateTime.UtcNow;
+        }
         return policy;
     }
 
@@ -94,6 +113,7 @@ public static class RetryPolicyExtensions
     /// <param name="action">The action to execute.</param>
     /// <param name="context">Optional context object for logging/telemetry.</param>
     /// <returns>True if the action succeeded; false if it failed after all retries.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="policy"/> or <paramref name="action"/> is null.</exception>
     /// <exception cref="AggregateException">Throws if all retry attempts fail.</exception>
     public static bool ExecuteWithRetry(this RetryPolicy policy, Action action, object? context = null)
     {
@@ -125,7 +145,7 @@ public static class RetryPolicyExtensions
         }
 
         throw new AggregateException(
-            $"Action failed after {policy.TotalRetryAttempts} retry attempts",
+            $"Action failed after {policy.TotalRetryAttempts} retry attempt(s)",
             lastException);
     }
 
@@ -137,6 +157,7 @@ public static class RetryPolicyExtensions
     /// <param name="func">The function to execute.</param>
     /// <param name="context">Optional context object for logging/telemetry.</param>
     /// <returns>The result of the function if successful.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="policy"/> or <paramref name="func"/> is null.</exception>
     /// <exception cref="AggregateException">Throws if all retry attempts fail.</exception>
     public static T ExecuteWithRetry<T>(this RetryPolicy policy, Func<T> func, object? context = null)
     {
@@ -167,7 +188,7 @@ public static class RetryPolicyExtensions
         }
 
         throw new AggregateException(
-            $"Function failed after {policy.TotalRetryAttempts} retry attempts",
+            $"Function failed after {policy.TotalRetryAttempts} retry attempt(s)",
             lastException);
     }
 
@@ -177,8 +198,11 @@ public static class RetryPolicyExtensions
     /// <param name="policy">The retry policy instance.</param>
     /// <param name="action">The async action to execute.</param>
     /// <param name="context">Optional context object for logging/telemetry.</param>
+    /// <param name="cancellationToken">Cancellation token for cooperative cancellation.</param>
     /// <returns>True if the action succeeded; false if it failed after all retries.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="policy"/> or <paramref name="action"/> is null.</exception>
     /// <exception cref="AggregateException">Throws if all retry attempts fail.</exception>
+    /// <exception cref="OperationCanceledException">Thrown if the operation is canceled.</exception>
     public static async Task<bool> ExecuteWithRetryAsync(this RetryPolicy policy, Func<Task> action, object? context = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(policy);
@@ -208,14 +232,11 @@ public static class RetryPolicyExtensions
             }
         }
 
-        if (cancellationToken.IsCancellationRequested)
-        {
-            throw new OperationCanceledException(cancellationToken);
-        }
-
-        throw new AggregateException(
-            $"Async action failed after {policy.TotalRetryAttempts} retry attempts",
-            lastException);
+        return cancellationToken.IsCancellationRequested
+            ? throw new OperationCanceledException(cancellationToken)
+            : throw new AggregateException(
+                $"Async action failed after {policy.TotalRetryAttempts} retry attempt(s)",
+                lastException);
     }
 
     /// <summary>
@@ -225,8 +246,11 @@ public static class RetryPolicyExtensions
     /// <param name="policy">The retry policy instance.</param>
     /// <param name="func">The async function to execute.</param>
     /// <param name="context">Optional context object for logging/telemetry.</param>
+    /// <param name="cancellationToken">Cancellation token for cooperative cancellation.</param>
     /// <returns>The result of the function if successful.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="policy"/> or <paramref name="func"/> is null.</exception>
     /// <exception cref="AggregateException">Throws if all retry attempts fail.</exception>
+    /// <exception cref="OperationCanceledException">Thrown if the operation is canceled.</exception>
     public static async Task<T> ExecuteWithRetryAsync<T>(this RetryPolicy policy, Func<Task<T>> func, object? context = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(policy);
@@ -255,14 +279,11 @@ public static class RetryPolicyExtensions
             }
         }
 
-        if (cancellationToken.IsCancellationRequested)
-        {
-            throw new OperationCanceledException(cancellationToken);
-        }
-
-        throw new AggregateException(
-            $"Async function failed after {policy.TotalRetryAttempts} retry attempts",
-            lastException);
+        return cancellationToken.IsCancellationRequested
+            ? throw new OperationCanceledException(cancellationToken)
+            : throw new AggregateException(
+                $"Async function failed after {policy.TotalRetryAttempts} retry attempt(s)",
+                lastException);
     }
 
     /// <summary>
@@ -270,24 +291,29 @@ public static class RetryPolicyExtensions
     /// </summary>
     /// <param name="policy">The retry policy instance.</param>
     /// <returns>A formatted string with policy details.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="policy"/> is null.</exception>
     public static string GetConfigurationSummary(this RetryPolicy policy)
     {
         ArgumentNullException.ThrowIfNull(policy);
 
-        return $"""
+        var retryableExceptions = policy.RetryableExceptions.Count > 0
+            ? string.Join(", ", policy.RetryableExceptions.Select(t => t.Name))
+            : "None";
+
+        return $$"""
 Retry Policy Configuration:
 ==========================
-Name: {policy.Name}
-Max Retries: {policy.MaxRetries}
-Initial Delay: {policy.InitialDelay.TotalMilliseconds}ms
-Backoff Strategy: {policy.Strategy}
-Max Delay: {policy.MaxDelay.TotalMilliseconds}ms
-Backoff Multiplier: {policy.BackoffMultiplier}
-Use Jitter: {policy.UseJitter}
-Jitter Factor: {policy.JitterFactor}
-Total Retry Attempts: {policy.TotalRetryAttempts}
-Retryable Exceptions: {string.Join(", ", policy.RetryableExceptions.Select(t => t.Name))}
-Valid Configuration: {policy.IsValidConfiguration(out _)}
+Name: {{policy.Name}}
+Max Retries: {{policy.MaxRetries}}
+Initial Delay: {{policy.InitialDelay.TotalMilliseconds}}ms
+Backoff Strategy: {{policy.Strategy}}
+Max Delay: {{policy.MaxDelay.TotalMilliseconds}}ms
+Backoff Multiplier: {{policy.BackoffMultiplier}}
+Use Jitter: {{policy.UseJitter}}
+Jitter Factor: {{policy.JitterFactor}}
+Total Retry Attempts: {{policy.TotalRetryAttempts}}
+Retryable Exceptions: {{retryableExceptions}}
+Valid Configuration: {{policy.IsValidConfiguration(out _)}}
 """;
     }
 
@@ -296,11 +322,12 @@ Valid Configuration: {policy.IsValidConfiguration(out _)}
     /// </summary>
     /// <param name="policy">The retry policy instance to clone.</param>
     /// <returns>A new RetryPolicy instance with identical settings.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="policy"/> is null.</exception>
     public static RetryPolicy Clone(this RetryPolicy policy)
     {
         ArgumentNullException.ThrowIfNull(policy);
 
-        var clone = new RetryPolicy(policy.Name)
+        return new RetryPolicy(policy.Name)
         {
             MaxRetries = policy.MaxRetries,
             InitialDelay = policy.InitialDelay,
@@ -311,8 +338,6 @@ Valid Configuration: {policy.IsValidConfiguration(out _)}
             JitterFactor = policy.JitterFactor,
             RetryableExceptions = new List<Type>(policy.RetryableExceptions)
         };
-
-        return clone;
     }
 
     /// <summary>
@@ -321,12 +346,13 @@ Valid Configuration: {policy.IsValidConfiguration(out _)}
     /// </summary>
     /// <param name="policy">The retry policy instance.</param>
     /// <returns>The same policy instance for method chaining.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="policy"/> is null.</exception>
     public static RetryPolicy ResetStatistics(this RetryPolicy policy)
     {
-        // TotalRetryAttempts has private setter, so we can't reset it directly
-        // This method is kept for API consistency but does nothing
         ArgumentNullException.ThrowIfNull(policy);
 
+        // TotalRetryAttempts has private setter, so we can't reset it directly
+        // This method is kept for API consistency but does nothing
         policy.ModifiedAt = DateTime.UtcNow;
         return policy;
     }
