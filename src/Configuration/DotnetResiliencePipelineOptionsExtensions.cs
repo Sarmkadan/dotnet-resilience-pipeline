@@ -21,12 +21,12 @@ public static class DotnetResiliencePipelineOptionsExtensions
     /// <param name="options">The pipeline options.</param>
     /// <param name="pipelineName">The name for the pipeline.</param>
     /// <returns>A configured pipeline builder.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="pipelineName"/> is <see langword="null"/>.</exception>
     public static ResiliencyPipelineBuilder ToPipelineBuilder(this DotnetResiliencePipelineOptions options, string pipelineName)
     {
-        if (options is null)
-        {
-            throw new ArgumentNullException(nameof(options));
-        }
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(pipelineName);
 
         var builder = new ResiliencyPipelineBuilder();
 
@@ -95,12 +95,14 @@ public static class DotnetResiliencePipelineOptionsExtensions
     /// <param name="openDurationSeconds">Duration in seconds to keep circuit open.</param>
     /// <param name="successThresholdInHalfOpen">Successes needed in half-open state.</param>
     /// <returns>The configured circuit breaker options.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
     public static global::DotNetResiliencePipeline.Configuration.DotnetResiliencePipelineOptions.CircuitBreakerOptions ConfigureForProduction(
         this global::DotNetResiliencePipeline.Configuration.DotnetResiliencePipelineOptions.CircuitBreakerOptions options,
         int failureThreshold = 5,
         int openDurationSeconds = 30,
         int successThresholdInHalfOpen = 3)
     {
+        ArgumentNullException.ThrowIfNull(options);
         options.FailureThreshold = failureThreshold;
         options.OpenDurationSeconds = openDurationSeconds;
         options.SuccessThresholdInHalfOpen = successThresholdInHalfOpen;
@@ -116,6 +118,7 @@ public static class DotnetResiliencePipelineOptionsExtensions
     /// <param name="maxDelayMs">Maximum delay in milliseconds.</param>
     /// <param name="backoffMultiplier">Multiplier for exponential backoff.</param>
     /// <returns>The configured retry options.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
     public static global::DotNetResiliencePipeline.Configuration.DotnetResiliencePipelineOptions.RetryOptions ConfigureForTransientFaults(
         this global::DotNetResiliencePipeline.Configuration.DotnetResiliencePipelineOptions.RetryOptions options,
         int maxRetries = 3,
@@ -123,6 +126,7 @@ public static class DotnetResiliencePipelineOptionsExtensions
         int maxDelayMs = 30000,
         double backoffMultiplier = 2.0)
     {
+        ArgumentNullException.ThrowIfNull(options);
         options.MaxRetries = maxRetries;
         options.InitialDelayMs = initialDelayMs;
         options.MaxDelayMs = maxDelayMs;
@@ -139,10 +143,12 @@ public static class DotnetResiliencePipelineOptionsExtensions
     /// <param name="options">The timeout options.</param>
     /// <param name="timeoutSeconds">Timeout duration in seconds.</param>
     /// <returns>The configured timeout options.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
     public static global::DotNetResiliencePipeline.Configuration.DotnetResiliencePipelineOptions.TimeoutOptions ConfigureForCriticalOperations(
         this global::DotNetResiliencePipeline.Configuration.DotnetResiliencePipelineOptions.TimeoutOptions options,
         int timeoutSeconds = 5)
     {
+        ArgumentNullException.ThrowIfNull(options);
         options.TimeoutSeconds = timeoutSeconds;
         return options;
     }
@@ -154,11 +160,13 @@ public static class DotnetResiliencePipelineOptionsExtensions
     /// <param name="maxParallelization">Maximum concurrent executions.</param>
     /// <param name="maxQueueLength">Maximum queue length for waiting requests.</param>
     /// <returns>The configured bulkhead options.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
     public static global::DotNetResiliencePipeline.Configuration.DotnetResiliencePipelineOptions.BulkheadOptions ConfigureForIsolation(
         this global::DotNetResiliencePipeline.Configuration.DotnetResiliencePipelineOptions.BulkheadOptions options,
         int maxParallelization = 5,
         int maxQueueLength = 20)
     {
+        ArgumentNullException.ThrowIfNull(options);
         options.MaxParallelization = maxParallelization;
         options.MaxQueueLength = maxQueueLength;
         return options;
