@@ -1,4 +1,5 @@
 #nullable enable
+
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -18,10 +19,11 @@ public static class AdaptiveTimeoutExtensions
     /// <summary>
     /// Registers <see cref="AdaptiveTimeoutService"/> as a singleton in the DI container.
     /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddAdaptiveTimeout(this IServiceCollection services)
     {
-        if (services is null)
-            throw new ArgumentNullException(nameof(services));
+        ArgumentNullException.ThrowIfNull(services);
 
         services.AddSingleton<AdaptiveTimeoutService>();
         return services;
@@ -31,24 +33,22 @@ public static class AdaptiveTimeoutExtensions
     /// Registers <see cref="AdaptiveTimeoutService"/> and a named <see cref="AdaptiveTimeoutPolicy"/> as singletons,
     /// and wires the policy into the existing <see cref="ResiliencyPipelineService"/> if one is registered.
     /// </summary>
-    /// <param name="services">The service collection to configure.</param>
+    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     /// <param name="policyName">Unique name for the policy.</param>
     /// <param name="initialTimeout">Timeout applied before enough observations are collected.</param>
     /// <param name="configure">Optional delegate for fine-grained policy configuration.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="policyName"/> is null or whitespace.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="initialTimeout"/> is not positive.</exception>
     public static IServiceCollection AddAdaptiveTimeout(
         this IServiceCollection services,
         string policyName,
         TimeSpan initialTimeout,
         Action<AdaptiveTimeoutPolicy>? configure = null)
     {
-        if (services is null)
-            throw new ArgumentNullException(nameof(services));
-
-        if (string.IsNullOrWhiteSpace(policyName))
-            throw new ArgumentException("Policy name cannot be empty", nameof(policyName));
-
-        if (initialTimeout <= TimeSpan.Zero)
-            throw new ArgumentOutOfRangeException(nameof(initialTimeout), "Initial timeout must be positive");
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(initialTimeout, TimeSpan.Zero);
 
         services.AddSingleton<AdaptiveTimeoutService>();
 
