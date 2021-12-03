@@ -7,8 +7,8 @@
 
 using System;
 using System.Threading.Tasks;
-using DotNetResiliencePipeline.Services;
 using DotNetResiliencePipeline.Events;
+using DotNetResiliencePipeline.Services;
 
 namespace DotNetResiliencePipeline.Workers;
 
@@ -16,6 +16,7 @@ namespace DotNetResiliencePipeline.Workers;
 /// Extension methods for <see cref="HealthCheckWorker"/> providing additional functionality
 /// for health monitoring, logging, and integration scenarios.
 /// </summary>
+/// <exception cref="ArgumentNullException"><paramref name="worker"/> is <see langword="null"/></exception>
 public static class HealthCheckWorkerExtensions
 {
     /// <summary>
@@ -27,6 +28,10 @@ public static class HealthCheckWorkerExtensions
     /// <param name="healthyThreshold">Success rate threshold for healthy status (0-1)</param>
     /// <param name="degradedThreshold">Success rate threshold for degraded status (0-1)</param>
     /// <returns>A configured health check worker instance</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="pipelineService"/> is <see langword="null"/>
+    /// <para>-or-</para>
+    /// <paramref name="eventPublisher"/> is <see langword="null"/></exception>
     public static HealthCheckWorker CreateConfigured(
         this ResiliencyPipelineService pipelineService,
         ResiliencyEventPublisher eventPublisher,
@@ -34,6 +39,9 @@ public static class HealthCheckWorkerExtensions
         double healthyThreshold = 0.95,
         double degradedThreshold = 0.80)
     {
+        ArgumentNullException.ThrowIfNull(pipelineService);
+        ArgumentNullException.ThrowIfNull(eventPublisher);
+
         var worker = new HealthCheckWorker(pipelineService, eventPublisher)
         {
             CheckInterval = checkInterval,
@@ -49,10 +57,12 @@ public static class HealthCheckWorkerExtensions
     /// </summary>
     /// <param name="worker">The health check worker</param>
     /// <returns>True if the pipeline is healthy, false otherwise</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="worker"/> is <see langword="null"/></exception>
     public static bool IsHealthy(this HealthCheckWorker worker)
     {
+        ArgumentNullException.ThrowIfNull(worker);
         var status = worker.GetStatus();
-        return status.OverallHealth.Equals("Healthy", StringComparison.OrdinalIgnoreCase);
+        return string.Equals(status.OverallHealth, "Healthy", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -60,10 +70,12 @@ public static class HealthCheckWorkerExtensions
     /// </summary>
     /// <param name="worker">The health check worker</param>
     /// <returns>True if the pipeline is degraded, false otherwise</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="worker"/> is <see langword="null"/></exception>
     public static bool IsDegraded(this HealthCheckWorker worker)
     {
+        ArgumentNullException.ThrowIfNull(worker);
         var status = worker.GetStatus();
-        return status.OverallHealth.Equals("Degraded", StringComparison.OrdinalIgnoreCase);
+        return string.Equals(status.OverallHealth, "Degraded", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -71,10 +83,12 @@ public static class HealthCheckWorkerExtensions
     /// </summary>
     /// <param name="worker">The health check worker</param>
     /// <returns>True if the pipeline is unhealthy, false otherwise</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="worker"/> is <see langword="null"/></exception>
     public static bool IsUnhealthy(this HealthCheckWorker worker)
     {
+        ArgumentNullException.ThrowIfNull(worker);
         var status = worker.GetStatus();
-        return status.OverallHealth.Equals("Unhealthy", StringComparison.OrdinalIgnoreCase);
+        return string.Equals(status.OverallHealth, "Unhealthy", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -82,8 +96,10 @@ public static class HealthCheckWorkerExtensions
     /// </summary>
     /// <param name="worker">The health check worker</param>
     /// <returns>Formatted health status string</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="worker"/> is <see langword="null"/></exception>
     public static string GetHealthStatusString(this HealthCheckWorker worker)
     {
+        ArgumentNullException.ThrowIfNull(worker);
         var status = worker.GetStatus();
         return $"Health Status: {status.OverallHealth} | Success Rate: {status.PipelineSuccessRate:P1} | " +
                $"Policies: {status.TotalPolicies} | Executions: {status.TotalExecutions:N0} | " +
@@ -97,11 +113,17 @@ public static class HealthCheckWorkerExtensions
     /// <param name="timeout">Maximum time to wait for stable state</param>
     /// <param name="stableCheckInterval">Interval between stability checks</param>
     /// <returns>True if stable state was reached within timeout, false otherwise</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="worker"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is less than or equal to <see cref="TimeSpan.Zero"/></exception>
     public static async Task<bool> WaitForStableStateAsync(
         this HealthCheckWorker worker,
         TimeSpan timeout,
         TimeSpan? stableCheckInterval = null)
     {
+        ArgumentNullException.ThrowIfNull(worker);
+        if (timeout <= TimeSpan.Zero)
+            throw new ArgumentOutOfRangeException(nameof(timeout), "Timeout must be greater than zero");
+
         var checkInterval = stableCheckInterval ?? TimeSpan.FromSeconds(1);
         var endTime = DateTime.UtcNow.Add(timeout);
 
@@ -124,8 +146,10 @@ public static class HealthCheckWorkerExtensions
     /// </summary>
     /// <param name="worker">The health check worker</param>
     /// <returns>Formatted statistics string</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="worker"/> is <see langword="null"/></exception>
     public static string GetStatisticsString(this HealthCheckWorker worker)
     {
+        ArgumentNullException.ThrowIfNull(worker);
         var status = worker.GetStatus();
         return $"Pipeline Statistics:\n" +
                $"- Success Rate: {status.PipelineSuccessRate:P2}\n" +
