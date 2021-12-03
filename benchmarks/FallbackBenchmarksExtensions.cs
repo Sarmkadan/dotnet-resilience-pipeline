@@ -3,15 +3,19 @@ using System;
 namespace DotNetResiliencePipeline.Benchmarks;
 
 /// <summary>
-/// Extension methods for analyzing fallback policy benchmark results.
+/// Provides extension methods for analyzing fallback policy benchmark results, including calculating fallback invocation rates, 
+/// determining frequency of fallback triggers, and computing success ratios of fallback operations.
 /// </summary>
 public static class FallbackBenchmarksExtensions
 {
     /// <summary>
-    /// Calculates the average fallback invocation rate (fallbacks per second).
+    /// Calculates the average fallback invocation rate (fallbacks per second) based on total fallback invocations, 
+    /// fallback invocation percentage, and the fallback timeout duration.
     /// </summary>
     /// <param name="benchmarks">The benchmark instance containing fallback metrics.</param>
-    /// <returns>The average fallback invocation rate in fallbacks per second.</returns>
+    /// <returns>
+    /// The average fallback invocation rate in fallbacks per second. Returns 0 if the timeout duration is zero or negative.
+    /// </returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="benchmarks"/> is null.</exception>
     public static double GetAverageFallbackInvocationRate(this FallbackBenchmarks benchmarks)
     {
@@ -27,11 +31,14 @@ public static class FallbackBenchmarksExtensions
     }
 
     /// <summary>
-    /// Determines whether fallback was triggered frequently based on the provided threshold.
+    /// Determines whether the fallback policy was triggered frequently by comparing the fallback invocation percentage 
+    /// against a specified threshold percentage.
     /// </summary>
     /// <param name="benchmarks">The benchmark instance containing fallback metrics.</param>
-    /// <param name="threshold">The threshold percentage above which fallback is considered frequent.</param>
-    /// <returns>True if fallback invocation percentage exceeds the threshold; otherwise false.</returns>
+    /// <param name="threshold">The threshold percentage (e.g., 50 for 50%) above which fallback is considered frequent.</param>
+    /// <returns>
+    /// <c>true</c> if the fallback invocation percentage exceeds the threshold; otherwise <c>false</c>.
+    /// </returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="benchmarks"/> is null.</exception>
     public static bool IsFallbackTriggeredFrequently(this FallbackBenchmarks benchmarks, double threshold)
     {
@@ -41,10 +48,13 @@ public static class FallbackBenchmarksExtensions
     }
 
     /// <summary>
-    /// Calculates the success ratio of fallback operations.
+    /// Calculates the success ratio of fallback operations by comparing the number of successful fallbacks to the total 
+    /// number of fallback invocations. The success rate is derived from the fallback success percentage and total invocations.
     /// </summary>
     /// <param name="benchmarks">The benchmark instance containing fallback metrics.</param>
-    /// <returns>The ratio of successful fallbacks to total fallbacks. Returns 0 if no fallbacks occurred.</returns>
+    /// <returns>
+    /// The ratio of successful fallbacks to total fallbacks. Returns 0 if no fallbacks occurred.
+    /// </returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="benchmarks"/> is null.</exception>
     public static double CalculateFallbackSuccessRatio(this FallbackBenchmarks benchmarks)
     {
