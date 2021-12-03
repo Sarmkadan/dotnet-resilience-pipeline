@@ -1,14 +1,6 @@
-#nullable enable
-
-// =============================================================================
-// Author: Vladyslav Zaiets | https://sarmkadan.com
-// CTO & Software Architect
-// =============================================================================
-
 using DotNetResiliencePipeline.Domain.Policies;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace DotNetResiliencePipeline.Utilities;
 
@@ -21,28 +13,24 @@ public static class CircuitBreakerDiagnosticsValidation
     /// <summary>
     /// Validates a circuit breaker diagnostic report.
     /// </summary>
-    /// <param name="value">The diagnostic report to validate</param>
-    /// <returns>List of validation errors (empty if valid)</returns>
+    /// <param name="value">The diagnostic report to validate.</param>
+    /// <returns>List of validation errors (empty if valid).</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> Validate(this CircuitBreakerDiagnosticReport value)
     {
-        if (value is null)
-        {
-            return new[] { "Diagnostic report cannot be null" };
-        }
+        ArgumentNullException.ThrowIfNull(value);
 
         var errors = new List<string>();
 
         // Validate PolicyId
-        if (string.IsNullOrWhiteSpace(value.PolicyId))
-        {
-            errors.Add("PolicyId cannot be null or whitespace");
-        }
+        ArgumentException.ThrowIfNullOrEmpty(value.PolicyId);
 
         // Validate PolicyName
         if (string.IsNullOrWhiteSpace(value.PolicyName))
         {
             errors.Add("PolicyName cannot be null or whitespace");
         }
+        ArgumentException.ThrowIfNullOrEmpty(value.PolicyName);
 
         // Validate CurrentState
         if (!Enum.IsDefined(typeof(CircuitBreakerPolicy.CircuitState), value.CurrentState))
@@ -96,14 +84,12 @@ public static class CircuitBreakerDiagnosticsValidation
     /// <summary>
     /// Validates a circuit breaker effectiveness analysis.
     /// </summary>
-    /// <param name="value">The effectiveness analysis to validate</param>
-    /// <returns>List of validation errors (empty if valid)</returns>
+    /// <param name="value">The effectiveness analysis to validate.</param>
+    /// <returns>List of validation errors (empty if valid).</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> Validate(this CircuitBreakerEffectiveness value)
     {
-        if (value is null)
-        {
-            return new[] { "Effectiveness analysis cannot be null" };
-        }
+        ArgumentNullException.ThrowIfNull(value);
 
         var errors = new List<string>();
 
@@ -112,6 +98,7 @@ public static class CircuitBreakerDiagnosticsValidation
         {
             errors.Add("PolicyName cannot be null or whitespace");
         }
+        ArgumentException.ThrowIfNullOrEmpty(value.PolicyName);
 
         // Validate TotalExecutions
         if (value.TotalExecutions < 0)
@@ -144,14 +131,7 @@ public static class CircuitBreakerDiagnosticsValidation
         }
 
         // Validate EffectivenessRating
-        if (string.IsNullOrWhiteSpace(value.EffectivenessRating))
-        {
-            errors.Add("EffectivenessRating cannot be null or whitespace");
-        }
-        else if (value.EffectivenessRating != "Excellent" &&
-                 value.EffectivenessRating != "Good" &&
-                 value.EffectivenessRating != "Fair" &&
-                 value.EffectivenessRating != "Poor")
+        if (value.EffectivenessRating is not ("Excellent" or "Good" or "Fair" or "Poor"))
         {
             errors.Add("EffectivenessRating must be one of: Excellent, Good, Fair, Poor");
         }
@@ -162,22 +142,14 @@ public static class CircuitBreakerDiagnosticsValidation
     /// <summary>
     /// Validates a circuit breaker configuration suggestion.
     /// </summary>
-    /// <param name="value">The configuration to validate</param>
-    /// <returns>List of validation errors (empty if valid)</returns>
+    /// <param name="value">The configuration to validate.</param>
+    /// <returns>List of validation errors (empty if valid).</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> Validate(this CircuitBreakerConfiguration value)
     {
-        if (value is null)
-        {
-            return new[] { "Configuration cannot be null" };
-        }
+        ArgumentNullException.ThrowIfNull(value);
 
         var errors = new List<string>();
-
-        // Validate PolicyName
-        if (string.IsNullOrWhiteSpace(value.PolicyName))
-        {
-            errors.Add("PolicyName cannot be null or whitespace");
-        }
 
         // Validate SuggestedFailureThreshold
         if (value.SuggestedFailureThreshold <= 0)
@@ -203,8 +175,8 @@ public static class CircuitBreakerDiagnosticsValidation
     /// <summary>
     /// Checks if a diagnostic report is valid.
     /// </summary>
-    /// <param name="value">The diagnostic report to check</param>
-    /// <returns>True if valid, false otherwise</returns>
+    /// <param name="value">The diagnostic report to check.</param>
+    /// <returns>True if valid, false otherwise.</returns>
     public static bool IsValid(this CircuitBreakerDiagnosticReport value)
     {
         return value.Validate().Count == 0;
@@ -213,8 +185,8 @@ public static class CircuitBreakerDiagnosticsValidation
     /// <summary>
     /// Checks if an effectiveness analysis is valid.
     /// </summary>
-    /// <param name="value">The effectiveness analysis to check</param>
-    /// <returns>True if valid, false otherwise</returns>
+    /// <param name="value">The effectiveness analysis to check.</param>
+    /// <returns>True if valid, false otherwise.</returns>
     public static bool IsValid(this CircuitBreakerEffectiveness value)
     {
         return value.Validate().Count == 0;
@@ -223,8 +195,8 @@ public static class CircuitBreakerDiagnosticsValidation
     /// <summary>
     /// Checks if a configuration suggestion is valid.
     /// </summary>
-    /// <param name="value">The configuration to check</param>
-    /// <returns>True if valid, false otherwise</returns>
+    /// <param name="value">The configuration to check.</param>
+    /// <returns>True if valid, false otherwise.</returns>
     public static bool IsValid(this CircuitBreakerConfiguration value)
     {
         return value.Validate().Count == 0;
@@ -233,8 +205,8 @@ public static class CircuitBreakerDiagnosticsValidation
     /// <summary>
     /// Ensures that a diagnostic report is valid, throwing an exception if not.
     /// </summary>
-    /// <param name="value">The diagnostic report to validate</param>
-    /// <exception cref="ArgumentException">Thrown if the report is invalid</exception>
+    /// <param name="value">The diagnostic report to validate.</param>
+    /// <exception cref="ArgumentException">Thrown if the report is invalid.</exception>
     public static void EnsureValid(this CircuitBreakerDiagnosticReport value)
     {
         var errors = value.Validate();
@@ -247,8 +219,8 @@ public static class CircuitBreakerDiagnosticsValidation
     /// <summary>
     /// Ensures that an effectiveness analysis is valid, throwing an exception if not.
     /// </summary>
-    /// <param name="value">The effectiveness analysis to validate</param>
-    /// <exception cref="ArgumentException">Thrown if the analysis is invalid</exception>
+    /// <param name="value">The effectiveness analysis to validate.</param>
+    /// <exception cref="ArgumentException">Thrown if the analysis is invalid.</exception>
     public static void EnsureValid(this CircuitBreakerEffectiveness value)
     {
         var errors = value.Validate();
@@ -261,8 +233,8 @@ public static class CircuitBreakerDiagnosticsValidation
     /// <summary>
     /// Ensures that a configuration suggestion is valid, throwing an exception if not.
     /// </summary>
-    /// <param name="value">The configuration to validate</param>
-    /// <exception cref="ArgumentException">Thrown if the configuration is invalid</exception>
+    /// <param name="value">The configuration to validate.</param>
+    /// <exception cref="ArgumentException">Thrown if the configuration is invalid.</exception>
     public static void EnsureValid(this CircuitBreakerConfiguration value)
     {
         var errors = value.Validate();
