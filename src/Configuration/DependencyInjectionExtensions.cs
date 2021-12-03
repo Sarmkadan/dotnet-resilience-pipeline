@@ -20,14 +20,25 @@ namespace DotNetResiliencePipeline.Configuration;
 public static class DependencyInjectionExtensions
 {
     /// <summary>
+    /// Initializes static members of the <see cref="DependencyInjectionExtensions"/> class.
+    /// </summary>
+    static DependencyInjectionExtensions()
+    {
+        // Ensure static initialization if needed
+    }
+
+    /// <summary>
     /// Adds resilience pipeline services to the DI container.
     /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+    /// <param name="configureBuilder">Optional configuration action for the pipeline builder.</param>
+    /// <returns>The <see cref="IServiceCollection"/> so calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddResiliencePipeline(
         this IServiceCollection services,
         Action<ResiliencyPipelineBuilder>? configureBuilder = null)
     {
-        if (services is null)
-            throw new ArgumentNullException(nameof(services));
+        ArgumentNullException.ThrowIfNull(services);
 
         // Register repositories
         services.AddSingleton<PolicyRepository>();
@@ -61,15 +72,18 @@ public static class DependencyInjectionExtensions
     /// <summary>
     /// Adds resilience pipeline with configuration options using IOptions pattern.
     /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+    /// <param name="configureOptions">Configuration action for the pipeline options.</param>
+    /// <returns>The <see cref="IServiceCollection"/> so calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="services"/> or <paramref name="configureOptions"/> is <see langword="null"/>.
+    /// </exception>
     public static IServiceCollection AddResiliencePipelineWithOptions(
         this IServiceCollection services,
         Action<DotnetResiliencePipelineOptions> configureOptions)
     {
-        if (services is null)
-            throw new ArgumentNullException(nameof(services));
-
-        if (configureOptions is null)
-            throw new ArgumentNullException(nameof(configureOptions));
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configureOptions);
 
         // Configure options
         services.Configure(configureOptions);
@@ -109,6 +123,7 @@ public static class DependencyInjectionExtensions
                 policy.OpenDuration = configured.OpenDuration;
                 policy.SuccessThresholdInHalfOpen = configured.SuccessThresholdInHalfOpen;
             });
+
             builder.WithRetry("default-retry", policy =>
             {
                 var configured = options.Retry.ToPolicy(policy.Name);
@@ -120,8 +135,10 @@ public static class DependencyInjectionExtensions
                 policy.UseJitter = configured.UseJitter;
                 policy.JitterFactor = configured.JitterFactor;
             });
+
             builder.WithTimeout("default-timeout", TimeSpan.FromSeconds(options.Timeout.TimeoutSeconds));
             builder.WithBulkhead("default-bulkhead", options.Bulkhead.MaxParallelization, options.Bulkhead.MaxQueueLength);
+
             builder.WithFallback("default-fallback", policy =>
             {
                 var configured = options.Fallback.ToPolicy(policy.Name);
@@ -138,20 +155,23 @@ public static class DependencyInjectionExtensions
     /// <summary>
     /// Adds resilience pipeline with custom configuration.
     /// </summary>
+    /// <typeparam name="TConfig">The type of configuration object.</typeparam>
+    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+    /// <param name="config">The configuration object.</param>
+    /// <param name="configureBuilder">Configuration action that receives both config and builder.</param>
+    /// <returns>The <see cref="IServiceCollection"/> so calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="services"/>, <paramref name="config"/>, or <paramref name="configureBuilder"/> is <see langword="null"/>.
+    /// </exception>
     public static IServiceCollection AddResiliencePipeline<TConfig>(
         this IServiceCollection services,
         TConfig config,
         Action<TConfig, ResiliencyPipelineBuilder> configureBuilder)
-    where TConfig : class
+        where TConfig : class
     {
-        if (services is null)
-            throw new ArgumentNullException(nameof(services));
-
-        if (config is null)
-            throw new ArgumentNullException(nameof(config));
-
-        if (configureBuilder is null)
-            throw new ArgumentNullException(nameof(configureBuilder));
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(configureBuilder);
 
         // Register repositories
         services.AddSingleton<PolicyRepository>();
@@ -181,16 +201,20 @@ public static class DependencyInjectionExtensions
     /// <summary>
     /// Registers a specific policy type in the container.
     /// </summary>
+    /// <typeparam name="TPolicy">The type of policy to register. Must derive from <see cref="ResiliencyPolicy"/>.</typeparam>
+    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+    /// <param name="factory">Factory function to create the policy instance.</param>
+    /// <returns>The <see cref="IServiceCollection"/> so calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="services"/> or <paramref name="factory"/> is <see langword="null"/>.
+    /// </exception>
     public static IServiceCollection AddPolicy<TPolicy>(
         this IServiceCollection services,
         Func<IServiceProvider, TPolicy> factory)
-    where TPolicy : ResiliencyPolicy
+        where TPolicy : ResiliencyPolicy
     {
-        if (services is null)
-            throw new ArgumentNullException(nameof(services));
-
-        if (factory is null)
-            throw new ArgumentNullException(nameof(factory));
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(factory);
 
         services.AddSingleton(provider =>
         {
