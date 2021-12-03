@@ -8,9 +8,11 @@ using Xunit;
 
 namespace DotNetResiliencePipeline.Tests;
 
+/// <summary>Provides unit tests for the <see cref="FallbackService"/> class.</summary>
 public sealed class FallbackServiceTests
 {
     [Fact]
+    /// <summary>Tests that <see cref="FallbackService.ExecuteAsync{TResult}"/> throws <see cref="ArgumentNullException"/> when the policy is null.</summary>
     public async Task ExecuteAsync_WithNullPolicy_ThrowsArgumentNullException()
     {
         var service = new FallbackService();
@@ -26,6 +28,7 @@ public sealed class FallbackServiceTests
     }
 
     [Fact]
+    /// <summary>Tests that <see cref="FallbackService.ExecuteAsync{TResult}"/> throws <see cref="InvalidPolicyConfigurationException"/> when the policy configuration is invalid.</summary>
     public async Task ExecuteAsync_WithInvalidPolicy_ThrowsInvalidPolicyConfigurationException()
     {
         var service = new FallbackService();
@@ -45,6 +48,7 @@ public sealed class FallbackServiceTests
     }
 
     [Fact]
+    /// <summary>Tests that <see cref="FallbackService.ExecuteAsync{TResult}"/> returns the primary failure when the policy is disabled.</summary>
     public async Task ExecuteAsync_WithDisabledPolicy_ReturnsPrimaryFailure()
     {
         var service = new FallbackService();
@@ -62,6 +66,7 @@ public sealed class FallbackServiceTests
     }
 
     [Fact]
+    /// <summary>Tests that <see cref="FallbackService.ExecuteAsync{TResult}"/> returns the primary failure when the fallback condition is not met.</summary>
     public async Task ExecuteAsync_WhenFallbackNotTriggered_ReturnsPrimaryFailure()
     {
         var service = new FallbackService();
@@ -82,6 +87,7 @@ public sealed class FallbackServiceTests
     }
 
     [Fact]
+    /// <summary>Tests that <see cref="FallbackService.ExecuteAsync{TResult}"/> returns the successful fallback result.</summary>
     public async Task ExecuteAsync_WithSuccessfulFallback_ReturnsFallbackResult()
     {
         var service = new FallbackService();
@@ -99,6 +105,7 @@ public sealed class FallbackServiceTests
     }
 
     [Fact]
+    /// <summary>Tests that <see cref="FallbackService.ExecuteAsync{TResult}"/> throws <see cref="FallbackFailedException"/> when the fallback action fails.</summary>
     public async Task ExecuteAsync_WithFailedFallback_ThrowsFallbackFailedException()
     {
         var service = new FallbackService();
@@ -120,6 +127,7 @@ public sealed class FallbackServiceTests
     }
 
     [Fact]
+    /// <summary>Tests that <see cref="FallbackService.ExecuteAsync{TResult}"/> rethrows the primary exception when no fallback action is defined.</summary>
     public async Task ExecuteAsync_WithoutFallbackActionSet_RethrowsPrimaryException()
     {
         var service = new FallbackService();
@@ -136,6 +144,7 @@ public sealed class FallbackServiceTests
     }
 
     [Fact]
+    /// <summary>Tests that <see cref="FallbackService.ExecuteAsync{TResult}"/> correctly records metrics for a successful fallback.</summary>
     public async Task ExecuteAsync_RecordsSuccessfulFallbackMetrics()
     {
         var service = new FallbackService();
@@ -153,6 +162,7 @@ public sealed class FallbackServiceTests
     }
 
     [Fact]
+    /// <summary>Tests that <see cref="FallbackService.ExecuteAsync{TResult}"/> correctly records metrics for a failed fallback.</summary>
     public async Task ExecuteAsync_RecordsFailedFallbackMetrics()
     {
         var service = new FallbackService();
@@ -177,6 +187,7 @@ public sealed class FallbackServiceTests
     }
 
     [Fact]
+    /// <summary>Tests that <see cref="FallbackService.ShouldTriggerFallback"/> returns false when the policy is null.</summary>
     public void ShouldTriggerFallback_WithNullPolicy_ReturnsFalse()
     {
         var service = new FallbackService();
@@ -187,6 +198,7 @@ public sealed class FallbackServiceTests
     }
 
     [Fact]
+    /// <summary>Tests that <see cref="FallbackService.ShouldTriggerFallback"/> correctly delegates to the policy.</summary>
     public void ShouldTriggerFallback_DelegatesToPolicy()
     {
         var service = new FallbackService();
@@ -198,6 +210,7 @@ public sealed class FallbackServiceTests
     }
 
     [Fact]
+    /// <summary>Tests that <see cref="FallbackService.GetFallbackSuccessRate"/> returns zero when the policy is null.</summary>
     public void GetFallbackSuccessRate_WithNullPolicy_ReturnsZero()
     {
         var service = new FallbackService();
@@ -208,6 +221,7 @@ public sealed class FallbackServiceTests
     }
 
     [Fact]
+    /// <summary>Tests that <see cref="FallbackService.GetFallbackSuccessRate"/> correctly delegates to the policy.</summary>
     public void GetFallbackSuccessRate_DelegatesToPolicy()
     {
         var service = new FallbackService();
@@ -223,6 +237,7 @@ public sealed class FallbackServiceTests
     }
 
     [Fact]
+    /// <summary>Tests that <see cref="FallbackService.AddFallbackTrigger"/> correctly delegates to the policy.</summary>
     public void AddFallbackTrigger_DelegatesToPolicy()
     {
         var service = new FallbackService();
@@ -234,6 +249,7 @@ public sealed class FallbackServiceTests
     }
 
     [Fact]
+    /// <summary>Tests that <see cref="FallbackService.RemoveFallbackTrigger"/> correctly delegates to the policy.</summary>
     public void RemoveFallbackTrigger_DelegatesToPolicy()
     {
         var service = new FallbackService();
@@ -246,6 +262,7 @@ public sealed class FallbackServiceTests
     }
 
     [Fact]
+    /// <summary>Tests that <see cref="FallbackService.ExecuteAsync{TResult}"/> throws <see cref="FallbackFailedException"/> when the fallback action times out.</summary>
     public async Task ExecuteAsync_WithFallbackTimeout_ThrowsOnTimeout()
     {
         var service = new FallbackService();
@@ -271,6 +288,7 @@ public sealed class FallbackServiceTests
     }
 
     [Fact]
+    /// <summary>Tests that <see cref="FallbackService.ExecuteAsync{TResult}"/> returns the correct result type for a typed fallback.</summary>
     public async Task ExecuteAsync_WithTypedFallback_ReturnsCorrectType()
     {
         var service = new FallbackService();
