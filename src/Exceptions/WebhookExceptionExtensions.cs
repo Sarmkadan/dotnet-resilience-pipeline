@@ -4,7 +4,7 @@ using DotNetResiliencePipeline.Exceptions;
 namespace DotNetResiliencePipeline.Exceptions;
 
 /// <summary>
-/// Provides extension methods for <see cref="WebhookException"/> and its derived types.
+/// Provides extension methods for <see cref="WebhookException"/> and its derived types to classify and summarize webhook-related errors.
 /// </summary>
 public static class WebhookExceptionExtensions
 {
@@ -48,7 +48,7 @@ public static class WebhookExceptionExtensions
     /// Gets a human-readable summary of the webhook failure.
     /// </summary>
     /// <param name="exception">The exception containing webhook failure details. Cannot be null.</param>
-    /// <returns>A formatted string containing the webhook ID and error message.</returns>
+    /// <returns>A formatted string containing the webhook ID (if available) and error message.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="exception"/> is null.</exception>
     public static string GetErrorSummary(this WebhookException exception)
     {
