@@ -14,9 +14,15 @@ using Xunit;
 
 namespace DotNetResiliencePipeline.Tests;
 
-// Public interface used to verify operation invocation via Moq
+/// <summary>
+/// Public interface used to verify operation invocation via Moq.
+/// </summary>
 public interface IAsyncOperation
 {
+    /// <summary>
+    /// Runs the asynchronous operation.
+    /// </summary>
+    /// <returns>The result of the operation as a string.</returns>
     Task<string> RunAsync();
 }
 
