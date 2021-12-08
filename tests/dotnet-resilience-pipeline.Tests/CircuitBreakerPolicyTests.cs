@@ -8,10 +8,14 @@ using DotNetResiliencePipeline.Domain.Policies;
 using FluentAssertions;
 using Xunit;
 
-namespace DotNetResiliencePipeline.Tests;
-
+/// <summary>
+/// Tests for the CircuitBreakerPolicy class.
+/// </summary>
 public sealed class CircuitBreakerPolicyTests
 {
+    /// <summary>
+    /// Verifies that a CircuitBreakerPolicy throws an ArgumentException when its name is whitespace.
+    /// </summary>
     [Fact]
     public void Constructor_WithWhitespaceName_ThrowsArgumentException()
     {
@@ -23,6 +27,9 @@ public sealed class CircuitBreakerPolicyTests
             .WithMessage("*Policy name cannot be empty*");
     }
 
+    /// <summary>
+    /// Verifies that a CircuitBreakerPolicy transitions to the Open state when the failure threshold is reached.
+    /// </summary>
     [Fact]
     public void RecordFailure_AtFailureThreshold_TransitionsToOpenState()
     {
@@ -39,6 +46,9 @@ public sealed class CircuitBreakerPolicyTests
         policy.ConsecutiveFailures.Should().Be(3);
     }
 
+    /// <summary>
+    /// Verifies that a CircuitBreakerPolicy remains in the Closed state when the failure threshold is not reached.
+    /// </summary>
     [Fact]
     public void RecordFailure_BelowFailureThreshold_RemainsInClosedState()
     {
@@ -54,6 +64,9 @@ public sealed class CircuitBreakerPolicyTests
         policy.ConsecutiveFailures.Should().Be(2);
     }
 
+    /// <summary>
+    /// Verifies that a CircuitBreakerPolicy transitions to the Closed state when the success threshold is met in the HalfOpen state.
+    /// </summary>
     [Fact]
     public void RecordSuccess_InHalfOpenAtSuccessThreshold_TransitionsToClosedState()
     {
@@ -77,6 +90,9 @@ public sealed class CircuitBreakerPolicyTests
         policy.ConsecutiveFailures.Should().Be(0);
     }
 
+    /// <summary>
+    /// Verifies that a CircuitBreakerPolicy resets to the Closed state and clears statistics when manually reset.
+    /// </summary>
     [Fact]
     public void ManualReset_AfterCircuitOpens_ResetsToClosedAndClearsStatistics()
     {
