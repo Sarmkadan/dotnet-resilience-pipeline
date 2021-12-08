@@ -5,10 +5,14 @@ using DotNetResiliencePipeline.Services;
 using FluentAssertions;
 using Xunit;
 
-namespace DotNetResiliencePipeline.Tests;
-
+/// <summary>
+/// Tests for the TimeoutService class.
+/// </summary>
 public sealed class TimeoutServiceTests
 {
+    /// <summary>
+    /// Tests that ExecuteAsync throws an ArgumentNullException when the policy is null.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_WithNullPolicy_ThrowsArgumentNullException()
     {
@@ -22,6 +26,9 @@ public sealed class TimeoutServiceTests
             .WithParameterName("policy");
     }
 
+    /// <summary>
+    /// Tests that ExecuteAsync throws an InvalidPolicyConfigurationException when the policy is invalid.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_WithInvalidPolicy_ThrowsInvalidPolicyConfigurationException()
     {
@@ -35,6 +42,9 @@ public sealed class TimeoutServiceTests
         await act.Should().ThrowAsync<InvalidPolicyConfigurationException>();
     }
 
+    /// <summary>
+    /// Tests that ExecuteAsync bypasses the timeout when the policy is disabled.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_WithDisabledPolicy_BypassesTimeout()
     {
@@ -56,6 +66,9 @@ public sealed class TimeoutServiceTests
         result.Should().Be("completed");
     }
 
+    /// <summary>
+    /// Tests that ExecuteAsync records metrics when the operation is successful.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_WithSuccessfulOperation_RecordsMetrics()
     {
@@ -71,6 +84,9 @@ public sealed class TimeoutServiceTests
         policy.TotalExecutions.Should().Be(1);
     }
 
+    /// <summary>
+    /// Tests that ExecuteAsync throws an OperationTimeoutException when the operation times out.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_WithOperationThatTimesOut_ThrowsOperationTimeoutException()
     {
@@ -89,6 +105,9 @@ public sealed class TimeoutServiceTests
         policy.TimeoutCount.Should().Be(1);
     }
 
+    /// <summary>
+    /// Tests that ExecuteAsync rethrows an OperationCanceledException when the operation is externally canceled.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_WithExternalCancellation_Rethrows()
     {
@@ -112,6 +131,9 @@ public sealed class TimeoutServiceTests
         await act.Should().ThrowAsync<OperationCanceledException>();
     }
 
+    /// <summary>
+    /// Tests that ExecuteAsync records a failure when the operation throws an exception.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_WithOperationException_RecordsFailure()
     {
@@ -126,6 +148,9 @@ public sealed class TimeoutServiceTests
         policy.FailedExecutions.Should().Be(1);
     }
 
+    /// <summary>
+    /// Tests that ExecuteAsync records the execution time.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_RecordsExecutionTime()
     {
@@ -143,6 +168,9 @@ public sealed class TimeoutServiceTests
         policy.AverageExecutionTimeMs.Should().BeGreaterThanOrEqualTo(40);
     }
 
+    /// <summary>
+    /// Tests that HasExceededTimeout returns false when the policy is null.
+    /// </summary>
     [Fact]
     public void HasExceededTimeout_WithNullPolicy_ReturnsFalse()
     {
@@ -153,6 +181,9 @@ public sealed class TimeoutServiceTests
         hasExceeded.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that HasExceededTimeout returns true when the time exceeds the timeout.
+    /// </summary>
     [Fact]
     public void HasExceededTimeout_WithTimeExceedingTimeout_ReturnsTrue()
     {
@@ -164,6 +195,9 @@ public sealed class TimeoutServiceTests
         hasExceeded.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that HasExceededTimeout returns false when the time is within the timeout.
+    /// </summary>
     [Fact]
     public void HasExceededTimeout_WithTimeWithinTimeout_ReturnsFalse()
     {
@@ -175,6 +209,9 @@ public sealed class TimeoutServiceTests
         hasExceeded.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that GetTimeoutMilliseconds returns zero when the policy is null.
+    /// </summary>
     [Fact]
     public void GetTimeoutMilliseconds_WithNullPolicy_ReturnsZero()
     {
@@ -185,6 +222,9 @@ public sealed class TimeoutServiceTests
         timeoutMs.Should().Be(0);
     }
 
+    /// <summary>
+    /// Tests that GetTimeoutMilliseconds returns the timeout in milliseconds.
+    /// </summary>
     [Fact]
     public void GetTimeoutMilliseconds_ReturnsTimeoutInMs()
     {
@@ -196,6 +236,9 @@ public sealed class TimeoutServiceTests
         timeoutMs.Should().Be(5000);
     }
 
+    /// <summary>
+    /// Tests that GetTimeoutMilliseconds handles fractional seconds.
+    /// </summary>
     [Fact]
     public void GetTimeoutMilliseconds_HandlesFractionalSeconds()
     {
