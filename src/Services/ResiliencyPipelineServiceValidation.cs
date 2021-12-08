@@ -4,16 +4,25 @@ using System.Collections.Generic;
 namespace DotNetResiliencePipeline.Services
 {
     /// <summary>
-    /// Provides validation methods for <see cref="ResiliencyPipelineService"/> instances.
+    /// Provides a collection of extension methods that validate <see cref="ResiliencyPipelineService"/> objects.
     /// </summary>
+    /// <remarks>
+    /// The methods examine the service's identifier, timestamps and execution counters and return
+    /// human‑readable error messages for any rule violations. They are intended for use in
+    /// configuration or health‑check scenarios where a pipeline definition must be verified before
+    /// being registered or executed.
+    /// </remarks>
     public static class ResiliencyPipelineServiceValidation
     {
         /// <summary>
-        /// Validates a <see cref="ResiliencyPipelineService"/> instance and returns a list of validation problems.
+        /// Validates the state of a <see cref="ResiliencyPipelineService"/> instance and returns any problems found.
         /// </summary>
-        /// <param name="value">The service instance to validate.</param>
-        /// <returns>A read-only list of validation error messages. Empty if valid.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
+        /// <param name="value">The <see cref="ResiliencyPipelineService"/> instance to validate.</param>
+        /// <returns>
+        /// A read‑only list of error messages describing each validation failure. The list is empty when the
+        /// instance satisfies all validation rules.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <c>null</c>.</exception>
         public static IReadOnlyList<string> Validate(this ResiliencyPipelineService value)
         {
             ArgumentNullException.ThrowIfNull(value);
@@ -61,18 +70,20 @@ namespace DotNetResiliencePipeline.Services
         }
 
         /// <summary>
-        /// Determines whether the specified <see cref="ResiliencyPipelineService"/> is valid.
+        /// Determines whether the specified <see cref="ResiliencyPipelineService"/> instance passes all validation checks.
         /// </summary>
-        /// <param name="value">The service instance to check.</param>
-        /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
+        /// <param name="value">The instance to evaluate.</param>
+        /// <returns><c>true</c> if the instance has no validation problems; otherwise, <c>false</c>.</returns>
         public static bool IsValid(this ResiliencyPipelineService value) => value.Validate().Count == 0;
 
         /// <summary>
-        /// Validates a <see cref="ResiliencyPipelineService"/> instance and throws an <see cref="ArgumentException"/> if invalid.
+        /// Validates the supplied <see cref="ResiliencyPipelineService"/> and throws an <see cref="ArgumentException"/>
+        /// if any validation rule fails.
         /// </summary>
-        /// <param name="value">The service instance to validate.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
-        /// <exception cref="ArgumentException">Thrown when validation fails.</exception>
+        /// <param name="value">The instance to validate.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">Thrown when one or more validation problems are detected; the exception
+        /// message contains a concatenated list of the individual error messages.</exception>
         public static void EnsureValid(this ResiliencyPipelineService value)
         {
             var problems = value.Validate();
