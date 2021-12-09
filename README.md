@@ -66,4 +66,58 @@ catch (HttpRequestException ex)
     }
 }
 ```
+
+## PipelineEventObserverExtensions
+
+`PipelineEventObserverExtensions` offers a collection of helper methods for inspecting and managing the event handlers that a `PipelineEventObserver` has registered.  
+These extensions make it easy to query active/inactive handler counts, locate specific handlers, toggle their activation state, and obtain formatted diagnostics about the observer’s current configuration.
+
+### Example Usage
+```csharp
+using System;
+using System.Collections.Generic;
+using Resilience.Pipeline.Events; // Adjust the namespace to match your project
+
+// Assume a concrete observer instance exists
+var observer = new PipelineEventObserver();
+
+// 1. Query handler statistics
+int activeCount   = PipelineEventObserverExtensions.GetActiveHandlersCount(observer);
+int inactiveCount = PipelineEventObserverExtensions.GetInactiveHandlersCount(observer);
+Console.WriteLine($"Active: {activeCount}, Inactive: {inactiveCount}");
+
+// 2. Find a handler for a specific event type (e.g., HttpRequestEvent)
+EventHandler? handler = PipelineEventObserverExtensions.FindHandler(observer, typeof(HttpRequestEvent));
+if (handler != null)
+{
+    Console.WriteLine($"Found handler for {handler.GetType().Name}");
+}
+
+// 3. Toggle the activation state of a handler (if one was found)
+if (handler != null)
+{
+    bool toggled = PipelineEventObserverExtensions.ToggleHandlerActive(observer, handler);
+    Console.WriteLine($"Handler active state toggled: {toggled}");
+}
+
+// 4. Retrieve a formatted statistics string
+string stats = PipelineEventObserverExtensions.GetStatisticsFormatted(observer);
+Console.WriteLine("Observer statistics:");
+Console.WriteLine(stats);
+
+// 5. Get a summary of all registered handlers
+string summary = PipelineEventObserverExtensions.GetHandlersSummary(observer);
+Console.WriteLine("Handlers summary:");
+Console.WriteLine(summary);
+
+// 6. List all handlers for a particular event type
+List<EventHandler> httpHandlers = PipelineEventObserverExtensions.GetHandlersByEventType(observer, typeof(HttpRequestEvent));
+Console.WriteLine($"Number of HTTP request handlers: {httpHandlers.Count}");
+
+// 7. Quick boolean check for any active handlers
+bool hasActive = PipelineEventObserverExtensions.HasActiveHandlers(observer);
+Console.WriteLine($"Observer has active handlers: {hasActive}");
+```
+
 ## ...
+
