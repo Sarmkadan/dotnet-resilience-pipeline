@@ -98,4 +98,26 @@ if (client.HasClient())
 
 The `HttpClientExceptionExtensions` class provides a set of convenience extensions for `HttpRequestException` and other `Exception` types commonly encountered when working with HTTP clients.
 
+## RetryPolicyExtensions
+
+The `RetryPolicyExtensions` class provides a set of extension methods for working with `RetryPolicy` instances. It allows you to add or remove retryable exceptions, execute actions with retry, and get configuration summaries.
+
+### Example Usage
+```csharp
+using Resilience.Policies;
+
+var retryPolicy = new RetryPolicy();
+
+// Add a retryable exception
+retryPolicy = retryPolicy.AddRetryableException<TimeoutException>();
+
+// Execute an action with retry
+bool success = retryPolicy.ExecuteWithRetry(() => {
+    // Code to be executed with retry
+});
+
+// Get the configuration summary
+string summary = retryPolicy.GetConfigurationSummary();
+```
+
 ...
