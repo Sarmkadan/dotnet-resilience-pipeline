@@ -58,9 +58,44 @@ int specificSubscribers = publisher.GetSubscriberCount<MyResiliencyEvent>();
 publisher.Reset();
 ```
 
+## HttpClientFactoryExtensions
+
+The `HttpClientFactoryExtensions` class provides simplified HTTP client operations with built-in resiliency policies. It offers typed methods for common HTTP patterns like JSON serialization and status code inspection.
+
+### Example Usage
+```csharp
+using Resilience.Http;
+
+var client = new HttpClient
+{
+    BaseAddress = new Uri("https://api.example.com")
+};
+
+// Check if client is configured
+if (client.HasClient())
+{
+    // GET as string
+    var rawResponse = await client.GetStringAsync("/users/1");
+    
+    // GET as deserialized object
+    var user = await client.GetFromJsonAsync<User>("/users/1");
+    
+    // POST with JSON payload
+    var request = new UserRequest { Name = "Alice" };
+    await client.PostAsJsonAsync("/users", request);
+    
+    // POST with JSON payload and response
+    var response = await client.PostAsJsonAndGetAsync<UserRequest, UserResponse>(
+        "/users", 
+        request);
+    
+    // GET status code only
+    var statusCode = await client.GetStatusCodeAsync("/health");
+}
+```
+
 ## HttpClientExceptionExtensions
 
 The `HttpClientExceptionExtensions` class provides a set of convenience extensions for `HttpRequestException` and other `Exception` types commonly encountered when working with HTTP clients.
 
 ...
-
