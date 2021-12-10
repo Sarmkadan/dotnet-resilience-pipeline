@@ -120,4 +120,28 @@ bool success = retryPolicy.ExecuteWithRetry(() => {
 string summary = retryPolicy.GetConfigurationSummary();
 ```
 
+## ErrorHandlingMiddlewareExtensions
+
+The `ErrorHandlingMiddlewareExtensions` class provides a set of extension methods for error handling in middleware. It allows you to retrieve errors by type, recoverability, or operation, generate error reports, and check if an error has occurred recently.
+
+### Example Usage
+```csharp
+using Resilience.Middleware;
+
+// Get errors by type
+var errorsByType = ErrorHandlingMiddlewareExtensions.GetErrorsByType(typeof(TimeoutException));
+
+// Get errors by recoverability
+var recoverableErrors = ErrorHandlingMiddlewareExtensions.GetErrorsByRecoverability(true);
+
+// Get total error count
+int totalErrorCount = ErrorHandlingMiddlewareExtensions.GetTotalErrorCount();
+
+// Check if an error has occurred recently
+bool recentError = ErrorHandlingMiddlewareExtensions.HasErrorOccurredRecently();
+
+// Generate an error report
+string errorReport = ErrorHandlingMiddlewareExtensions.GenerateErrorReport();
+```
+
 ...
