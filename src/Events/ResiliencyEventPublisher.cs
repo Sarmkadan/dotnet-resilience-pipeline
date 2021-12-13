@@ -116,7 +116,13 @@ public sealed class ResiliencyEventPublisher
     /// </summary>
     public int GetSubscriberCount(string eventType)
     {
-        return _subscribers.TryGetValue(eventType, out var subscribers) ? subscribers.Count : 0;
+        if (!_subscribers.TryGetValue(eventType, out var subscribers))
+            return 0;
+
+        lock (subscribers)
+        {
+            return subscribers.Count;
+        }
     }
 
     /// <summary>
@@ -127,6 +133,23 @@ public sealed class ResiliencyEventPublisher
         lock (_lockObj)
         {
             _eventHistory.Clear();
+        }
+    }
+
+    /// <summary>
+    /// Removes all subscribers for all event types.
+    /// </summary>
+    public void ClearSubscribers()
+    {
+        foreach (var eventType in _subscribers.Keys.ToList())
+        {
+            if (_subscribers.TryGetValue(eventType, out var subscribers))
+            {
+                lock (subscribers)
+                {
+                    subscribers.Clear();
+                }
+            }
         }
     }
 }

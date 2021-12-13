@@ -42,7 +42,7 @@ public sealed class MetricsController
                 FailedExecutions = stats.FailedExecutions,
                 SuccessRate = stats.SuccessRate,
                 PolicyCount = stats.PolicyCount,
-                AverageExecutionTimeMs = stats.TotalExecutions > 0 ? 50 : 0 // Simplified
+                AverageExecutionTimeMs = _historyRepository.GetAverageExecutionTime()
             };
 
             return new ApiResponse<PipelineMetricsDto> { Success = true, Data = dto };
@@ -61,15 +61,20 @@ public sealed class MetricsController
         try
         {
             var policies = _pipelineService.GetAllPolicies();
-            var dtos = policies.Select(p => new PolicyMetricsDto
+            var dtos = policies.Select(p =>
             {
-                PolicyId = p.Id,
-                PolicyName = p.Name,
-                Type = p.GetType().Name,
-                IsEnabled = p.IsEnabled,
-                ExecutionCount = 0, // Would come from repository
-                SuccessCount = 0,
-                FailureCount = 0
+                var records = _historyRepository.GetByPolicyId(p.Id);
+                var successCount = records.Count(r => r.IsSuccess);
+                return new PolicyMetricsDto
+                {
+                    PolicyId = p.Id,
+                    PolicyName = p.Name,
+                    Type = p.GetType().Name,
+                    IsEnabled = p.IsEnabled,
+                    ExecutionCount = records.Count,
+                    SuccessCount = successCount,
+                    FailureCount = records.Count - successCount
+                };
             }).ToList();
 
             return new ApiResponse<List<PolicyMetricsDto>> { Success = true, Data = dtos };
@@ -121,8 +126,18 @@ public sealed class MetricsController
     {
         try
         {
-            // Simplified - would fetch from repository
-            var records = new List<ExecutionRecordDto>();
+            if (limit <= 0)
+                return new ApiResponse<List<ExecutionRecordDto>> { Success = false, Message = "Limit must be greater than 0" };
+
+            var records = _historyRepository.GetLatest(limit).Select(r => new ExecutionRecordDto
+            {
+                Id = r.ExecutionId,
+                PolicyName = r.PolicyName,
+                IsSuccess = r.IsSuccess,
+                ExecutionTimeMs = r.ExecutionTimeMs,
+                ExecutedAt = r.ExecutedAt,
+                ErrorMessage = r.ErrorMessage
+            }).ToList();
 
             return new ApiResponse<List<ExecutionRecordDto>> { Success = true, Data = records };
         }

@@ -118,9 +118,7 @@ namespace DotNetResiliencePipeline.Events
 
             if (clearSubscribers)
             {
-                // Note: The base class doesn't expose a method to clear subscribers,
-                // so this parameter is documented but not implemented.
-                // Subscribers can be cleared by disposing and recreating the publisher.
+                publisher.ClearSubscribers();
             }
         }
     }
