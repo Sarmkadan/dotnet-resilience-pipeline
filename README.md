@@ -161,4 +161,23 @@ bool recentError = ErrorHandlingMiddlewareExtensions.HasErrorOccurredRecently();
 string errorReport = ErrorHandlingMiddlewareExtensions.GenerateErrorReport();
 ```
 
+## HealthCheckWorkerExtensions
+
+The `HealthCheckWorkerExtensions` class provides utility methods for managing and monitoring health check workers. It includes methods to check the health status, wait for stable states, and retrieve statistics.
+
+### Example Usage
+```csharp
+using Resilience.Workers;
+
+var worker = HealthCheckWorkerExtensions.CreateConfigured();
+bool isHealthy = HealthCheckWorkerExtensions.IsHealthy(worker);
+bool isDegraded = HealthCheckWorkerExtensions.IsDegraded(worker);
+bool isUnhealthy = HealthCheckWorkerExtensions.IsUnhealthy(worker);
+string status = HealthCheckWorkerExtensions.GetHealthStatusString(worker);
+string stats = HealthCheckWorkerExtensions.GetStatisticsString(worker);
+
+// Wait for stable state with timeout
+bool stable = await HealthCheckWorkerExtensions.WaitForStableStateAsync(worker, TimeSpan.FromSeconds(10));
+```
+
 ...
