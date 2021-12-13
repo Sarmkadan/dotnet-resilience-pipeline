@@ -3,10 +3,15 @@ using DotNetResiliencePipeline.Domain.Policies;
 using FluentAssertions;
 using Xunit;
 
-namespace DotNetResiliencePipeline.Tests;
-
+/// <summary>
+/// Contains unit tests for the <see cref="TimeoutPolicy"/> class.
+/// </summary>
 public sealed class TimeoutPolicyTests
 {
+    /// <summary>
+    /// Verifies that constructing a <see cref="TimeoutPolicy"/> with a valid name succeeds
+    /// and sets the <c>Name</c> and default <c>Timeout</c> values.
+    /// </summary>
     [Fact]
     public void Constructor_WithValidName_Succeeds()
     {
@@ -16,6 +21,10 @@ public sealed class TimeoutPolicyTests
         policy.Timeout.Should().Be(TimeSpan.FromSeconds(10));
     }
 
+    /// <summary>
+    /// Ensures that constructing a <see cref="TimeoutPolicy"/> with a whitespace-only name
+    /// throws an <see cref="ArgumentException"/> containing the expected message.
+    /// </summary>
     [Fact]
     public void Constructor_WithWhitespaceName_ThrowsArgumentException()
     {
@@ -25,6 +34,10 @@ public sealed class TimeoutPolicyTests
             .WithMessage("*Policy name cannot be empty*");
     }
 
+    /// <summary>
+    /// Confirms that <see cref="TimeoutPolicy.IsTimedOut(TimeSpan)"/> returns <c>false</c>
+    /// when the execution time is less than the configured timeout.
+    /// </summary>
     [Fact]
     public void IsTimedOut_WithExecutionTimeLessThanTimeout_ReturnsFalse()
     {
@@ -38,6 +51,10 @@ public sealed class TimeoutPolicyTests
         isTimedOut.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Confirms that <see cref="TimeoutPolicy.IsTimedOut(TimeSpan)"/> returns <c>true</c>
+    /// when the execution time exceeds the configured timeout.
+    /// </summary>
     [Fact]
     public void IsTimedOut_WithExecutionTimeGreaterThanTimeout_ReturnsTrue()
     {
@@ -51,6 +68,10 @@ public sealed class TimeoutPolicyTests
         isTimedOut.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that <see cref="TimeoutPolicy.IsTimedOut(TimeSpan)"/> returns <c>false</c>
+    /// when the execution time is exactly equal to the timeout.
+    /// </summary>
     [Fact]
     public void IsTimedOut_WithExecutionTimeEqualToTimeout_ReturnsFalse()
     {
@@ -64,6 +85,10 @@ public sealed class TimeoutPolicyTests
         isTimedOut.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Checks that <see cref="TimeoutPolicy.IsTimedOutMs(long)"/> returns <c>true</c>
+    /// when the supplied milliseconds exceed the timeout.
+    /// </summary>
     [Fact]
     public void IsTimedOutMs_WithTimeGreaterThanTimeout_ReturnsTrue()
     {
@@ -77,6 +102,10 @@ public sealed class TimeoutPolicyTests
         isTimedOut.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Checks that <see cref="TimeoutPolicy.IsTimedOutMs(long)"/> returns <c>false</c>
+    /// when the supplied milliseconds are less than the timeout.
+    /// </summary>
     [Fact]
     public void IsTimedOutMs_WithTimeLessThanTimeout_ReturnsFalse()
     {
@@ -90,6 +119,10 @@ public sealed class TimeoutPolicyTests
         isTimedOut.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Validates that <see cref="TimeoutPolicy.RecordExecutionTime(long)"/> throws an
+    /// <see cref="ArgumentException"/> when a negative execution time is provided.
+    /// </summary>
     [Fact]
     public void RecordExecutionTime_WithNegativeTime_ThrowsArgumentException()
     {
@@ -101,6 +134,10 @@ public sealed class TimeoutPolicyTests
             .WithMessage("*Execution time cannot be negative*");
     }
 
+    /// <summary>
+    /// Ensures that <see cref="TimeoutPolicy.RecordExecutionTime(long)"/> correctly updates
+    /// average, longest, and shortest execution time statistics.
+    /// </summary>
     [Fact]
     public void RecordExecutionTime_UpdatesStatistics()
     {
@@ -115,6 +152,10 @@ public sealed class TimeoutPolicyTests
         policy.ShortestExecutionTimeMs.Should().Be(100);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="TimeoutPolicy.RecordTimeout(long)"/> increments the timeout count
+    /// and records a failure for each call.
+    /// </summary>
     [Fact]
     public void RecordTimeout_IncreasesTimeoutCountAndRecordsFailure()
     {
@@ -127,6 +168,10 @@ public sealed class TimeoutPolicyTests
         policy.FailedExecutions.Should().Be(2);
     }
 
+    /// <summary>
+    /// Checks that <see cref="TimeoutPolicy.RecordTimeout(long)"/> stores the timestamp of the
+    /// most recent timeout in the policy metadata under the key <c>LastTimeoutAt</c>.
+    /// </summary>
     [Fact]
     public void RecordTimeout_StoresLastTimeoutTime()
     {
@@ -140,6 +185,10 @@ public sealed class TimeoutPolicyTests
         lastTimeout.Should().BeOnOrAfter(beforeTime).And.BeOnOrBefore(afterTime);
     }
 
+    /// <summary>
+    /// Confirms that <see cref="TimeoutPolicy.GetTimeoutPercentage()"/> returns the correct
+    /// percentage based on recorded successes and timeouts.
+    /// </summary>
     [Fact]
     public void GetTimeoutPercentage_CalculatesCorrectly()
     {
@@ -156,6 +205,10 @@ public sealed class TimeoutPolicyTests
         timeoutPct.Should().Be(20);
     }
 
+    /// <summary>
+    /// Ensures that <see cref="TimeoutPolicy.GetTimeoutPercentage()"/> returns zero when no
+    /// executions have been recorded.
+    /// </summary>
     [Fact]
     public void GetTimeoutPercentage_WithNoExecutions_ReturnsZero()
     {
@@ -166,6 +219,10 @@ public sealed class TimeoutPolicyTests
         timeoutPct.Should().Be(0);
     }
 
+    /// <summary>
+    /// Validates that <see cref="TimeoutPolicy.GetPercentile95ExecutionTime()"/> returns a value
+    /// within the expected 95th percentile range for a sample of 100 execution times.
+    /// </summary>
     [Fact]
     public void GetPercentile95ExecutionTime_CalculatesCorrectly()
     {
@@ -180,6 +237,10 @@ public sealed class TimeoutPolicyTests
         p95.Should().BeLessThanOrEqualTo(99);
     }
 
+    /// <summary>
+    /// Validates that <see cref="TimeoutPolicy.GetPercentile99ExecutionTime()"/> returns a value
+    /// within the expected 99th percentile range for a sample of 100 execution times.
+    /// </summary>
     [Fact]
     public void GetPercentile99ExecutionTime_CalculatesCorrectly()
     {
@@ -194,6 +255,9 @@ public sealed class TimeoutPolicyTests
         p99.Should().BeLessThanOrEqualTo(99);
     }
 
+    /// <summary>
+    /// Checks that percentile calculations return a sensible value when the sample size is very small.
+    /// </summary>
     [Fact]
     public void GetPercentileExecutionTime_WithSmallSample_ReturnsSensibleValue()
     {
@@ -208,6 +272,10 @@ public sealed class TimeoutPolicyTests
         p99.Should().Be(100);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="TimeoutPolicy.IsValidConfiguration(out string?)"/> returns
+    /// <c>false</c> and an appropriate error message when the timeout is zero.
+    /// </summary>
     [Fact]
     public void IsValidConfiguration_WithZeroTimeout_ReturnsFalse()
     {
@@ -222,6 +290,10 @@ public sealed class TimeoutPolicyTests
         error.Should().Contain("Timeout");
     }
 
+    /// <summary>
+    /// Verifies that <see cref="TimeoutPolicy.IsValidConfiguration(out string?)"/> returns
+    /// <c>false</c> and an appropriate error message when the timeout is negative.
+    /// </summary>
     [Fact]
     public void IsValidConfiguration_WithNegativeTimeout_ReturnsFalse()
     {
@@ -236,6 +308,9 @@ public sealed class TimeoutPolicyTests
         error.Should().Contain("Timeout");
     }
 
+    /// <summary>
+    /// Confirms that a positive, non‑zero timeout yields a valid configuration with no error message.
+    /// </summary>
     [Fact]
     public void IsValidConfiguration_WithValidTimeout_ReturnsTrue()
     {
@@ -250,6 +325,10 @@ public sealed class TimeoutPolicyTests
         error.Should().BeNull();
     }
 
+    /// <summary>
+    /// Ensures that <see cref="TimeoutPolicy.ResetStatistics()"/> clears all metric counters and
+    /// resets execution‑time statistics to their initial values.
+    /// </summary>
     [Fact]
     public void ResetStatistics_ClearsAllMetrics()
     {
@@ -267,6 +346,10 @@ public sealed class TimeoutPolicyTests
         policy.ShortestExecutionTimeMs.Should().Be(long.MaxValue);
     }
 
+    /// <summary>
+    /// Checks that <see cref="TimeoutPolicy.GetSnapshot()"/> returns a snapshot whose metadata
+    /// contains the expected keys for timeout and execution‑time metrics.
+    /// </summary>
     [Fact]
     public void GetSnapshot_IncludesAllMetrics()
     {
