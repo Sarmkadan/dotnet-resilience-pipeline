@@ -31,153 +31,38 @@ A comprehensive, production-grade resilience library for .NET applications featu
 
 ## ...
 
-## DotnetResiliencePipelineOptionsExtensions
+## PoliciesControllerExtensions
 
-The `DotnetResiliencePipelineOptionsExtensions` class provides extension methods for configuring resiliency pipeline options with pre-defined strategies for different operational scenarios. It enables fluent configuration of circuit breakers, retries, timeouts, and bulkheads tailored for production, transient faults, critical operations, and isolation requirements.
-
-### Example Usage
-```csharp
-using Resilience.Configuration;
-
-var options = new DotnetResiliencePipelineOptions()
-    .ConfigureForProduction()
-    .ConfigureForTransientFaults()
-    .ConfigureForCriticalOperations()
-    .ConfigureForIsolation();
-
-var pipelineBuilder = options.ToPipelineBuilder();
-```
-
-## ResiliencyEventPublisherExtensions
-
-The `ResiliencyEventPublisherExtensions` class provides methods for publishing resiliency events with historical tracking, retrieving the last event of a specific type, and managing subscriber counts. It supports exception publishing and state reset for event tracking.
+The `PoliciesControllerExtensions` class provides a set of extension methods for working with policy-related operations. It enables creating, retrieving, validating, and checking the existence of policies.
 
 ### Example Usage
 ```csharp
-using Resilience.Events;
+using Resilience.Api;
+using Resilience.Dtos;
 
-// Assume a concrete publisher instance exists
-var publisher = new ResiliencyEventPublisher();
+// Create a policy
+var policy = new PolicyDto { /* initialize properties */ };
+var createResponse = await PoliciesControllerExtensions.CreatePolicyAsync(policy);
+Console.WriteLine(createResponse.ToJson());
 
-// 1. Publish an event with history tracking
-await publisher.PublishWithHistoryAsync(new MyResiliencyEvent("Test"));
-
-// 2. Retrieve the last event of a specific type
-var lastEvent = publisher.GetLastEvent<MyResiliencyEvent>();
-
-// 3. Get total subscriber count
-int totalSubscribers = publisher.GetSubscriberCount();
-
-// 4. Get subscriber count for a specific event type
-int specificSubscribers = publisher.GetSubscriberCount<MyResiliencyEvent>();
-
-// 5. Reset all tracked state
-publisher.Reset();
-```
-
-## HttpClientFactoryExtensions
-
-The `HttpClientFactoryExtensions` class provides simplified HTTP client operations with built-in resiliency policies. It offers typed methods for common HTTP patterns like JSON serialization and status code inspection.
-
-### Example Usage
-```csharp
-using Resilience.Http;
-
-var client = new HttpClient
+// Get all policies
+var policies = await PoliciesControllerExtensions.GetAllPoliciesListAsync();
+foreach (var p in policies)
 {
-    BaseAddress = new Uri("https://api.example.com")
-};
-
-// Check if client is configured
-if (client.HasClient())
-{
-    // GET as string
-    var rawResponse = await client.GetStringAsync("/users/1");
-    
-    // GET as deserialized object
-    var user = await client.GetFromJsonAsync<User>("/users/1");
-    
-    // POST with JSON payload
-    var request = new UserRequest { Name = "Alice" };
-    await client.PostAsJsonAsync("/users", request);
-    
-    // POST with JSON payload and response
-    var response = await client.PostAsJsonAndGetAsync<UserRequest, UserResponse>(
-        "/users", 
-        request);
-    
-    // GET status code only
-    var statusCode = await client.GetStatusCodeAsync("/health");
+    Console.WriteLine(p.ToJson());
 }
+
+// Get a policy by id
+var policyId = Guid.NewGuid();
+var policyById = await PoliciesControllerExtensions.GetPolicyAsync<PolicyDto>(policyId);
+Console.WriteLine(policyById?.ToJson());
+
+// Validate policy configuration
+var validationResult = await PoliciesControllerExtensions.ValidatePolicyConfigurationAsync(policy);
+Console.WriteLine(validationResult.ToJson());
+
+// Check if policy exists
+var exists = await PoliciesControllerExtensions.PolicyExistsAsync(policyId);
+Console.WriteLine(exists);
 ```
-
-## HttpClientExceptionExtensions
-
-The `HttpClientExceptionExtensions` class provides a set of convenience extensions for `HttpRequestException` and other `Exception` types commonly encountered when working with HTTP clients.
-
-## RetryPolicyExtensions
-
-The `RetryPolicyExtensions` class provides a set of extension methods for working with `RetryPolicy` instances. It allows you to add or remove retryable exceptions, execute actions with retry, and get configuration summaries.
-
-### Example Usage
-```csharp
-using Resilience.Policies;
-
-var retryPolicy = new RetryPolicy();
-
-// Add a retryable exception
-retryPolicy = retryPolicy.AddRetryableException<TimeoutException>();
-
-// Execute an action with retry
-bool success = retryPolicy.ExecuteWithRetry(() => {
-    // Code to be executed with retry
-});
-
-// Get the configuration summary
-string summary = retryPolicy.GetConfigurationSummary();
-```
-
-## ErrorHandlingMiddlewareExtensions
-
-The `ErrorHandlingMiddlewareExtensions` class provides a set of extension methods for error handling in middleware. It allows you to retrieve errors by type, recoverability, or operation, generate error reports, and check if an error has occurred recently.
-
-### Example Usage
-```csharp
-using Resilience.Middleware;
-
-// Get errors by type
-var errorsByType = ErrorHandlingMiddlewareExtensions.GetErrorsByType(typeof(TimeoutException));
-
-// Get errors by recoverability
-var recoverableErrors = ErrorHandlingMiddlewareExtensions.GetErrorsByRecoverability(true);
-
-// Get total error count
-int totalErrorCount = ErrorHandlingMiddlewareExtensions.GetTotalErrorCount();
-
-// Check if an error has occurred recently
-bool recentError = ErrorHandlingMiddlewareExtensions.HasErrorOccurredRecently();
-
-// Generate an error report
-string errorReport = ErrorHandlingMiddlewareExtensions.GenerateErrorReport();
-```
-
-## HealthCheckWorkerExtensions
-
-The `HealthCheckWorkerExtensions` class provides utility methods for managing and monitoring health check workers. It includes methods to check the health status, wait for stable states, and retrieve statistics.
-
-### Example Usage
-```csharp
-using Resilience.Workers;
-
-var worker = HealthCheckWorkerExtensions.CreateConfigured();
-bool isHealthy = HealthCheckWorkerExtensions.IsHealthy(worker);
-bool isDegraded = HealthCheckWorkerExtensions.IsDegraded(worker);
-bool isUnhealthy = HealthCheckWorkerExtensions.IsUnhealthy(worker);
-string status = HealthCheckWorkerExtensions.GetHealthStatusString(worker);
-string stats = HealthCheckWorkerExtensions.GetStatisticsString(worker);
-
-// Wait for stable state with timeout
-bool stable = await HealthCheckWorkerExtensions.WaitForStableStateAsync(worker, TimeSpan.FromSeconds(10));
-```
-
-...
+## ...
