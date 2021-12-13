@@ -31,6 +31,23 @@ A comprehensive, production-grade resilience library for .NET applications featu
 
 ## ...
 
+## DotnetResiliencePipelineOptionsExtensions
+
+The `DotnetResiliencePipelineOptionsExtensions` class provides extension methods for configuring resiliency pipeline options with pre-defined strategies for different operational scenarios. It enables fluent configuration of circuit breakers, retries, timeouts, and bulkheads tailored for production, transient faults, critical operations, and isolation requirements.
+
+### Example Usage
+```csharp
+using Resilience.Configuration;
+
+var options = new DotnetResiliencePipelineOptions()
+    .ConfigureForProduction()
+    .ConfigureForTransientFaults()
+    .ConfigureForCriticalOperations()
+    .ConfigureForIsolation();
+
+var pipelineBuilder = options.ToPipelineBuilder();
+```
+
 ## ResiliencyEventPublisherExtensions
 
 The `ResiliencyEventPublisherExtensions` class provides methods for publishing resiliency events with historical tracking, retrieving the last event of a specific type, and managing subscriber counts. It supports exception publishing and state reset for event tracking.
