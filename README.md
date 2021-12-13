@@ -31,6 +31,32 @@ A comprehensive, production-grade resilience library for .NET applications featu
 
 ## ...
 
+## CircuitBreakerDiagnosticsValidation
+
+The `CircuitBreakerDiagnosticsValidation` class provides methods to validate circuit breaker configurations. It ensures that the configuration is valid and throws exceptions if it's not.
+
+### Example Usage
+```csharp
+using Resilience.Utilities;
+
+// Validate circuit breaker configuration
+var validationErrors = CircuitBreakerDiagnosticsValidation.Validate(new CircuitBreakerConfiguration
+{
+    // Initialize properties
+});
+
+// Check if configuration is valid
+var isValid = CircuitBreakerDiagnosticsValidation.IsValid(new CircuitBreakerConfiguration
+{
+    // Initialize properties
+});
+
+// Ensure configuration is valid, throws if not
+CircuitBreakerDiagnosticsValidation.EnsureValid(new CircuitBreakerConfiguration
+{
+    // Initialize properties
+});
+```
 ## PoliciesControllerExtensions
 
 The `PoliciesControllerExtensions` class provides a set of extension methods for working with policy-related operations. It enables creating, retrieving, validating, and checking the existence of policies.
