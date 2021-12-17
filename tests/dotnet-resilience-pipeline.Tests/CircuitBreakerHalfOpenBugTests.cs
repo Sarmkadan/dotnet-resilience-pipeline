@@ -8,10 +8,14 @@ using DotNetResiliencePipeline.Domain.Policies;
 using FluentAssertions;
 using Xunit;
 
-namespace DotNetResiliencePipeline.Tests;
-
+/// <summary>
+/// Tests for CircuitBreakerPolicy behavior in HalfOpen state.
+/// </summary>
 public sealed class CircuitBreakerHalfOpenBugTests
 {
+    /// <summary>
+    /// Verifies that recording a success in HalfOpen state only allows the success threshold to be met.
+    /// </summary>
     [Fact]
     public void RecordSuccess_InHalfOpen_ShouldOnlyAllowSuccessThresholdRequests()
     {
@@ -37,6 +41,9 @@ public sealed class CircuitBreakerHalfOpenBugTests
         policy.CurrentState.Should().Be(CircuitBreakerPolicy.CircuitState.Closed);
     }
 
+    /// <summary>
+    /// Verifies that recording a success in HalfOpen state blocks additional requests after the success threshold is met.
+    /// </summary>
     [Fact]
     public void RecordSuccess_InHalfOpen_ShouldBlockAdditionalRequestsAfterSuccessThreshold()
     {
@@ -71,6 +78,9 @@ public sealed class CircuitBreakerHalfOpenBugTests
         policy.ConsecutiveFailures.Should().Be(0);
     }
 
+    /// <summary>
+    /// Verifies that recording a failure in HalfOpen state reopens the circuit.
+    /// </summary>
     [Fact]
     public void RecordFailure_InHalfOpen_ShouldReopenCircuit()
     {
@@ -102,6 +112,9 @@ public sealed class CircuitBreakerHalfOpenBugTests
         policy.CurrentState.Should().Be(CircuitBreakerPolicy.CircuitState.Open);
     }
 
+    /// <summary>
+    /// Verifies that attempting a reset when the OpenDuration has elapsed transitions the circuit to HalfOpen.
+    /// </summary>
     [Fact]
     public void AttemptReset_WhenOpenDurationElapsed_TransitionsToHalfOpen()
     {
