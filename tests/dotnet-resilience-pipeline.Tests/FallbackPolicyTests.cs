@@ -5,8 +5,14 @@ using Xunit;
 
 namespace DotNetResiliencePipeline.Tests;
 
+/// <summary>
+/// Contains unit tests for the <see cref="FallbackPolicy"/> class to verify fallback behavior and configuration.
+/// </summary>
 public sealed class FallbackPolicyTests
 {
+    /// <summary>
+    /// Tests that the constructor successfully creates a fallback policy with a valid name.
+    /// </summary>
     [Fact]
     public void Constructor_WithValidName_Succeeds()
     {
@@ -26,6 +32,9 @@ public sealed class FallbackPolicyTests
             .WithMessage("*Policy name cannot be empty*");
     }
 
+    /// <summary>
+    /// Tests that SetFallbackAction successfully stores a valid fallback function.
+    /// </summary>
     [Fact]
     public void SetFallbackAction_WithValidFunc_StoresAction()
     {
@@ -41,6 +50,9 @@ public sealed class FallbackPolicyTests
         policy.Should().NotBeNull();
     }
 
+    /// <summary>
+    /// Tests that ShouldTriggerFallback returns true when FallbackOnAnyException is enabled.
+    /// </summary>
     [Fact]
     public void ShouldTriggerFallback_WithFallbackOnAnyException_ReturnsTrue()
     {
@@ -51,6 +63,9 @@ public sealed class FallbackPolicyTests
         shouldTrigger.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that ShouldTriggerFallback returns false when passed a null exception.
+    /// </summary>
     [Fact]
     public void ShouldTriggerFallback_WithNullException_ReturnsFalse()
     {
@@ -61,6 +76,9 @@ public sealed class FallbackPolicyTests
         shouldTrigger.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that ShouldTriggerFallback returns true when the exception matches a configured trigger type.
+    /// </summary>
     [Fact]
     public void ShouldTriggerFallback_WithSpecificExceptionAndMatch_ReturnsTrue()
     {
@@ -75,6 +93,9 @@ public sealed class FallbackPolicyTests
         shouldTrigger.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that ShouldTriggerFallback returns false when the exception doesn't match configured trigger types.
+    /// </summary>
     [Fact]
     public void ShouldTriggerFallback_WithSpecificExceptionNoMatch_ReturnsFalse()
     {
@@ -89,6 +110,9 @@ public sealed class FallbackPolicyTests
         shouldTrigger.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that RecordSuccessfulFallback throws ArgumentException when provided with negative execution time.
+    /// </summary>
     [Fact]
     public void RecordSuccessfulFallback_WithNegativeTime_ThrowsArgumentException()
     {
@@ -100,6 +124,9 @@ public sealed class FallbackPolicyTests
             .WithMessage("*Execution time cannot be negative*");
     }
 
+    /// <summary>
+    /// Tests that RecordSuccessfulFallback correctly increments fallback invocation counters and calculates average execution time.
+    /// </summary>
     [Fact]
     public void RecordSuccessfulFallback_IncrementCounters()
     {
@@ -113,6 +140,9 @@ public sealed class FallbackPolicyTests
         policy.AverageFallbackExecutionTimeMs.Should().Be(150);
     }
 
+    /// <summary>
+    /// Tests that RecordFailedFallback throws ArgumentException when provided with negative execution time.
+    /// </summary>
     [Fact]
     public void RecordFailedFallback_WithNegativeTime_ThrowsArgumentException()
     {
@@ -124,6 +154,9 @@ public sealed class FallbackPolicyTests
             .WithMessage("*Execution time cannot be negative*");
     }
 
+    /// <summary>
+    /// Tests that RecordFailedFallback correctly increments fallback failure counters.
+    /// </summary>
     [Fact]
     public void RecordFailedFallback_IncrementCounters()
     {
@@ -138,6 +171,9 @@ public sealed class FallbackPolicyTests
         policy.FailedExecutions.Should().Be(2);
     }
 
+    /// <summary>
+    /// Tests that GetFallbackSuccessRate calculates the correct success rate with mixed successful and failed fallback invocations.
+    /// </summary>
     [Fact]
     public void GetFallbackSuccessRate_WithMixedResults_CalculatesCorrectly()
     {
@@ -152,6 +188,9 @@ public sealed class FallbackPolicyTests
         successRate.Should().BeApproximately(66.66666666666666, 0.0001);
     }
 
+    /// <summary>
+    /// Tests that GetFallbackSuccessRate returns 0 when no fallback invocations have been recorded.
+    /// </summary>
     [Fact]
     public void GetFallbackSuccessRate_WithNoInvocations_ReturnsZero()
     {
@@ -162,6 +201,9 @@ public sealed class FallbackPolicyTests
         successRate.Should().Be(0);
     }
 
+    /// <summary>
+    /// Tests that GetFallbackInvocationPercentage calculates the correct percentage of fallback invocations.
+    /// </summary>
     [Fact]
     public void GetFallbackInvocationPercentage_CalculatesCorrectly()
     {
@@ -178,6 +220,9 @@ public sealed class FallbackPolicyTests
         invocationPct.Should().Be(20);
     }
 
+    /// <summary>
+    /// Tests that AddFallbackTrigger throws ArgumentNullException when provided with a null exception type.
+    /// </summary>
     [Fact]
     public void AddFallbackTrigger_WithNullType_ThrowsArgumentNullException()
     {
@@ -189,6 +234,9 @@ public sealed class FallbackPolicyTests
             .WithParameterName("exceptionType");
     }
 
+    /// <summary>
+    /// Tests that AddFallbackTrigger throws ArgumentException when provided with a non-Exception type.
+    /// </summary>
     [Fact]
     public void AddFallbackTrigger_WithNonExceptionType_ThrowsArgumentException()
     {
@@ -200,6 +248,9 @@ public sealed class FallbackPolicyTests
             .WithMessage("*is not an Exception type*");
     }
 
+    /// <summary>
+    /// Tests that AddFallbackTrigger successfully adds a valid exception type to the trigger list.
+    /// </summary>
     [Fact]
     public void AddFallbackTrigger_WithValidException_Succeeds()
     {
@@ -210,6 +261,9 @@ public sealed class FallbackPolicyTests
         policy.FallbackTriggerExceptions.Should().Contain(typeof(TimeoutException));
     }
 
+    /// <summary>
+    /// Tests that AddFallbackTrigger prevents adding duplicate exception types to the trigger list.
+    /// </summary>
     [Fact]
     public void AddFallbackTrigger_WithDuplicateType_DoesNotAddTwice()
     {
@@ -221,6 +275,9 @@ public sealed class FallbackPolicyTests
         policy.FallbackTriggerExceptions.Count(t => t == typeof(TimeoutException)).Should().Be(1);
     }
 
+    /// <summary>
+    /// Tests that RemoveFallbackTrigger successfully removes an exception type from the trigger list.
+    /// </summary>
     [Fact]
     public void RemoveFallbackTrigger_RemovesExceptionType()
     {
@@ -232,6 +289,9 @@ public sealed class FallbackPolicyTests
         policy.FallbackTriggerExceptions.Should().NotContain(typeof(TimeoutException));
     }
 
+    /// <summary>
+    /// Tests that IsValidConfiguration returns false when FallbackTimeout is set to TimeSpan.Zero.
+    /// </summary>
     [Fact]
     public void IsValidConfiguration_WithZeroTimeout_ReturnsFalse()
     {
@@ -246,6 +306,9 @@ public sealed class FallbackPolicyTests
         error.Should().Contain("FallbackTimeout");
     }
 
+    /// <summary>
+    /// Tests that IsValidConfiguration returns false when FallbackOnAnyException is false and no trigger exceptions are configured.
+    /// </summary>
     [Fact]
     public void IsValidConfiguration_WithSpecificExceptionsAndNone_ReturnsFalse()
     {
@@ -261,6 +324,9 @@ public sealed class FallbackPolicyTests
         error.Should().Contain("fallback trigger exceptions");
     }
 
+    /// <summary>
+    /// Tests that IsValidConfiguration returns true when the policy has valid configuration settings.
+    /// </summary>
     [Fact]
     public void IsValidConfiguration_WithValidSettings_ReturnsTrue()
     {
@@ -276,6 +342,9 @@ public sealed class FallbackPolicyTests
         error.Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that ResetStatistics clears all fallback-related metrics and counters.
+    /// </summary>
     [Fact]
     public void ResetStatistics_ClearsAllMetrics()
     {
