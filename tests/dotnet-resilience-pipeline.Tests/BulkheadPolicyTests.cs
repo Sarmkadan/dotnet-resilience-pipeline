@@ -5,8 +5,15 @@ using Xunit;
 
 namespace DotNetResiliencePipeline.Tests;
 
+/// <summary>
+/// Contains unit tests for the <see cref="BulkheadPolicy"/> class, which implements bulkhead isolation pattern
+/// to limit concurrent execution and queue requests when all slots are occupied.
+/// </summary>
 public sealed class BulkheadPolicyTests
 {
+    /// <summary>
+    /// Tests that the constructor successfully creates a bulkhead policy with valid configuration.
+    /// </summary>
     [Fact]
     public void Constructor_WithValidName_Succeeds()
     {
@@ -17,6 +24,9 @@ public sealed class BulkheadPolicyTests
         policy.MaxQueueLength.Should().Be(50);
     }
 
+    /// <summary>
+    /// Tests that the constructor throws an ArgumentException when provided with whitespace-only name.
+    /// </summary>
     [Fact]
     public void Constructor_WithWhitespaceName_ThrowsArgumentException()
     {
@@ -26,6 +36,9 @@ public sealed class BulkheadPolicyTests
             .WithMessage("*Policy name cannot be empty*");
     }
 
+    /// <summary>
+    /// Tests that TryAcquireSlot returns true when the number of active executions is below MaxParallelization.
+    /// </summary>
     [Fact]
     public void TryAcquireSlot_WhenBelowMaxParallelization_ReturnsTrue()
     {
@@ -37,6 +50,9 @@ public sealed class BulkheadPolicyTests
         policy.ActiveExecutions.Should().Be(1);
     }
 
+    /// <summary>
+    /// Tests that TryAcquireSlot returns false and queues the request when MaxParallelization is reached.
+    /// </summary>
     [Fact]
     public void TryAcquireSlot_WhenAtMaxParallelization_ReturnsfalseAndQueues()
     {
@@ -56,6 +72,9 @@ public sealed class BulkheadPolicyTests
         policy.QueuedRequests.Should().Be(1);
     }
 
+    /// <summary>
+    /// Tests that TryAcquireSlot returns false and increments RejectedCount when both MaxParallelization and MaxQueueLength are reached.
+    /// </summary>
     [Fact]
     public void TryAcquireSlot_WhenQueueFull_ReturnsFalseAndIncrementsRejectedCount()
     {
@@ -73,6 +92,9 @@ public sealed class BulkheadPolicyTests
         policy.RejectedCount.Should().Be(1);
     }
 
+    /// <summary>
+    /// Tests that ReleaseSlot decreases the ActiveExecutions counter.
+    /// </summary>
     [Fact]
     public void ReleaseSlot_DecreasesActiveExecutions()
     {
@@ -87,6 +109,9 @@ public sealed class BulkheadPolicyTests
         policy.ActiveExecutions.Should().Be(1);
     }
 
+    /// <summary>
+    /// Tests that ReleaseSlot does not allow ActiveExecutions to go below zero.
+    /// </summary>
     [Fact]
     public void ReleaseSlot_WhenNoActiveExecutions_DoesNotGoNegative()
     {
@@ -97,6 +122,9 @@ public sealed class BulkheadPolicyTests
         policy.ActiveExecutions.Should().Be(0);
     }
 
+    /// <summary>
+    /// Tests that DequeueRequest decreases the QueuedRequests counter.
+    /// </summary>
     [Fact]
     public void DequeueRequest_DecreasesQueuedRequests()
     {
@@ -115,6 +143,9 @@ public sealed class BulkheadPolicyTests
         policy.QueuedRequests.Should().Be(0);
     }
 
+    /// <summary>
+    /// Tests that RecordQueueWaitTime throws an ArgumentException when provided with negative wait time.
+    /// </summary>
     [Fact]
     public void RecordQueueWaitTime_WithNegativeTime_ThrowsArgumentException()
     {
@@ -126,6 +157,9 @@ public sealed class BulkheadPolicyTests
             .WithMessage("*Wait time cannot be negative*");
     }
 
+    /// <summary>
+    /// Tests that RecordQueueWaitTime correctly updates the average and longest queue time statistics.
+    /// </summary>
     [Fact]
     public void RecordQueueWaitTime_UpdatesStatistics()
     {
@@ -139,6 +173,9 @@ public sealed class BulkheadPolicyTests
         policy.LongestQueueTimeMs.Should().Be(300);
     }
 
+    /// <summary>
+    /// Tests that GetUtilizationPercentage correctly calculates the percentage of active executions relative to MaxParallelization.
+    /// </summary>
     [Fact]
     public void GetUtilizationPercentage_CalculatesCorrectly()
     {
@@ -153,6 +190,9 @@ public sealed class BulkheadPolicyTests
         utilization.Should().Be(30);
     }
 
+    /// <summary>
+    /// Tests that GetQueuedPercentage correctly calculates the percentage of queued requests relative to MaxQueueLength.
+    /// </summary>
     [Fact]
     public void GetQueuedPercentage_CalculatesCorrectly()
     {
@@ -172,6 +212,9 @@ public sealed class BulkheadPolicyTests
         queuedPct.Should().BeGreaterThan(0);
     }
 
+    /// <summary>
+    /// Tests that GetRejectionPercentage correctly calculates the percentage of rejected requests relative to total executions.
+    /// </summary>
     [Fact]
     public void GetRejectionPercentage_CalculatesCorrectly()
     {
@@ -192,6 +235,9 @@ public sealed class BulkheadPolicyTests
         rejectionPct.Should().BeGreaterThan(0);
     }
 
+    /// <summary>
+    /// Tests that IsValidConfiguration returns false when MaxParallelization is set to zero.
+    /// </summary>
     [Fact]
     public void IsValidConfiguration_WithZeroMaxParallelization_ReturnsFalse()
     {
@@ -203,6 +249,9 @@ public sealed class BulkheadPolicyTests
         error.Should().Contain("MaxParallelization");
     }
 
+    /// <summary>
+    /// Tests that IsValidConfiguration returns false when MaxQueueLength is set to a negative value.
+    /// </summary>
     [Fact]
     public void IsValidConfiguration_WithNegativeQueueLength_ReturnsFalse()
     {
@@ -214,6 +263,9 @@ public sealed class BulkheadPolicyTests
         error.Should().Contain("MaxQueueLength");
     }
 
+    /// <summary>
+    /// Tests that IsValidConfiguration returns true when all configuration values are valid.
+    /// </summary>
     [Fact]
     public void IsValidConfiguration_WithValidSettings_ReturnsTrue()
     {
@@ -229,6 +281,9 @@ public sealed class BulkheadPolicyTests
         error.Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that ResetStatistics clears all metrics including active executions, rejected count, and queue times.
+    /// </summary>
     [Fact]
     public void ResetStatistics_ClearsAllMetrics()
     {
@@ -247,6 +302,9 @@ public sealed class BulkheadPolicyTests
         policy.LongestQueueTimeMs.Should().Be(0);
     }
 
+    /// <summary>
+    /// Tests that concurrent calls to TryAcquireSlot are thread-safe and all succeed within the configured MaxParallelization limit.
+    /// </summary>
     [Fact]
     public async Task ThreadSafety_ConcurrentAcquisitions_AllSucceed()
     {
