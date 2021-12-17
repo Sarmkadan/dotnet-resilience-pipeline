@@ -11,8 +11,14 @@ using Xunit;
 
 namespace DotNetResiliencePipeline.Tests;
 
+/// <summary>
+/// Provides unit tests for the <see cref="ResiliencyPipelineService"/> class.
+/// </summary>
 public sealed class ResiliencyPipelineServiceTests
 {
+    /// <summary>
+    /// Verifies that registering a policy adds it to the pipeline.
+    /// </summary>
     [Fact]
     public void RegisterPolicy_ShouldAddPolicyToPipeline()
     {
@@ -27,6 +33,10 @@ public sealed class ResiliencyPipelineServiceTests
         service.GetAllPolicies().Should().ContainSingle(p => p.Id == policy.Id);
     }
 
+    /// <summary>
+    /// Verifies that executing an asynchronous operation returns a successful result when the operation succeeds.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task ExecuteAsync_ShouldReturnSuccess_WhenOperationSucceeds()
     {
@@ -41,6 +51,10 @@ public sealed class ResiliencyPipelineServiceTests
         result.Data.Should().Be("success");
     }
 
+    /// <summary>
+    /// Verifies that executing asynchronous operations tracks execution statistics.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task ExecuteAsync_ShouldTrackExecutionStats()
     {
@@ -58,6 +72,10 @@ public sealed class ResiliencyPipelineServiceTests
         stats.FailedExecutions.Should().Be(1);
     }
 
+    /// <summary>
+    /// Verifies that executing an asynchronous operation returns a failure result when the operation fails and no fallback is provided.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task ExecuteAsync_ShouldReturnFailure_WhenOperationFailsAndNoFallback()
     {
@@ -72,6 +90,11 @@ public sealed class ResiliencyPipelineServiceTests
         result.Exception.Should().BeOfType<InvalidOperationException>();
     }
 
+    /// <summary>
+    /// Verifies that executing an asynchronous operation uses a fallback policy when the operation fails.
+    /// </summary>
+    /// <param name="fallbackPolicy">The fallback policy to use.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task ExecuteAsync_ShouldUseFallback_WhenOperationFails()
     {
