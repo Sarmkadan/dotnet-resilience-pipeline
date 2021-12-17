@@ -5,10 +5,17 @@ using DotNetResiliencePipeline.Services;
 using FluentAssertions;
 using Xunit;
 
-namespace DotNetResiliencePipeline.Tests;
-
+/// <summary>
+/// Tests for the RetryService class.
+/// </summary>
 public sealed class RetryServiceTests
 {
+    /// <summary>
+    /// Creates a new RetryPolicy instance with the specified name and maximum retries.
+    /// </summary>
+    /// <param name="name">The name of the policy.</param>
+    /// <param name="maxRetries">The maximum number of retries.</param>
+    /// <returns>A new RetryPolicy instance.</returns>
     private static RetryPolicy FastRetryPolicy(string name, int maxRetries = 3) =>
         new RetryPolicy(name)
         {
@@ -18,6 +25,9 @@ public sealed class RetryServiceTests
             UseJitter = false
         };
 
+    /// <summary>
+    /// Tests that the ExecuteAsync method returns the value without retrying when the operation succeeds.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_OperationSucceeds_ReturnsValueWithoutRetrying()
     {
@@ -36,6 +46,9 @@ public sealed class RetryServiceTests
         policy.TotalRetryAttempts.Should().Be(0);
     }
 
+    /// <summary>
+    /// Tests that the ExecuteAsync method retries and returns the value when the operation fails transiently.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_TransientFailureThenSuccess_RetriesAndReturnsValue()
     {
@@ -60,6 +73,9 @@ public sealed class RetryServiceTests
         policy.SuccessfulExecutions.Should().Be(1);
     }
 
+    /// <summary>
+    /// Tests that the ExecuteAsync method throws a MaxRetriesExceededException when all attempts are exhausted.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_AllAttemptsExhausted_ThrowsMaxRetriesExceededException()
     {
@@ -77,6 +93,9 @@ public sealed class RetryServiceTests
         policy.FailedExecutions.Should().Be(1);
     }
 
+    /// <summary>
+    /// Tests that the ExecuteAsync method throws immediately without retrying when a non-retryable exception is thrown.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_NonRetryableException_ThrowsImmediatelyWithoutRetrying()
     {
@@ -98,6 +117,9 @@ public sealed class RetryServiceTests
         callCount.Should().Be(1);
     }
 
+    /// <summary>
+    /// Tests that the ExecuteAsync method throws an ArgumentNullException when the policy is null.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_NullPolicy_ThrowsArgumentNullException()
     {
@@ -112,6 +134,9 @@ public sealed class RetryServiceTests
             .WithParameterName("policy");
     }
 
+    /// <summary>
+    /// Tests that the ExecuteAsync method throws an InvalidPolicyConfigurationException when the policy configuration is invalid.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_InvalidPolicyConfiguration_ThrowsInvalidPolicyConfigurationException()
     {
@@ -126,6 +151,9 @@ public sealed class RetryServiceTests
         await act.Should().ThrowAsync<InvalidPolicyConfigurationException>();
     }
 
+    /// <summary>
+    /// Tests that the ExecuteAsync method stops retrying when a cancellation is requested.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_CancellationRequested_StopsRetrying()
     {
@@ -142,6 +170,9 @@ public sealed class RetryServiceTests
         await act.Should().ThrowAsync<OperationCanceledException>();
     }
 
+    /// <summary>
+    /// Tests that the ExecuteAsync method executes once when the policy is disabled.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_DisabledPolicy_ExecutesOnce()
     {
@@ -159,6 +190,9 @@ public sealed class RetryServiceTests
         callCount.Should().Be(1);
     }
 
+    /// <summary>
+    /// Tests that the CalculateRetryDelay method delegates to the policy.
+    /// </summary>
     [Fact]
     public void CalculateRetryDelay_DelegatesToPolicy()
     {
@@ -176,6 +210,9 @@ public sealed class RetryServiceTests
         delay.Should().Be(TimeSpan.FromMilliseconds(150));
     }
 
+    /// <summary>
+    /// Tests that the CalculateRetryDelay method throws an ArgumentNullException when the policy is null.
+    /// </summary>
     [Fact]
     public void CalculateRetryDelay_NullPolicy_ThrowsArgumentNullException()
     {
@@ -186,6 +223,9 @@ public sealed class RetryServiceTests
         act.Should().Throw<ArgumentNullException>();
     }
 
+    /// <summary>
+    /// Tests that the IsRetryable method returns true when the exception is retryable.
+    /// </summary>
     [Fact]
     public void IsRetryable_WithMatchingException_ReturnsTrue()
     {
@@ -198,6 +238,9 @@ public sealed class RetryServiceTests
         service.IsRetryable(policy, new TimeoutException()).Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that the IsRetryable method returns false when the exception is not retryable.
+    /// </summary>
     [Fact]
     public void IsRetryable_WithNonMatchingException_ReturnsFalse()
     {
@@ -210,6 +253,9 @@ public sealed class RetryServiceTests
         service.IsRetryable(policy, new ArgumentException()).Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that the IsRetryable method returns false when the policy is null.
+    /// </summary>
     [Fact]
     public void IsRetryable_NullPolicy_ReturnsFalse()
     {
