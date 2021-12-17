@@ -8,10 +8,14 @@ using DotNetResiliencePipeline.Domain.Policies;
 using FluentAssertions;
 using Xunit;
 
-namespace DotNetResiliencePipeline.Tests;
-
+/// <summary>
+/// Tests for the RetryPolicy class.
+/// </summary>
 public sealed class RetryPolicyTests
 {
+    /// <summary>
+    /// Verifies that the CalculateDelay method returns the same delay for every attempt when using the Fixed strategy.
+    /// </summary>
     [Fact]
     public void CalculateDelay_FixedStrategy_ReturnsSameDelayForEveryAttempt()
     {
@@ -35,6 +39,9 @@ public sealed class RetryPolicyTests
         delay2.Should().Be(TimeSpan.FromMilliseconds(200));
     }
 
+    /// <summary>
+    /// Verifies that the CalculateDelay method returns a delay that grows with each attempt when using the Exponential strategy.
+    /// </summary>
     [Fact]
     public void CalculateDelay_ExponentialStrategy_DelayGrowsWithEachAttempt()
     {
@@ -61,6 +68,9 @@ public sealed class RetryPolicyTests
         delay2.Should().BeApproximately(delay1 * 2, 1.0);
     }
 
+    /// <summary>
+    /// Verifies that the CalculateDelay method throws an ArgumentOutOfRangeException when the attempt number is equal to the maximum retries.
+    /// </summary>
     [Fact]
     public void CalculateDelay_AttemptEqualToMaxRetries_ThrowsArgumentOutOfRangeException()
     {
@@ -75,6 +85,9 @@ public sealed class RetryPolicyTests
             .WithParameterName("attemptNumber");
     }
 
+    /// <summary>
+    /// Verifies that the IsValidConfiguration method returns false when the maximum delay is less than the initial delay.
+    /// </summary>
     [Fact]
     public void IsValidConfiguration_WhenMaxDelayIsLessThanInitialDelay_ReturnsFalseWithError()
     {
@@ -93,6 +106,9 @@ public sealed class RetryPolicyTests
         error.Should().Contain("MaxDelay");
     }
 
+    /// <summary>
+    /// Verifies that the IsRetryable method returns false when the exception is null.
+    /// </summary>
     [Fact]
     public void IsRetryable_NullException_ReturnsFalse()
     {
