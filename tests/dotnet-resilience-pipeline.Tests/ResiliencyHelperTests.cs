@@ -6,8 +6,15 @@ using Xunit;
 
 namespace DotNetResiliencePipeline.Tests;
 
+/// <summary>
+/// Provides unit tests for the <see cref="ResiliencyHelper"/> class.
+/// Tests various helper methods for determining pipeline health status and validating/exorting resiliency policies.
+/// </summary>
 public sealed class ResiliencyHelperTests
 {
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.DeterminePipelineHealth"/> returns <see cref="HealthStatus.Healthy"/> when the success rate is 95% or higher.
+    /// </summary>
     [Fact]
     public void DeterminePipelineHealth_SuccessRateAbove95_ReturnsHealthy()
     {
@@ -15,6 +22,9 @@ public sealed class ResiliencyHelperTests
         ResiliencyHelper.DeterminePipelineHealth(95).Should().Be(HealthStatus.Healthy);
     }
 
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.DeterminePipelineHealth"/> returns <see cref="HealthStatus.Degraded"/> when the success rate is between 80% and 94%.
+    /// </summary>
     [Fact]
     public void DeterminePipelineHealth_SuccessRateBetween80And94_ReturnsDegraded()
     {
@@ -22,6 +32,9 @@ public sealed class ResiliencyHelperTests
         ResiliencyHelper.DeterminePipelineHealth(90).Should().Be(HealthStatus.Degraded);
     }
 
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.DeterminePipelineHealth"/> returns <see cref="HealthStatus.Unhealthy"/> when the success rate is between 50% and 79%.
+    /// </summary>
     [Fact]
     public void DeterminePipelineHealth_SuccessRateBetween50And79_ReturnsUnhealthy()
     {
@@ -29,6 +42,9 @@ public sealed class ResiliencyHelperTests
         ResiliencyHelper.DeterminePipelineHealth(70).Should().Be(HealthStatus.Unhealthy);
     }
 
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.DeterminePipelineHealth"/> returns <see cref="HealthStatus.Critical"/> when the success rate is below 50%.
+    /// </summary>
     [Fact]
     public void DeterminePipelineHealth_SuccessRateBelow50_ReturnsCritical()
     {
@@ -36,6 +52,9 @@ public sealed class ResiliencyHelperTests
         ResiliencyHelper.DeterminePipelineHealth(49).Should().Be(HealthStatus.Critical);
     }
 
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.ExportPolicyConfig"/> exports a circuit breaker policy configuration with all required base fields.
+    /// </summary>
     [Fact]
     public void ExportPolicyConfig_CircuitBreaker_ContainsAllBaseFields()
     {
@@ -56,6 +75,9 @@ public sealed class ResiliencyHelperTests
         config["IsEnabled"].Should().Be(true);
     }
 
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.ExportPolicyConfig"/> throws an <see cref="ArgumentNullException"/> when passed a null policy.
+    /// </summary>
     [Fact]
     public void ExportPolicyConfig_NullPolicy_ThrowsArgumentNullException()
     {
@@ -64,6 +86,9 @@ public sealed class ResiliencyHelperTests
         act.Should().Throw<ArgumentNullException>();
     }
 
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.ValidatePolicy"/> throws an <see cref="ArgumentNullException"/> when passed a null policy.
+    /// </summary>
     [Fact]
     public void ValidatePolicy_NullPolicy_ThrowsArgumentNullException()
     {
@@ -72,6 +97,9 @@ public sealed class ResiliencyHelperTests
         act.Should().Throw<ArgumentNullException>();
     }
 
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.ValidatePolicy"/> returns an empty collection when validating a valid circuit breaker policy.
+    /// </summary>
     [Fact]
     public void ValidatePolicy_ValidCircuitBreaker_ReturnsEmptyErrors()
     {
@@ -86,6 +114,9 @@ public sealed class ResiliencyHelperTests
         errors.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.ValidatePolicy"/> returns validation errors when a circuit breaker policy has a zero failure threshold.
+    /// </summary>
     [Fact]
     public void ValidatePolicy_CircuitBreakerWithZeroThreshold_ReturnsErrors()
     {
@@ -97,6 +128,9 @@ public sealed class ResiliencyHelperTests
         errors.Should().ContainMatch("*threshold*");
     }
 
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.ValidatePolicy"/> returns validation errors when a circuit breaker policy has a zero open duration.
+    /// </summary>
     [Fact]
     public void ValidatePolicy_CircuitBreakerWithZeroOpenDuration_ReturnsErrors()
     {
@@ -107,6 +141,9 @@ public sealed class ResiliencyHelperTests
         errors.Should().NotBeEmpty();
     }
 
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.ValidatePolicy"/> returns an empty collection when validating a valid retry policy.
+    /// </summary>
     [Fact]
     public void ValidatePolicy_ValidRetryPolicy_ReturnsEmptyErrors()
     {
@@ -122,6 +159,9 @@ public sealed class ResiliencyHelperTests
         errors.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.ValidatePolicy"/> returns validation errors when a retry policy has an invalid max retries value.
+    /// </summary>
     [Fact]
     public void ValidatePolicy_InvalidRetryPolicy_ReturnsErrors()
     {
@@ -132,6 +172,9 @@ public sealed class ResiliencyHelperTests
         errors.Should().NotBeEmpty();
     }
 
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.ValidatePolicy"/> returns an empty collection when validating a valid timeout policy.
+    /// </summary>
     [Fact]
     public void ValidatePolicy_ValidTimeoutPolicy_ReturnsEmptyErrors()
     {
@@ -142,6 +185,9 @@ public sealed class ResiliencyHelperTests
         errors.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.ValidatePolicy"/> returns validation errors when a timeout policy has a zero timeout value.
+    /// </summary>
     [Fact]
     public void ValidatePolicy_InvalidTimeoutPolicy_ReturnsErrors()
     {
@@ -152,6 +198,9 @@ public sealed class ResiliencyHelperTests
         errors.Should().NotBeEmpty();
     }
 
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.ValidatePolicy"/> returns an empty collection when validating a valid bulkhead policy.
+    /// </summary>
     [Fact]
     public void ValidatePolicy_ValidBulkheadPolicy_ReturnsEmptyErrors()
     {
@@ -162,6 +211,9 @@ public sealed class ResiliencyHelperTests
         errors.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.ValidatePolicy"/> returns validation errors when a bulkhead policy has a zero max parallelization value.
+    /// </summary>
     [Fact]
     public void ValidatePolicy_BulkheadWithZeroParallelization_ReturnsErrors()
     {
@@ -172,6 +224,9 @@ public sealed class ResiliencyHelperTests
         errors.Should().NotBeEmpty();
     }
 
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.ValidatePolicy"/> returns an empty collection when validating a valid fallback policy.
+    /// </summary>
     [Fact]
     public void ValidatePolicy_ValidFallbackPolicy_ReturnsEmptyErrors()
     {
@@ -183,6 +238,9 @@ public sealed class ResiliencyHelperTests
         errors.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Tests that <see cref="ResiliencyHelper.ExportPolicyConfig"/> includes tags in the exported policy configuration.
+    /// </summary>
     [Fact]
     public void ExportPolicyConfig_WithTags_IncludesTags()
     {
