@@ -37,54 +37,48 @@ A comprehensive, production-grade resilience library for .NET applications featu
 
 The `RetryBenchmarks` class provides performance benchmarks for different retry strategies implemented in the `RetryPolicy` class. It measures the execution time and memory allocation of various retry operations including fixed interval, exponential backoff, and exponential backoff with jitter strategies.
 
-### Example Usage
+### TimeoutBenchmarks
+
+The `TimeoutBenchmarks` class measures the performance of the `TimeoutPolicy`, including execution time recording, timeout handling, and percentile calculations. It demonstrates how the policy tracks execution durations, determines timeouts, and provides metrics such as timeout percentage and execution time percentiles.
+
+#### Example Usage
 
 ```csharp
 using DotNetResiliencePipeline.Benchmarks;
-using DotNetResiliencePipeline.Domain.Policies;
 
-// Create retry policies with different backoff strategies
-var fixedRetryPolicy = new RetryPolicy("fixed-retry")
-{
-    MaxRetries = 3,
-    InitialDelay = TimeSpan.FromMilliseconds(100),
-    Strategy = RetryPolicy.BackoffStrategy.Fixed
-};
+// Create an instance of the benchmark class
+var benchmarks = new TimeoutBenchmarks();
+benchmarks.Setup(); // Initializes the TimeoutPolicy
 
-var exponentialRetryPolicy = new RetryPolicy("exponential-retry")
-{
-    MaxRetries = 5,
-    InitialDelay = TimeSpan.FromMilliseconds(100),
-    Strategy = RetryPolicy.BackoffStrategy.Exponential,
-    BackoffMultiplier = 2.0,
-    MaxDelay = TimeSpan.FromSeconds(30)
-};
+// Record an execution time of 50 ms
+benchmarks.TimeoutPolicy_RecordExecutionTime(50);
 
-var jitterRetryPolicy = new RetryPolicy("jitter-retry")
-{
-    MaxRetries = 5,
-    InitialDelay = TimeSpan.FromMilliseconds(100),
-    Strategy = RetryPolicy.BackoffStrategy.ExponentialWithJitter,
-    BackoffMultiplier = 2.0,
-    MaxDelay = TimeSpan.FromSeconds(30),
-    UseJitter = true,
-    JitterFactor = 1.0
-};
+// Record a timeout event (15 seconds)
+benchmarks.TimeoutPolicy_RecordTimeout(15000);
 
-// Calculate delays for retry attempts
-var fixedDelay = fixedRetryPolicy.GetNextDelayMs(1);
-var exponentialDelay = exponentialRetryPolicy.GetNextDelayMs(2);
-var jitterDelay = jitterRetryPolicy.GetNextDelayMs(3);
+// Check if a 50 ms duration is within the timeout
+bool within = benchmarks.TimeoutPolicy_IsTimedOut_Within();
 
-// Check if an exception is retryable
-var isRetryable = fixedRetryPolicy.IsRetryable(new TimeoutException());
+// Check if a 15 second duration exceeds the timeout
+bool exceeds = benchmarks.TimeoutPolicy_IsTimedOut_Exceeds();
 
-// Get policy configuration
-var strategy = fixedRetryPolicy.Strategy;
-var maxRetries = fixedRetryPolicy.MaxRetries;
+// Get the 95th percentile execution time
+long p95 = benchmarks.TimeoutPolicy_GetPercentile95ExecutionTime();
+
+// Get the 99th percentile execution time
+long p99 = benchmarks.TimeoutPolicy_GetPercentile99ExecutionTime();
+
+// Get the percentage of timeouts
+double timeoutPct = benchmarks.TimeoutPolicy_GetTimeoutPercentage();
+
+// Get the configured timeout
+TimeSpan timeout = benchmarks.TimeoutPolicy_Get_Timeout();
+
+// Get the total number of timeouts recorded
+long timeoutCount = benchmarks.TimeoutPolicy_Get_TimeoutCount();
 ```
 
-## CircuitBreakerDiagnosticsValidation
+### CircuitBreakerDiagnosticsValidation
 
 The `CircuitBreakerDiagnosticsValidation` class provides methods to validate circuit breaker configurations. It ensures that the configuration is valid and throws exceptions if it's not.
 
