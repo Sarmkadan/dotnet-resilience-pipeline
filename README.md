@@ -139,3 +139,47 @@ var exists = await PoliciesControllerExtensions.PolicyExistsAsync(policyId);
 Console.WriteLine(exists);
 ```
 ## ...
+
+## ResiliencePipelineBenchmarks
+
+The `ResiliencePipelineBenchmarks` class provides performance benchmarks for the Resiliency Pipeline Service. It measures the execution time and memory allocation of various pipeline operations including successful operations, circuit breaker, retry, timeout, bulkhead, and fallback.
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Benchmarks;
+
+// Create an instance of the benchmark class
+var benchmarks = new ResiliencePipelineBenchmarks();
+
+// Set up the pipeline service
+benchmarks.Setup();
+
+// Execute a successful operation
+await benchmarks.ResiliencePipeline_Execute_Successful_Operation();
+
+// Execute an operation with circuit breaker
+await benchmarks.ResiliencePipeline_Execute_With_CircuitBreaker();
+
+// Execute an operation with retry
+await benchmarks.ResiliencePipeline_Execute_With_Retry();
+
+// Execute an operation with timeout
+await benchmarks.ResiliencePipeline_Execute_With_Timeout();
+
+// Execute an operation with bulkhead
+await benchmarks.ResiliencePipeline_Execute_With_Bulkhead();
+
+// Execute an operation with fallback
+await benchmarks.ResiliencePipeline_Execute_With_Fallback();
+
+// Execute the full pipeline
+await benchmarks.ResiliencePipeline_Execute_Full_Pipeline();
+
+// Get pipeline statistics
+var statistics = benchmarks.ResiliencePipeline_Get_Statistics();
+
+// Execute multiple operations in parallel
+await benchmarks.ResiliencePipeline_Execute_Multiple_Operations_Parallel();
+```
+## ...
