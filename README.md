@@ -140,6 +140,40 @@ Console.WriteLine(exists);
 ```
 ## ...
 
+## CircuitBreakerBenchmarks
+
+The `CircuitBreakerBenchmarks` class provides performance benchmarks for the `CircuitBreakerPolicy`. It measures the execution time and memory allocation of various circuit breaker operations, including recording success and failure events, state transitions, and retrieving the current state and circuit breaker trips. 
+
+### Example Usage
+```csharp
+using DotNetResiliencePipeline.Benchmarks;
+
+// Create an instance of the benchmark class
+var benchmarks = new CircuitBreakerBenchmarks();
+benchmarks.Setup();
+
+// Record a success event in the closed state
+benchmarks.CircuitBreaker_Closed_State();
+
+// Record a success event in the half-open state
+benchmarks.CircuitBreaker_HalfOpen_State();
+
+// Attempt to reset the circuit breaker in the open state
+benchmarks.CircuitBreaker_Open_State();
+
+// Record a failure event
+benchmarks.CircuitBreaker_Failure_Recording();
+
+// Transition the circuit breaker from closed to open
+benchmarks.CircuitBreaker_State_Transition();
+
+// Get the current state of the circuit breaker
+var currentState = benchmarks.CircuitBreaker_Get_CurrentState();
+
+// Get the number of circuit breaker trips
+var trips = benchmarks.CircuitBreaker_Get_CircuitBreakerTrips();
+```
+
 ## ResiliencePipelineBenchmarks
 
 The `ResiliencePipelineBenchmarks` class provides performance benchmarks for the Resiliency Pipeline Service. It measures the execution time and memory allocation of various pipeline operations including successful operations, circuit breaker, retry, timeout, bulkhead, and fallback.
