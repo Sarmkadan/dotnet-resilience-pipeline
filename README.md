@@ -182,4 +182,63 @@ var statistics = benchmarks.ResiliencePipeline_Get_Statistics();
 // Execute multiple operations in parallel
 await benchmarks.ResiliencePipeline_Execute_Multiple_Operations_Parallel();
 ```
+
+## ConcurrencyBenchmarks
+
+The `ConcurrencyBenchmarks` class provides performance benchmarks for concurrent operations and thread safety across all resilience policies. It measures the performance of recording success/failure events, state access, retry attempts, delay calculations, execution time tracking, timeout events, slot acquisition, queue wait times, fallback operations, and utilization metrics under parallel load.
+
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Benchmarks;
+
+// Create an instance of the benchmark class
+var benchmarks = new ConcurrencyBenchmarks();
+
+// Set up all policies with default configurations
+benchmarks.Setup();
+
+// Benchmark concurrent success recording for circuit breaker
+benchmarks.CircuitBreaker_Concurrent_Success_Recording();
+
+// Benchmark concurrent failure recording for circuit breaker
+benchmarks.CircuitBreaker_Concurrent_Failure_Recording();
+
+// Benchmark concurrent state access for circuit breaker
+benchmarks.CircuitBreaker_Concurrent_State_Access();
+
+// Benchmark concurrent retry recording
+benchmarks.RetryPolicy_Concurrent_Retry_Recording();
+
+// Benchmark concurrent delay calculations
+benchmarks.RetryPolicy_Concurrent_Delay_Calculation();
+
+// Benchmark concurrent execution time recording for timeout policy
+benchmarks.TimeoutPolicy_Concurrent_Execution_Recording();
+
+// Benchmark concurrent timeout recording
+benchmarks.TimeoutPolicy_Concurrent_Timeout_Recording();
+
+// Benchmark concurrent slot acquisition for bulkhead policy
+benchmarks.BulkheadPolicy_Concurrent_Slot_Acquisition();
+
+// Benchmark concurrent queue wait time recording
+benchmarks.BulkheadPolicy_Concurrent_Queue_Wait_Recording();
+
+// Benchmark concurrent fallback recording
+benchmarks.FallbackPolicy_Concurrent_Fallback_Recording();
+
+// Benchmark concurrent fallback checks
+benchmarks.FallbackPolicy_Concurrent_Fallback_Check();
+
+// Benchmark mixed concurrent operations across all policies
+benchmarks.All_Policies_Concurrent_Mixed_Operations();
+
+// Get concurrent circuit breaker trip count
+long trips = benchmarks.CircuitBreaker_Get_CircuitBreakerTrips_Concurrent();
+
+// Get concurrent bulkhead utilization
+double utilization = benchmarks.Bulkhead_Get_Utilization_Concurrent();
+```
 ## ...
