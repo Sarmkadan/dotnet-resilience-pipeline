@@ -259,6 +259,48 @@ TimeSpan timeout = benchmarks.FallbackPolicy_Get_FallbackTimeout();
 long invocationCount = benchmarks.FallbackPolicy_Get_FallbackInvocationCount();
 ```
 
+## BulkheadBenchmarks
+
+The `BulkheadBenchmarks` class provides performance benchmarks for the `BulkheadPolicy`, measuring execution time and memory allocation for various bulkhead operations. It benchmarks slot acquisition and release, queue wait time recording, and retrieval of utilization metrics including active executions, queued percentage, rejection percentage, and configured capacity limits.
+
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Benchmarks;
+
+// Create an instance of the benchmark class
+var benchmarks = new BulkheadBenchmarks();
+benchmarks.Setup(); // Initializes the BulkheadPolicy with MaxParallelization=10 and MaxQueueLength=50
+
+// Attempt to acquire a slot in the bulkhead
+bool acquired = benchmarks.BulkheadPolicy_TryAcquireSlot_Available();
+
+// Release the acquired slot
+benchmarks.BulkheadPolicy_ReleaseSlot();
+
+// Record queue wait time of 150 milliseconds
+benchmarks.BulkheadPolicy_RecordQueueWaitTime(150);
+
+// Get the current utilization percentage (0-100)
+double utilization = benchmarks.BulkheadPolicy_GetUtilizationPercentage();
+
+// Get the percentage of operations currently queued
+double queuedPct = benchmarks.BulkheadPolicy_GetQueuedPercentage();
+
+// Get the percentage of operations that were rejected due to capacity limits
+double rejectionPct = benchmarks.BulkheadPolicy_GetRejectionPercentage();
+
+// Get the configured maximum parallel executions allowed
+int maxParallel = benchmarks.BulkheadPolicy_Get_MaxParallelization();
+
+// Get the configured maximum queue length
+int maxQueue = benchmarks.BulkheadPolicy_Get_MaxQueueLength();
+
+// Get the current number of active executions
+int activeExecutions = benchmarks.BulkheadPolicy_Get_ActiveExecutions();
+```
+
 ## PolicyComparisonBenchmarks
 
 The `PolicyComparisonBenchmarks` class provides performance benchmarks for comparing different resilience policy configurations and scenarios. It measures execution time and memory allocation across retry strategies (fixed, linear, exponential, exponential with jitter), circuit breaker configurations (low/high failure thresholds, short/long durations), and bulkhead configurations (small/medium/large capacity). This enables direct comparison of performance characteristics and resource utilization between different resilience strategy implementations.
