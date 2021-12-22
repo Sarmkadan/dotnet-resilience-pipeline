@@ -217,6 +217,48 @@ var statistics = benchmarks.ResiliencePipeline_Get_Statistics();
 await benchmarks.ResiliencePipeline_Execute_Multiple_Operations_Parallel();
 ```
 
+
+## FallbackBenchmarks
+
+The `FallbackBenchmarks` class provides performance benchmarks for the `FallbackPolicy`, measuring execution time and memory allocation for various fallback operations. It benchmarks recording successful and failed fallback attempts, checking fallback conditions, and retrieving fallback metrics such as success rate, invocation percentage, timeout configuration, and invocation counts.
+
+#### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Benchmarks;
+
+// Create an instance of the benchmark class
+var benchmarks = new FallbackBenchmarks();
+benchmarks.Setup(); // Initializes the FallbackPolicy with default configuration
+
+// Record a successful fallback with 100ms duration
+benchmarks.FallbackPolicy_RecordSuccessfulFallback(100);
+
+// Record a failed fallback with an exception and 150ms duration
+benchmarks.FallbackPolicy_RecordFailedFallback(new InvalidOperationException("Service unavailable"), 150);
+
+// Check if a TimeoutException should trigger fallback (fallback on any exception by default)
+bool shouldTriggerAny = benchmarks.FallbackPolicy_ShouldTriggerFallback_Any();
+
+// Configure to trigger fallback only for specific exceptions
+benchmarks.FallbackPolicy_RecordSuccessfulFallback(200); // Reset metrics
+benchmarks.FallbackPolicy_FallbackOnAnyException = false;
+benchmarks.FallbackPolicy_AddFallbackTrigger(typeof(TimeoutException));
+bool shouldTriggerSpecific = benchmarks.FallbackPolicy_ShouldTriggerFallback_Specific();
+
+// Get fallback success rate (successful fallbacks / total fallbacks)
+double successRate = benchmarks.FallbackPolicy_GetFallbackSuccessRate();
+
+// Get fallback invocation percentage (fallback invocations / total operations)
+double invocationPct = benchmarks.FallbackPolicy_GetFallbackInvocationPercentage();
+
+// Get the configured fallback timeout
+TimeSpan timeout = benchmarks.FallbackPolicy_Get_FallbackTimeout();
+
+// Get the total number of fallback invocations recorded
+long invocationCount = benchmarks.FallbackPolicy_Get_FallbackInvocationCount();
+```
+
 ## ConcurrencyBenchmarks
 
 The `ConcurrencyBenchmarks` class provides performance benchmarks for concurrent operations and thread safety across all resilience policies. It measures the performance of recording success/failure events, state access, retry attempts, delay calculations, execution time tracking, timeout events, slot acquisition, queue wait times, fallback operations, and utilization metrics under parallel load.
