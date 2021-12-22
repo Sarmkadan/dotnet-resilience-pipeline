@@ -259,6 +259,62 @@ TimeSpan timeout = benchmarks.FallbackPolicy_Get_FallbackTimeout();
 long invocationCount = benchmarks.FallbackPolicy_Get_FallbackInvocationCount();
 ```
 
+## PolicyComparisonBenchmarks
+
+The `PolicyComparisonBenchmarks` class provides performance benchmarks for comparing different resilience policy configurations and scenarios. It measures execution time and memory allocation across retry strategies (fixed, linear, exponential, exponential with jitter), circuit breaker configurations (low/high failure thresholds, short/long durations), and bulkhead configurations (small/medium/large capacity). This enables direct comparison of performance characteristics and resource utilization between different resilience strategy implementations.
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Benchmarks;
+
+// Create an instance of the benchmark class
+var benchmarks = new PolicyComparisonBenchmarks();
+benchmarks.Setup(); // Initializes all policy configurations
+
+// Compare retry strategies - get next delay for fixed strategy
+long fixedDelay = benchmarks.RetryComparison_Fixed_Strategy();
+
+// Compare retry strategies - get next delay for exponential strategy
+long exponentialDelay = benchmarks.RetryComparison_Exponential_Strategy();
+
+// Record retry attempts across all retry strategies
+benchmarks.RetryComparison_RecordRetryAttempt_All_Strategies();
+
+// Compare circuit breaker configurations - record success with low threshold
+benchmarks.CircuitBreakerComparison_LowThreshold_RecordSuccess();
+
+// Compare circuit breaker configurations - record success with high threshold
+benchmarks.CircuitBreakerComparison_HighThreshold_RecordSuccess();
+
+// Compare circuit breaker configurations - record failure with short duration
+benchmarks.CircuitBreakerComparison_ShortDuration_RecordFailure();
+
+// Get current state of circuit breaker
+var currentState = benchmarks.CircuitBreakerComparison_GetState_All();
+
+// Compare bulkhead configurations - try to acquire slot with small bulkhead
+bool acquiredSmall = benchmarks.BulkheadComparison_Small_TryAcquireSlot();
+
+// Compare bulkhead configurations - try to acquire slot with medium bulkhead
+bool acquiredMedium = benchmarks.BulkheadComparison_Medium_TryAcquireSlot();
+
+// Record queue wait times across all bulkhead configurations
+benchmarks.BulkheadComparison_RecordQueueWaitTime_All();
+
+// Get utilization percentage for bulkhead
+double utilization = benchmarks.BulkheadComparison_GetUtilization_All();
+
+// Simulate circuit breaker transition from closed to open
+benchmarks.CircuitBreakerComparison_Transition_Closed_To_Open();
+
+// Record multiple retry attempts
+benchmarks.RetryComparison_Multiple_Retry_Attempts();
+
+// Test bulkhead capacity limits - queue and reject
+bool rejected = benchmarks.BulkheadComparison_Queue_And_Reject();
+```
+
 ## ConcurrencyBenchmarks
 
 The `ConcurrencyBenchmarks` class provides performance benchmarks for concurrent operations and thread safety across all resilience policies. It measures the performance of recording success/failure events, state access, retry attempts, delay calculations, execution time tracking, timeout events, slot acquisition, queue wait times, fallback operations, and utilization metrics under parallel load.
