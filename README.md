@@ -415,4 +415,55 @@ long trips = benchmarks.CircuitBreaker_Get_CircuitBreakerTrips_Concurrent();
 // Get concurrent bulkhead utilization
 double utilization = benchmarks.Bulkhead_Get_Utilization_Concurrent();
 ```
+
+## WebhookException
+
+The `WebhookException` class serves as the base exception type for all webhook-related failures in the resilience pipeline. It provides contextual information about webhook operations including the webhook identifier, URL, and the underlying exception that triggered the failure. This exception hierarchy enables consistent error handling and logging for webhook delivery and registration scenarios.
+
+#### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Exceptions;
+
+// Create a base webhook exception with webhook context
+var webhookEx = new WebhookException(
+    "Failed to process webhook delivery",
+    webhookId: "wh_789",
+    webhookUrl: "https://api.example.com/webhooks/wh_789"
+);
+
+// Create a webhook exception with inner exception
+var webhookExWithInner = new WebhookException(
+    "Webhook delivery failed",
+    new InvalidOperationException("Connection timeout"),
+    webhookId: "wh_456",
+    webhookUrl: "https://api.example.com/webhooks/wh_456"
+);
+
+// Access webhook properties
+Console.WriteLine($"Webhook ID: {webhookEx.WebhookId}");
+Console.WriteLine($"Webhook URL: {webhookEx.WebhookUrl}");
+
+// Create a delivery failure exception
+var deliveryFailedEx = new WebhookDeliveryFailedException(
+    webhookId: "wh_123",
+    webhookUrl: "https://api.example.com/webhooks/wh_123",
+    eventType: "order.created",
+    attemptCount: 3,
+    innerException: new TimeoutException("Request timed out after 5 seconds")
+);
+
+// Create a registration exception
+var registrationEx = new WebhookRegistrationException(
+    "Failed to register webhook: invalid payload schema",
+    webhookUrl: "https://api.example.com/webhooks"
+);
+
+// Create an invalid webhook exception
+var invalidWebhookEx = new InvalidWebhookException(
+    "Webhook subscription is not valid for this event type",
+    webhookId: "wh_invalid",
+    webhookUrl: "https://api.example.com/webhooks/wh_invalid"
+);
+```
 ## ...
