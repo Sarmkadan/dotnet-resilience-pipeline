@@ -416,6 +416,39 @@ long trips = benchmarks.CircuitBreaker_Get_CircuitBreakerTrips_Concurrent();
 double utilization = benchmarks.Bulkhead_Get_Utilization_Concurrent();
 ```
 
+## ResiliencyException
+
+The `ResiliencyException` class serves as the base exception type for all resilience pipeline failures. It provides contextual information about policy execution including the policy name, policy type, and the timestamp when the exception occurred. This exception hierarchy enables consistent error handling and logging across all resilience strategies.
+
+#### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Exceptions;
+
+// Create a base resiliency exception with policy context
+var resilienceEx = new ResiliencyException(
+    "Operation failed due to circuit breaker policy",
+    policyName: "UserServiceCircuitBreaker",
+    policyType: "CircuitBreaker"
+);
+
+Console.WriteLine($"Policy: {resilienceEx.PolicyName}");
+Console.WriteLine($"Type: {resilienceEx.PolicyType}");
+Console.WriteLine($"Occurred: {resilienceEx.OccurredAt:O}");
+
+// Create a resiliency exception with inner exception
+var resilienceExWithInner = new ResiliencyException(
+    "Database operation timed out",
+    new TimeoutException("Connection timed out after 30 seconds"),
+    policyName: "DatabaseTimeoutPolicy",
+    policyType: "Timeout"
+);
+
+// Access base exception properties
+Console.WriteLine($"Message: {resilienceExWithInner.Message}");
+Console.WriteLine($"Inner exception: {resilienceExWithInner.InnerException?.GetType().Name}");
+```
+
 ## WebhookException
 
 The `WebhookException` class serves as the base exception type for all webhook-related failures in the resilience pipeline. It provides contextual information about webhook operations including the webhook identifier, URL, and the underlying exception that triggered the failure. This exception hierarchy enables consistent error handling and logging for webhook delivery and registration scenarios.
