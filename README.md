@@ -69,6 +69,7 @@ long p95 = benchmarks.TimeoutPolicy_GetPercentile95ExecutionTime();
 long p99 = benchmarks.TimeoutPolicy_GetPercentile99ExecutionTime();
 
 // Get the percentage of timeouts
+
 double timeoutPct = benchmarks.TimeoutPolicy_GetTimeoutPercentage();
 
 // Get the configured timeout
@@ -89,19 +90,19 @@ using Resilience.Utilities;
 // Validate circuit breaker configuration
 var validationErrors = CircuitBreakerDiagnosticsValidation.Validate(new CircuitBreakerConfiguration
 {
-    // Initialize properties
+// Initialize properties
 });
 
 // Check if configuration is valid
 var isValid = CircuitBreakerDiagnosticsValidation.IsValid(new CircuitBreakerConfiguration
 {
-    // Initialize properties
+// Initialize properties
 });
 
 // Ensure configuration is valid, throws if not
 CircuitBreakerDiagnosticsValidation.EnsureValid(new CircuitBreakerConfiguration
 {
-    // Initialize properties
+// Initialize properties
 });
 ```
 ## PoliciesControllerExtensions
@@ -122,7 +123,7 @@ Console.WriteLine(createResponse.ToJson());
 var policies = await PoliciesControllerExtensions.GetAllPoliciesListAsync();
 foreach (var p in policies)
 {
-    Console.WriteLine(p.ToJson());
+Console.WriteLine(p.ToJson());
 }
 
 // Get a policy by id
@@ -142,7 +143,7 @@ Console.WriteLine(exists);
 
 ## CircuitBreakerBenchmarks
 
-The `CircuitBreakerBenchmarks` class provides performance benchmarks for the `CircuitBreakerPolicy`. It measures the execution time and memory allocation of various circuit breaker operations, including recording success and failure events, state transitions, and retrieving the current state and circuit breaker trips. 
+The `CircuitBreakerBenchmarks` class provides performance benchmarks for the `CircuitBreakerPolicy`. It measures the execution time and memory allocation of various circuit breaker operations, including recording success and failure events, state transitions, and retrieving the current state and circuit breaker trips.
 
 ### Example Usage
 ```csharp
@@ -217,7 +218,6 @@ var statistics = benchmarks.ResiliencePipeline_Get_Statistics();
 await benchmarks.ResiliencePipeline_Execute_Multiple_Operations_Parallel();
 ```
 
-
 ## FallbackBenchmarks
 
 The `FallbackBenchmarks` class provides performance benchmarks for the `FallbackPolicy`, measuring execution time and memory allocation for various fallback operations. It benchmarks recording successful and failed fallback attempts, checking fallback conditions, and retrieving fallback metrics such as success rate, invocation percentage, timeout configuration, and invocation counts.
@@ -264,8 +264,8 @@ long invocationCount = benchmarks.FallbackPolicy_Get_FallbackInvocationCount();
 The `BulkheadBenchmarks` class provides performance benchmarks for the `BulkheadPolicy`, measuring execution time and memory allocation for various bulkhead operations. It benchmarks slot acquisition and release, queue wait time recording, and retrieval of utilization metrics including active executions, queued percentage, rejection percentage, and configured capacity limits.
 
 
-### Example Usage
 
+### Example Usage
 ```csharp
 using DotNetResiliencePipeline.Benchmarks;
 
@@ -306,7 +306,6 @@ int activeExecutions = benchmarks.BulkheadPolicy_Get_ActiveExecutions();
 The `PolicyComparisonBenchmarks` class provides performance benchmarks for comparing different resilience policy configurations and scenarios. It measures execution time and memory allocation across retry strategies (fixed, linear, exponential, exponential with jitter), circuit breaker configurations (low/high failure thresholds, short/long durations), and bulkhead configurations (small/medium/large capacity). This enables direct comparison of performance characteristics and resource utilization between different resilience strategy implementations.
 
 ### Example Usage
-
 ```csharp
 using DotNetResiliencePipeline.Benchmarks;
 
@@ -362,8 +361,8 @@ bool rejected = benchmarks.BulkheadComparison_Queue_And_Reject();
 The `ConcurrencyBenchmarks` class provides performance benchmarks for concurrent operations and thread safety across all resilience policies. It measures the performance of recording success/failure events, state access, retry attempts, delay calculations, execution time tracking, timeout events, slot acquisition, queue wait times, fallback operations, and utilization metrics under parallel load.
 
 
-### Example Usage
 
+### Example Usage
 ```csharp
 using DotNetResiliencePipeline.Benchmarks;
 
@@ -426,10 +425,10 @@ The `ResiliencyException` class serves as the base exception type for all resili
 using DotNetResiliencePipeline.Exceptions;
 
 // Create a base resiliency exception with policy context
-var resilienceEx = new ResiliencyException(
-    "Operation failed due to circuit breaker policy",
-    policyName: "UserServiceCircuitBreaker",
-    policyType: "CircuitBreaker"
+var resilienceEx = new ResiliencyException( 
+  "Operation failed due to circuit breaker policy",
+  policyName: "UserServiceCircuitBreaker",
+  policyType: "CircuitBreaker"
 );
 
 Console.WriteLine($"Policy: {resilienceEx.PolicyName}");
@@ -438,10 +437,10 @@ Console.WriteLine($"Occurred: {resilienceEx.OccurredAt:O}");
 
 // Create a resiliency exception with inner exception
 var resilienceExWithInner = new ResiliencyException(
-    "Database operation timed out",
-    new TimeoutException("Connection timed out after 30 seconds"),
-    policyName: "DatabaseTimeoutPolicy",
-    policyType: "Timeout"
+  "Database operation timed out",
+  new TimeoutException("Connection timed out after 30 seconds"),
+  policyName: "DatabaseTimeoutPolicy",
+  policyType: "Timeout"
 );
 
 // Access base exception properties
@@ -460,17 +459,17 @@ using DotNetResiliencePipeline.Exceptions;
 
 // Create a base webhook exception with webhook context
 var webhookEx = new WebhookException(
-    "Failed to process webhook delivery",
-    webhookId: "wh_789",
-    webhookUrl: "https://api.example.com/webhooks/wh_789"
+  "Failed to process webhook delivery",
+  webhookId: "wh_789",
+  webhookUrl: "https://api.example.com/webhooks/wh_789"
 );
 
 // Create a webhook exception with inner exception
 var webhookExWithInner = new WebhookException(
-    "Webhook delivery failed",
-    new InvalidOperationException("Connection timeout"),
-    webhookId: "wh_456",
-    webhookUrl: "https://api.example.com/webhooks/wh_456"
+  "Webhook delivery failed",
+  new InvalidOperationException("Connection timeout"),
+  webhookId: "wh_456",
+  webhookUrl: "https://api.example.com/webhooks/wh_456"
 );
 
 // Access webhook properties
@@ -479,24 +478,83 @@ Console.WriteLine($"Webhook URL: {webhookEx.WebhookUrl}");
 
 // Create a delivery failure exception
 var deliveryFailedEx = new WebhookDeliveryFailedException(
-    webhookId: "wh_123",
-    webhookUrl: "https://api.example.com/webhooks/wh_123",
-    eventType: "order.created",
-    attemptCount: 3,
-    innerException: new TimeoutException("Request timed out after 5 seconds")
+  webhookId: "wh_123",
+  webhookUrl: "https://api.example.com/webhooks/wh_123",
+  eventType: "order.created",
+  attemptCount: 3,
+  innerException: new TimeoutException("Request timed out after 5 seconds")
 );
 
 // Create a registration exception
 var registrationEx = new WebhookRegistrationException(
-    "Failed to register webhook: invalid payload schema",
-    webhookUrl: "https://api.example.com/webhooks"
+  "Failed to register webhook: invalid payload schema",
+  webhookUrl: "https://api.example.com/webhooks"
 );
 
 // Create an invalid webhook exception
 var invalidWebhookEx = new InvalidWebhookException(
-    "Webhook subscription is not valid for this event type",
-    webhookId: "wh_invalid",
-    webhookUrl: "https://api.example.com/webhooks/wh_invalid"
+  "Webhook subscription is not valid for this event type",
+  webhookId: "wh_invalid",
+  webhookUrl: "https://api.example.com/webhooks/wh_invalid"
 );
 ```
+
+## HttpClientException
+
+The `HttpClientException` class serves as the base exception type for all HTTP client-related failures in the resilience pipeline. It provides contextual information about HTTP requests including the client name, request URL, and the underlying exception that triggered the failure. This exception hierarchy enables consistent error handling and logging for HTTP operations.
+
+#### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Exceptions;
+
+// Create a base HTTP client exception with client context
+var httpClientEx = new HttpClientException(
+  "Failed to execute HTTP request",
+  clientName: "UserServiceClient",
+  requestUrl: "https://api.example.com/users/123"
+);
+
+// Create an HTTP client exception with inner exception
+var httpClientExWithInner = new HttpClientException(
+  "HTTP request failed",
+  new InvalidOperationException("Connection timeout"),
+  clientName: "PaymentServiceClient",
+  requestUrl: "https://api.example.com/payments/process"
+);
+
+// Access HTTP client properties
+Console.WriteLine($"Client Name: {httpClientEx.ClientName}");
+Console.WriteLine($"Request URL: {httpClientEx.RequestUrl}");
+
+// Create an invalid HTTP request exception (missing required headers)
+var invalidRequestEx = new InvalidHttpRequestException(
+  "HTTP request configuration is invalid: missing authorization header",
+  clientName: "AuthServiceClient",
+  requestUrl: "https://api.example.com/auth/validate",
+  httpMethod: "GET"
+);
+
+// Create an HTTP response exception (404 Not Found)
+var responseEx = new HttpResponseException(
+  "The requested resource was not found",
+  statusCode: 404,
+  clientName: "ContentServiceClient",
+  requestUrl: "https://api.example.com/content/articles/999"
+);
+
+// Create an HTTP timeout exception
+var timeoutEx = new HttpTimeoutException(
+  "HTTP request timed out",
+  timeout: TimeSpan.FromSeconds(30),
+  clientName: "AnalyticsServiceClient",
+  requestUrl: "https://api.example.com/analytics/events"
+);
+
+// Access derived exception properties
+Console.WriteLine($"Status Code: {responseEx.StatusCode}");
+Console.WriteLine($"Timeout: {timeoutEx.Timeout.TotalSeconds} seconds");
+Console.WriteLine($"HTTP Method: {invalidRequestEx.HttpMethod}");
+```
+
 ## ...
