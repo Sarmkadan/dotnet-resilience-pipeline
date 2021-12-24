@@ -499,6 +499,95 @@ var invalidWebhookEx = new InvalidWebhookException(
 );
 ```
 
+## ExternalApiClient
+
+The `ExternalApiClient` class is a wrapper for external API calls with built-in resilience policies. It handles authentication, retries, timeouts, and error recovery, providing a robust and reliable way to interact with external services. The client supports both GET and POST requests with automatic JSON serialization and deserialization, custom headers, and comprehensive error handling.
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Integration;
+using System.Text.Json;
+
+// Create required services
+var httpClientFactory = new HttpClientFactory();
+var pipelineService = new ResiliencyPipelineService();
+
+// Create the external API client
+var apiClient = new ExternalApiClient(httpClientFactory, pipelineService);
+
+// Register an API configuration
+apiClient.RegisterApi("weather-api", new ExternalApiClient.ApiConfiguration
+{
+    BaseUrl = "https://api.weatherapi.com/v1",
+    ApiKey = "your-api-key-here",
+    Timeout = TimeSpan.FromSeconds(15),
+    MaxRetries = 3,
+    RetryDelay = TimeSpan.FromMilliseconds(200),
+    DefaultHeaders = new Dictionary<string, string>
+    {
+        {"Accept", "application/json"},
+        {"User-Agent", "DotNetResiliencePipeline/1.0"}
+    }
+});
+
+// Get weather data from external API
+var weatherResponse = await apiClient.GetAsync<WeatherData>(
+    "weather-api",
+    "current.json",
+    new Dictionary<string, string>
+    {
+        {"q", "New York"}
+    }
+);
+
+if (weatherResponse.Success && weatherResponse.Data != null)
+{
+    Console.WriteLine($"Temperature: {weatherResponse.Data.Current?.TempC}°C");
+    Console.WriteLine($"Condition: {weatherResponse.Data.Current?.Condition?.Text}");
+    Console.WriteLine($"Headers: {JsonSerializer.Serialize(weatherResponse.Headers)}");
+}
+else
+{
+    Console.WriteLine($"Error: {weatherResponse.Message}");
+}
+
+// Post data to external API
+var postData = new { userId = 123, action = "login" };
+var postResponse = await apiClient.PostAsync<ApiResult>(
+    "auth-api",
+    "users/login",
+    postData,
+    new Dictionary<string, string>
+    {
+        {"X-Request-ID", Guid.NewGuid().ToString()}
+    }
+);
+
+// Check registered APIs
+var registeredApis = apiClient.GetRegisteredApis();
+Console.WriteLine($"Registered APIs: {string.Join(", ", registeredApis)}");
+
+// Test API connectivity
+bool isConnected = await apiClient.TestConnectionAsync("weather-api");
+Console.WriteLine($"API connection test: {(isConnected ? "SUCCESS" : "FAILED")}");
+
+// Access configuration properties
+var config = new ExternalApiClient.ApiConfiguration
+{
+    BaseUrl = "https://api.example.com",
+    Timeout = TimeSpan.FromSeconds(30),
+    MaxRetries = 5,
+    RetryDelay = TimeSpan.FromSeconds(1),
+    DefaultHeaders = new Dictionary<string, string> { {"Content-Type", "application/json"} }
+};
+
+Console.WriteLine($"Base URL: {config.BaseUrl}");
+Console.WriteLine($"Timeout: {config.Timeout.TotalSeconds} seconds");
+Console.WriteLine($"Max Retries: {config.MaxRetries}");
+Console.WriteLine($"Retry Delay: {config.RetryDelay.TotalMilliseconds} ms");
+```
+
 ## HttpClientException
 
 The `HttpClientException` class serves as the base exception type for all HTTP client-related failures in the resilience pipeline. It provides contextual information about HTTP requests including the client name, request URL, and the underlying exception that triggered the failure. This exception hierarchy enables consistent error handling and logging for HTTP operations.
