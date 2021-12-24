@@ -557,6 +557,84 @@ Console.WriteLine($"Timeout: {timeoutEx.Timeout.TotalSeconds} seconds");
 Console.WriteLine($"HTTP Method: {invalidRequestEx.HttpMethod}");
 ```
 
+## WebhookManager
+
+The `WebhookManager` class manages webhook subscriptions and event deliveries for pipeline events. It handles registration, delivery with retry logic, tracking delivery history, and provides statistics about webhook operations. The manager supports custom headers, exponential backoff for retries, and maintains a configurable history of delivery attempts.
+
+#### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Integration;
+using System.Net;
+
+// Create a webhook manager instance
+var webhookManager = new WebhookManager
+{
+    MaxHistoryEntries = 500 // Configure history size
+};
+
+// Register a webhook subscription for specific events
+var webhookId = webhookManager.RegisterWebhook(
+    url: "https://api.example.com/webhooks/order-events",
+    events: new[] { "order.created", "order.updated", "order.cancelled" },
+    headers: new Dictionary<string, string>
+    {
+        {"Authorization", "Bearer token123"},
+        {"X-Webhook-Secret", "secret456"}
+    }
+);
+
+Console.WriteLine($"Registered webhook: {webhookId}");
+
+// Get all registered webhooks
+var allWebhooks = webhookManager.GetAllWebhooks();
+foreach (var webhook in allWebhooks)
+{
+    Console.WriteLine($"Webhook {webhook.Id}: {webhook.Url}");
+    Console.WriteLine($"  Events: {string.Join(", ", webhook.Events)}");
+    Console.WriteLine($"  Active: {webhook.IsActive}");
+    Console.WriteLine($"  Created: {webhook.CreatedAt:yyyy-MM-dd}");
+}
+
+// Enable/disable a webhook
+bool enabled = webhookManager.SetWebhookActive(webhookId, true);
+Console.WriteLine($"Webhook enabled: {enabled}");
+
+// Trigger an event to all subscribed webhooks
+try
+{
+    await webhookManager.TriggerEventAsync(
+        eventType: "order.created",
+        eventData: new { OrderId = 12345, CustomerId = 67890, Amount = 99.99 }
+    );
+    Console.WriteLine("Event triggered successfully");
+}
+catch (WebhookDeliveryFailedException ex)
+{
+    Console.WriteLine($"Failed to deliver webhook after {ex.AttemptCount} attempts: {ex.Message}");
+}
+
+// Get delivery history for a specific webhook
+var deliveryHistory = webhookManager.GetDeliveryHistory(webhookId, limit: 10);
+foreach (var delivery in deliveryHistory)
+{
+    Console.WriteLine($"Delivery {delivery.Id} at {delivery.Timestamp:HH:mm:ss}: " +
+                     $"{(delivery.Success ? "SUCCESS" : "FAILED")} " +
+                     $"(attempt {delivery.AttemptCount}, status {(int)delivery.StatusCode ?? 0})");
+}
+
+// Get overall webhook statistics
+var stats = webhookManager.GetStatistics();
+Console.WriteLine($"Total deliveries: {stats.TotalDeliveries}");
+Console.WriteLine($"Successful: {stats.SuccessfulDeliveries} ({stats.SuccessRate:F1}%)");
+Console.WriteLine($"Failed: {stats.FailedDeliveries}");
+Console.WriteLine($"Active subscriptions: {stats.ActiveSubscriptions}");
+
+// Unregister a webhook when no longer needed
+bool unregistered = webhookManager.UnregisterWebhook(webhookId);
+Console.WriteLine($"Webhook unregistered: {unregistered}");
+```
+
 ## ResiliencyEventPublisher
 
 The `ResiliencyEventPublisher` class implements a pub-sub pattern for publishing and subscribing to resilience pipeline events. It enables decoupled communication between resilience components by allowing subscribers to register handlers for specific event types and receive notifications when events occur. The publisher maintains an event history that can be queried for monitoring and debugging purposes.
