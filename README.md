@@ -557,4 +557,48 @@ Console.WriteLine($"Timeout: {timeoutEx.Timeout.TotalSeconds} seconds");
 Console.WriteLine($"HTTP Method: {invalidRequestEx.HttpMethod}");
 ```
 
+## ValidationException
+
+The `ValidationException` class is thrown when validation of input parameters or configuration fails. It provides detailed validation error information through the `ValidationErrors` dictionary, which maps field names to error messages. This exception enables consistent validation error handling and reporting across the resilience pipeline.
+
+#### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Exceptions;
+
+// Create a validation exception with a simple message
+var validationEx = new ValidationException("Configuration validation failed");
+
+// Create a validation exception with detailed error dictionary
+var errors = new Dictionary<string, string>
+{
+    {"MaxRetries", "Value must be between 1 and 10"},
+    {"Timeout", "Value must be greater than 0 milliseconds"},
+    {"CircuitBreakerThreshold", "Value must be between 0 and 100"}
+};
+var detailedValidationEx = new ValidationException(
+    "Configuration validation failed",
+    errors
+);
+
+// Access validation errors
+foreach (var error in detailedValidationEx.ValidationErrors)
+{
+    Console.WriteLine($"{error.Key}: {error.Value}");
+}
+
+// Create a validation exception with inner exception
+var validationWithInner = new ValidationException(
+    "Policy configuration validation failed",
+    new ArgumentException("Invalid retry configuration"),
+    errors
+);
+
+// Check if validation errors exist
+if (detailedValidationEx.ValidationErrors.Any())
+{
+    Console.WriteLine($"Validation failed with {detailedValidationEx.ValidationErrors.Count} errors");
+}
+```
+
 ## ...
