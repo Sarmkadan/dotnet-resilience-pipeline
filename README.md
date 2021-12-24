@@ -588,6 +588,76 @@ Console.WriteLine($"Max Retries: {config.MaxRetries}");
 Console.WriteLine($"Retry Delay: {config.RetryDelay.TotalMilliseconds} ms");
 ```
 
+## HttpClientFactory
+
+The `HttpClientFactory` class provides a factory pattern for creating and managing HTTP clients with built-in resilience policies. It creates named clients that can be reused across your application, handles client lifecycle management, and provides resilient HTTP operations (GET/POST) with automatic error handling and response tracking. The factory ensures proper resource cleanup and supports multiple client instances with different configurations.
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Integration;
+using System.Net;
+
+// Create the HttpClientFactory with a resiliency pipeline service
+var pipelineService = new ResiliencyPipelineService();
+var httpClientFactory = new HttpClientFactory(pipelineService);
+
+// Create a named HTTP client with base address
+var client = httpClientFactory.CreateClient(
+    clientName: "weather-api",
+    baseAddress: "https://api.weatherapi.com/v1",
+    timeout: TimeSpan.FromSeconds(15)
+);
+
+// Get weather data using resilient GET request
+var getResponse = await httpClientFactory.GetAsync(
+    clientName: "weather-api",
+    url: "current.json?q=London"
+);
+
+if (getResponse.Success)
+{
+    Console.WriteLine($"Status: {getResponse.StatusCode}");
+    Console.WriteLine($"Content: {getResponse.Content}");
+    Console.WriteLine($"Headers: {string.Join(", ", getResponse.Headers?.Select(h => h.Key))}");
+    Console.WriteLine($"Timestamp: {getResponse.Timestamp:O}");
+}
+else
+{
+    Console.WriteLine($"Request failed: {getResponse.Message}");
+}
+
+// Post data using resilient POST request
+var postContent = new StringContent(
+    "{\"location\":\"Paris\"}",
+    Encoding.UTF8,
+    "application/json"
+);
+
+var postResponse = await httpClientFactory.PostAsync(
+    clientName: "weather-api",
+    url: "forecast.json",
+    content: postContent
+);
+
+if (postResponse.Success)
+{
+    Console.WriteLine($"POST successful: {postResponse.StatusCode}");
+    Console.WriteLine($"Response: {postResponse.Content}");
+}
+
+// Get all registered client names
+var clientNames = httpClientFactory.GetClientNames();
+Console.WriteLine($"Registered clients: {string.Join(", ", clientNames)}");
+
+// Get an existing client
+var existingClient = httpClientFactory.GetClient("weather-api");
+
+// Remove a client when no longer needed
+bool removed = httpClientFactory.RemoveClient("weather-api");
+Console.WriteLine($"Client removed: {removed}");
+```
+
 ## HttpClientException
 
 The `HttpClientException` class serves as the base exception type for all HTTP client-related failures in the resilience pipeline. It provides contextual information about HTTP requests including the client name, request URL, and the underlying exception that triggered the failure. This exception hierarchy enables consistent error handling and logging for HTTP operations.
