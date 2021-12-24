@@ -557,6 +557,114 @@ Console.WriteLine($"Timeout: {timeoutEx.Timeout.TotalSeconds} seconds");
 Console.WriteLine($"HTTP Method: {invalidRequestEx.HttpMethod}");
 ```
 
+## ResiliencyEventPublisher
+
+The `ResiliencyEventPublisher` class implements a pub-sub pattern for publishing and subscribing to resilience pipeline events. It enables decoupled communication between resilience components by allowing subscribers to register handlers for specific event types and receive notifications when events occur. The publisher maintains an event history that can be queried for monitoring and debugging purposes.
+
+
+#### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Events;
+using System.Diagnostics;
+
+// Create a publisher instance
+var publisher = new ResiliencyEventPublisher();
+
+// Configure maximum history size (default: 1000)
+publisher.MaxHistorySize = 500;
+
+// Subscribe to successful policy execution events
+publisher.Subscribe<PolicyExecutedSuccessfullyEvent>("PolicyExecutedSuccessfullyEvent", 
+    (ev) => 
+    {
+        Console.WriteLine($"[{ev.Timestamp:HH:mm:ss.fff}] Policy '{ev.PolicyName}' executed successfully in {ev.DurationMs}ms (attempt #{ev.AttemptNumber})");
+        
+        // Log to application monitoring system
+        Debug.WriteLine($"Policy success: {ev.PolicyName}, Duration: {ev.DurationMs}ms");
+    });
+
+// Subscribe to policy execution failures
+publisher.Subscribe<PolicyExecutionFailedEvent>("PolicyExecutionFailedEvent", 
+    (ev) => 
+    {
+        Console.WriteLine($"[{ev.Timestamp:HH:mm:ss.fff}] Policy '{ev.PolicyName}' failed: {ev.ExceptionType} - {ev.ExceptionMessage}");
+        
+        // Send alert to monitoring system
+        AlertSystem.SendAlert(
+            AlertLevel.Warning,
+            $"Policy {ev.PolicyName} failed",
+            details: new { ev.ExceptionType, ev.DurationMs }
+        );
+    });
+
+// Subscribe to circuit breaker state changes
+publisher.Subscribe<CircuitBreakerStateChangedEvent>("CircuitBreakerStateChangedEvent",
+    (ev) => 
+    {
+        Console.WriteLine($"[{ev.Timestamp:HH:mm:ss.fff}] Circuit breaker '{ev.PolicyName}' state changed from '{ev.PreviousState}' to '{ev.NewState}'");
+        
+        // Update dashboard
+        Dashboard.UpdateCircuitBreakerState(ev.PolicyName, ev.NewState, ev.ConsecutiveFailures);
+    });
+
+// Simulate publishing events from resilience policies
+try
+{
+    // Simulate a successful policy execution
+    await publisher.PublishAsync(new PolicyExecutedSuccessfullyEvent
+    {
+        PolicyName = "UserServiceRetryPolicy",
+        SourcePolicy = "UserService",
+        DurationMs = 150,
+        AttemptNumber = 3
+    });
+    
+    // Simulate a failed policy execution
+    await publisher.PublishAsync(new PolicyExecutionFailedEvent
+    {
+        PolicyName = "PaymentServiceCircuitBreaker",
+        SourcePolicy = "PaymentService",
+        ExceptionType = "TimeoutException",
+        ExceptionMessage = "Request timed out after 30 seconds",
+        DurationMs = 30500
+    });
+    
+    // Simulate a circuit breaker state change
+    await publisher.PublishAsync(new CircuitBreakerStateChangedEvent
+    {
+        PolicyName = "DatabaseCircuitBreaker",
+        SourcePolicy = "DatabaseService",
+        PreviousState = "Closed",
+        NewState = "Open",
+        ConsecutiveFailures = 5
+    });
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Error publishing events: {ex.Message}");
+}
+
+// Query event history for monitoring
+var recentEvents = publisher.GetEventHistory(limit: 10);
+Console.WriteLine($"\nLast {recentEvents.Count} events:");
+foreach (var ev in recentEvents)
+{
+    Console.WriteLine($"- [{ev.Timestamp:HH:mm:ss}] {ev.GetType().Name}");
+}
+
+// Get specific event types
+var failedEvents = publisher.GetEvents<PolicyExecutionFailedEvent>(limit: 5);
+Console.WriteLine($"\nFailed events count: {failedEvents.Count}");
+
+// Check subscriber counts
+var subscriberCount = publisher.GetSubscriberCount("PolicyExecutedSuccessfullyEvent");
+Console.WriteLine($"Subscribers to success events: {subscriberCount}");
+
+// Clear history when needed (e.g., during maintenance)
+publisher.ClearHistory();
+```
+
 ## ValidationException
 
 The `ValidationException` class is thrown when validation of input parameters or configuration fails. It provides detailed validation error information through the `ValidationErrors` dictionary, which maps field names to error messages. This exception enables consistent validation error handling and reporting across the resilience pipeline.
