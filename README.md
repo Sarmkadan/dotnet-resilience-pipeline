@@ -665,6 +665,63 @@ Console.WriteLine($"Subscribers to success events: {subscriberCount}");
 publisher.ClearHistory();
 ```
 
+## PipelineEventObserver
+
+The `PipelineEventObserver` class provides a centralized observer for monitoring and reacting to resilience pipeline events. It automatically registers default handlers for key event types (successful executions, failures, circuit breaker changes, bulkhead rejections, timeouts, and fallbacks) while allowing custom handlers to be registered for specific event types. The observer maintains statistics about event occurrences and provides methods to manage handlers dynamically.
+
+
+
+#### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Events;
+using DotNetResiliencePipeline.Policies;
+
+// Create a resiliency event publisher
+var publisher = new ResiliencyEventPublisher();
+
+// Create the pipeline event observer with the publisher
+var observer = new PipelineEventObserver(publisher);
+
+// Get current statistics
+var stats = observer.GetStatistics();
+Console.WriteLine($"Total events: {stats.TotalEventsEmitted}");
+Console.WriteLine($"Successful executions: {stats.SuccessfulExecutions}");
+Console.WriteLine($"Failed executions: {stats.FailedExecutions}");
+Console.WriteLine($"Failure rate: {stats.FailureRate:P}");
+
+// Register a custom handler for specific event types
+observer.RegisterHandler<TimeoutOccurredEvent>("TimeoutLogger", 
+    (timeoutEvent) => 
+    {
+        Console.WriteLine($"[TIMEOUT] {timeoutEvent.PolicyName}: " +
+                        $"Actual={timeoutEvent.ActualDurationMs}ms, " +
+                        $"Configured={timeoutEvent.TimeoutMs}ms");
+    });
+
+// List all registered handlers
+var handlers = observer.GetHandlers();
+Console.WriteLine($"Registered handlers: {handlers.Count}");
+foreach (var handler in handlers)
+{
+    Console.WriteLine($"- {handler.Id} ({handler.EventType}) " +
+                     $"Created: {handler.CreatedAt:yyyy-MM-dd}, " +
+                     $"Active: {handler.IsActive}");
+}
+
+// Disable a handler temporarily
+observer.SetHandlerActive("TimeoutLogger", false);
+
+// Re-enable the handler
+observer.SetHandlerActive("TimeoutLogger", true);
+
+// Unregister a handler when no longer needed
+observer.UnregisterHandler("TimeoutLogger");
+
+// Get updated statistics after events have been processed
+var updatedStats = observer.GetStatistics();
+```
+
 ## ValidationException
 
 The `ValidationException` class is thrown when validation of input parameters or configuration fails. It provides detailed validation error information through the `ValidationErrors` dictionary, which maps field names to error messages. This exception enables consistent validation error handling and reporting across the resilience pipeline.
