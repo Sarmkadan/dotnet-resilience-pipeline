@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OutputType>Library</OutputType>
+    <RootNamespace>DotNetResiliencePipeline</RootNamespace>
+    <AssemblyName>DotNetResiliencePipeline</AssemblyName>
+    <PackageId>Zaiets.dotnet.resilience.pipeline</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Vladyslav Zaiets</Authors>
+    <Description>Resilience pipeline for .NET - circuit breaker, bulkhead, retry, timeout, fallback with fluent configuration</Description>
+    <PackageTags>dotnet resilience pipeline circuit-breaker bulkhead retry timeout fallback</PackageTags>
+    <PackageProjectUrl>https://github.com/sarmkadan/dotnet-resilience-pipeline</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/sarmkadan/dotnet-resilience-pipeline</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.7.0" />
+  </ItemGroup>
+
+</Project>
