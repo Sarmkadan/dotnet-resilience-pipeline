@@ -1,0 +1,90 @@
+# Prometheus configuration for DotNet Resilience Pipeline
+
+global:
+  scrape_interval: 15s        # How often to scrape targets by default
+  evaluation_interval: 15s    # How often to evaluate rules
+  external_labels:
+    monitor: 'dotnet-resilience-pipeline'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Load rules once and periodically evaluate them
+rule_files:
+  # - "alerts.yml"
+  # - "rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # DotNet Resilience Pipeline application
+  - job_name: 'dotnet-resilience-pipeline'
+    scheme: http
+    static_configs:
+      - targets: ['localhost:5000']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Node Exporter (if running)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'node_cpu_seconds_total|node_memory_MemAvailable_bytes|node_network_receive_bytes_total'
+        action: keep
+
+  # PostgreSQL (if exporter running)
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['localhost:9187']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'pg_stat_database_tup_returned|pg_connections_total'
+        action: keep
+
+# Custom metrics configuration
+# Metrics to track:
+# - dotnet_resilience_executions_total: Total operation executions
+# - dotnet_resilience_successes_total: Successful operations
+# - dotnet_resilience_failures_total: Failed operations
+# - dotnet_resilience_duration_seconds: Operation duration
+# - dotnet_resilience_circuit_breaker_state: Circuit breaker state (0=Closed, 1=Open, 2=HalfOpen)
+# - dotnet_resilience_bulkhead_executing: Current executing operations
+# - dotnet_resilience_bulkhead_queued: Current queued operations
+# - dotnet_resilience_retry_attempts: Retry attempt count
+# - dotnet_resilience_timeout_triggered: Timeout occurrences
+# - dotnet_resilience_fallback_used: Fallback executions
+
+# Alert examples (uncomment in alerts.yml):
+# - alert: HighErrorRate
+#   expr: rate(dotnet_resilience_failures_total[5m]) > 0.1
+#   for: 5m
+#   annotations:
+#     summary: "High error rate detected"
+#     description: "Error rate is {{ $value }}"
+#
+# - alert: CircuitBreakerOpen
+#   expr: dotnet_resilience_circuit_breaker_state == 1
+#   for: 1m
+#   annotations:
+#     summary: "Circuit breaker is open"
+#     description: "Circuit breaker {{ $labels.service }} is open"
+#
+# - alert: BulkheadSaturated
+#   expr: dotnet_resilience_bulkhead_executing / dotnet_resilience_bulkhead_capacity > 0.9
+#   for: 5m
+#   annotations:
+#     summary: "Bulkhead near saturation"
+#     description: "Bulkhead utilization is {{ $value | humanizePercentage }}"
