@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -86,7 +87,7 @@ public class MetricsMonitoringExample
         // Health report
         Console.WriteLine("\n--- Health Report ---");
         var healthReport = ResiliencyHelper.GenerateHealthReport(pipeline, history);
-        if (healthReport != null)
+        if (healthReport is not null)
         {
             Console.WriteLine($"Overall Status: {healthReport.HealthStatus}");
         }

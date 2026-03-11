@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -141,7 +142,7 @@ public class CliCommandHandler
             _ => null!
         };
 
-        if (policy == null)
+        if (policy is null)
             return new CommandExecutionResult { Success = false, Message = "Invalid policy type", ExitCode = 1 };
 
         _pipelineService.RegisterPolicy(policy);
@@ -179,7 +180,7 @@ public class CliCommandHandler
 
         var policy = _pipelineService.GetPolicyByName(options.PolicyName);
 
-        if (policy == null)
+        if (policy is null)
             return new CommandExecutionResult { Success = false, Message = $"Policy not found: {options.PolicyName}", ExitCode = 1 };
 
         var message = $"Policy: {policy.Name}\n  Type: {policy.GetType().Name}\n  ID: {policy.Id}\n  Enabled: {policy.IsEnabled}";
@@ -192,7 +193,7 @@ public class CliCommandHandler
             return new CommandExecutionResult { Success = false, Message = "Policy name is required", ExitCode = 1 };
 
         var policy = _pipelineService.GetPolicyByName(options.PolicyName);
-        if (policy == null)
+        if (policy is null)
             return new CommandExecutionResult { Success = false, Message = $"Policy not found: {options.PolicyName}", ExitCode = 1 };
 
         if (_pipelineService.RemovePolicy(policy.Id))
@@ -207,7 +208,7 @@ public class CliCommandHandler
             return new CommandExecutionResult { Success = false, Message = "Policy name is required", ExitCode = 1 };
 
         var policy = _pipelineService.GetPolicyByName(options.PolicyName);
-        if (policy == null)
+        if (policy is null)
             return new CommandExecutionResult { Success = false, Message = $"Policy not found: {options.PolicyName}", ExitCode = 1 };
 
         // Basic validation

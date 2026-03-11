@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -146,7 +147,7 @@ public class ExternalApiClient
             request.Headers.Add(header.Key, header.Value);
 
         // Apply custom headers
-        if (customHeaders != null)
+        if (customHeaders is not null)
         {
             foreach (var header in customHeaders)
                 request.Headers.Add(header.Key, header.Value);

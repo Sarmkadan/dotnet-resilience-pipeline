@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -54,7 +55,7 @@ public class HealthCheckWorker
         IsRunning = false;
         _cancellationTokenSource?.Cancel();
 
-        if (_workerTask != null)
+        if (_workerTask is not null)
             await _workerTask;
 
         _cancellationTokenSource?.Dispose();

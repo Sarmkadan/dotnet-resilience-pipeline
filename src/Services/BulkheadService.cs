@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -19,7 +20,7 @@ public class BulkheadService
     /// </summary>
     public bool TryAcquireSlot(BulkheadPolicy policy)
     {
-        if (policy == null)
+        if (policy is null)
             throw new ArgumentNullException(nameof(policy));
 
         if (!policy.IsEnabled)
@@ -33,7 +34,7 @@ public class BulkheadService
     /// </summary>
     public void ReleaseSlot(BulkheadPolicy policy)
     {
-        if (policy == null)
+        if (policy is null)
             throw new ArgumentNullException(nameof(policy));
 
         policy.ReleaseSlot();
@@ -44,7 +45,7 @@ public class BulkheadService
     /// </summary>
     public void DequeueRequest(BulkheadPolicy policy)
     {
-        if (policy == null)
+        if (policy is null)
             throw new ArgumentNullException(nameof(policy));
 
         policy.DequeueRequest();
@@ -55,7 +56,7 @@ public class BulkheadService
     /// </summary>
     public void RecordQueueWaitTime(BulkheadPolicy policy, long waitTimeMs)
     {
-        if (policy == null)
+        if (policy is null)
             throw new ArgumentNullException(nameof(policy));
 
         policy.RecordQueueWaitTime(waitTimeMs);

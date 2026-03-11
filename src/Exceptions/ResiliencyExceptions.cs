@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -128,7 +129,7 @@ public class InvalidPolicyConfigurationException : ResiliencyException
     public InvalidPolicyConfigurationException(string policyName, string message, List<string>? errors = null)
         : base(message, policyName, "Configuration")
     {
-        if (errors != null)
+        if (errors is not null)
             ConfigurationErrors = errors;
     }
 }

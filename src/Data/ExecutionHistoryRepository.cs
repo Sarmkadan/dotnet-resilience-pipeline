@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -43,7 +44,7 @@ public class ExecutionHistoryRepository
     /// </summary>
     public void Record(ExecutionRecord record)
     {
-        if (record == null)
+        if (record is null)
             throw new ArgumentNullException(nameof(record));
 
         lock (_lockObj)
