@@ -181,7 +181,7 @@ public static class CircuitBreakerDiagnostics
 /// <summary>
 /// Diagnostic report for a circuit breaker policy.
 /// </summary>
-public class CircuitBreakerDiagnosticReport
+public sealed class CircuitBreakerDiagnosticReport
 {
     public string PolicyId { get; set; } = string.Empty;
     public string PolicyName { get; set; } = string.Empty;
@@ -226,7 +226,7 @@ public class CircuitBreakerDiagnosticReport
 /// <summary>
 /// Effectiveness analysis for a circuit breaker.
 /// </summary>
-public class CircuitBreakerEffectiveness
+public sealed class CircuitBreakerEffectiveness
 {
     public string PolicyName { get; set; } = string.Empty;
     public long TotalExecutions { get; set; }
@@ -240,7 +240,7 @@ public class CircuitBreakerEffectiveness
 /// <summary>
 /// Configuration suggestion for circuit breaker.
 /// </summary>
-public class CircuitBreakerConfiguration
+public sealed class CircuitBreakerConfiguration
 {
     public string PolicyName { get; set; } = string.Empty;
     public int SuggestedFailureThreshold { get; set; }

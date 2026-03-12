@@ -134,7 +134,7 @@ public abstract class ResiliencyPolicy
 /// <summary>
 /// Snapshot of a policy's current state for reporting and monitoring.
 /// </summary>
-public class PolicySnapshot
+public sealed class PolicySnapshot
 {
     public string PolicyId { get; set; } = string.Empty;
     public string PolicyName { get; set; } = string.Empty;

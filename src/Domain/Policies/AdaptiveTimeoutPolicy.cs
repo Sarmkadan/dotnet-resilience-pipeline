@@ -10,7 +10,7 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// Timeout policy that automatically adjusts its timeout ceiling based on observed
 /// response-time percentiles within a sliding window of recent executions.
 /// </summary>
-public class AdaptiveTimeoutPolicy : ResiliencyPolicy
+public sealed class AdaptiveTimeoutPolicy : ResiliencyPolicy
 {
     private readonly Queue<long> _responseWindow = new();
     private readonly object _lock = new();

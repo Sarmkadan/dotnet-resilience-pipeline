@@ -13,7 +13,7 @@ namespace DotNetResiliencePipeline.Workers;
 /// Background worker that periodically checks pipeline health.
 /// Monitors policy health, detects degradation, and publishes health events.
 /// </summary>
-public class HealthCheckWorker
+public sealed class HealthCheckWorker
 {
     private readonly ResiliencyPipelineService _pipelineService;
     private readonly ResiliencyEventPublisher _eventPublisher;
@@ -133,7 +133,7 @@ public class HealthCheckWorker
 /// <summary>
 /// Status of the health check worker.
 /// </summary>
-public class HealthCheckStatus
+public sealed class HealthCheckStatus
 {
     public bool IsRunning { get; set; }
     public DateTime LastCheckTime { get; set; }

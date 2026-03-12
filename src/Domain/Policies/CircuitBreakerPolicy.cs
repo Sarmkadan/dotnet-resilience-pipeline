@@ -10,7 +10,7 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// Circuit breaker pattern implementation that prevents cascading failures.
 /// States: Closed (normal) -> Open (fail-fast) -> Half-Open (testing) -> Closed
 /// </summary>
-public class CircuitBreakerPolicy : ResiliencyPolicy
+public sealed class CircuitBreakerPolicy : ResiliencyPolicy
 {
     public enum CircuitState
     {

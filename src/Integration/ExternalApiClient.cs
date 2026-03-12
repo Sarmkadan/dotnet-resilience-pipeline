@@ -14,7 +14,7 @@ namespace DotNetResiliencePipeline.Integration;
 /// Wrapper for external API calls with built-in resilience policies.
 /// Handles authentication, retries, timeouts, and error recovery.
 /// </summary>
-public class ExternalApiClient
+public sealed class ExternalApiClient
 {
     private readonly HttpClientFactory _httpClientFactory;
     private readonly ResiliencyPipelineService _pipelineService;
@@ -165,7 +165,7 @@ public class ExternalApiClient
 /// <summary>
 /// Configuration for an external API.
 /// </summary>
-public class ApiConfiguration
+public sealed class ApiConfiguration
 {
     public string BaseUrl { get; set; } = string.Empty;
     public string? ApiKey { get; set; }
@@ -179,7 +179,7 @@ public class ApiConfiguration
 /// <summary>
 /// Response wrapper for API calls.
 /// </summary>
-public class ApiResponse<T>
+public sealed class ApiResponse<T>
 {
     public bool Success { get; set; }
     public T? Data { get; set; }

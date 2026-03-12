@@ -10,7 +10,7 @@ namespace DotNetResiliencePipeline.Utilities;
 /// Aggregates metrics across multiple policies and provides system-wide analytics.
 /// Supports time-windowed metrics and trend analysis.
 /// </summary>
-public class MetricsAggregator
+public sealed class MetricsAggregator
 {
     private readonly List<MetricsSnapshot> _snapshots = new();
     private readonly object _lockObj = new object();
@@ -167,7 +167,7 @@ public class MetricsAggregator
 /// <summary>
 /// Snapshot of metrics at a specific point in time.
 /// </summary>
-public class MetricsSnapshot
+public sealed class MetricsSnapshot
 {
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public long TotalExecutions { get; set; }
@@ -181,7 +181,7 @@ public class MetricsSnapshot
 /// <summary>
 /// Aggregated metrics across a time window.
 /// </summary>
-public class AggregatedMetrics
+public sealed class AggregatedMetrics
 {
     public TimeSpan TimeWindow { get; set; }
     public int SnapshotCount { get; set; }
@@ -196,7 +196,7 @@ public class AggregatedMetrics
 /// <summary>
 /// Trend analysis for a specific metric.
 /// </summary>
-public class MetricsTrend
+public sealed class MetricsTrend
 {
     public string MetricType { get; set; } = string.Empty;
     public TimeSpan TimeWindow { get; set; }
@@ -211,7 +211,7 @@ public class MetricsTrend
 /// <summary>
 /// Comparison of metrics between two time periods.
 /// </summary>
-public class PeriodComparison
+public sealed class PeriodComparison
 {
     public TimeSpan Period1 { get; set; }
     public TimeSpan Period2 { get; set; }
@@ -225,7 +225,7 @@ public class PeriodComparison
 /// <summary>
 /// Comprehensive performance report.
 /// </summary>
-public class PerformanceReport
+public sealed class PerformanceReport
 {
     public TimeSpan TimeWindow { get; set; }
     public DateTime GeneratedAt { get; set; }

@@ -179,7 +179,7 @@ public enum HealthStatus
 /// <summary>
 /// Comprehensive health report for a resilience pipeline.
 /// </summary>
-public class PipelineHealthReport
+public sealed class PipelineHealthReport
 {
     public string PipelineId { get; set; } = string.Empty;
     public DateTime ReportGeneratedAt { get; set; }

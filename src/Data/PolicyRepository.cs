@@ -12,7 +12,7 @@ namespace DotNetResiliencePipeline.Data;
 /// <summary>
 /// Repository for managing policy persistence and retrieval.
 /// </summary>
-public class PolicyRepository : IRepository<ResiliencyPolicy>
+public sealed class PolicyRepository : IRepository<ResiliencyPolicy>
 {
     private readonly Dictionary<string, ResiliencyPolicy> _storage;
     private readonly object _lockObj = new object();

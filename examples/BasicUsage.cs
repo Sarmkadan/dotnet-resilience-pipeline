@@ -15,7 +15,7 @@ namespace DotNetResiliencePipeline.Examples;
 /// <summary>
 /// Basic usage example demonstrating circuit breaker and retry patterns
 /// </summary>
-public class BasicUsageExample
+public sealed class BasicUsageExample
 {
     public static async Task Main()
     {

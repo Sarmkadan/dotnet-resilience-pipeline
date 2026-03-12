@@ -12,7 +12,7 @@ namespace DotNetResiliencePipeline.Configuration;
 /// <summary>
 /// Fluent builder for configuring resilience pipelines.
 /// </summary>
-public class ResiliencyPipelineBuilder
+public sealed class ResiliencyPipelineBuilder
 {
     private readonly ResiliencyPipelineService _pipelineService;
     private CircuitBreakerPolicy? _circuitBreakerPolicy;

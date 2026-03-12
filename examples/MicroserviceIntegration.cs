@@ -15,7 +15,7 @@ namespace DotNetResiliencePipeline.Examples;
 /// <summary>
 /// Realistic microservice integration example showing multiple policies
 /// </summary>
-public class MicroserviceIntegrationExample
+public sealed class MicroserviceIntegrationExample
 {
     private record UserDto(int Id, string Name, string Email);
     private record OrderDto(int Id, int UserId, decimal Amount);
