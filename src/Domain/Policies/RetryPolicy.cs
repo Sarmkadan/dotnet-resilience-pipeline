@@ -15,7 +15,8 @@ public sealed class RetryPolicy : ResiliencyPolicy
     {
         Fixed,
         Linear,
-        Exponential
+        Exponential, // Multiplies BaseDelay by BackoffMultiplier
+        ExponentialWithJitter // AWS 'full jitter' algorithm
     }
 
     /// <summary>
@@ -43,10 +44,7 @@ public sealed class RetryPolicy : ResiliencyPolicy
     /// </summary>
     public double BackoffMultiplier { get; set; } = 2.0;
 
-    /// <summary>
-    /// Whether to add random jitter to delays.
-    /// </summary>
-    public bool UseJitter { get; set; } = true;
+
 
     /// <summary>
     /// Types of exceptions that trigger a retry.
@@ -85,28 +83,39 @@ public sealed class RetryPolicy : ResiliencyPolicy
         if (attemptNumber < 0 || attemptNumber >= MaxRetries)
             throw new ArgumentOutOfRangeException(nameof(attemptNumber));
 
-        TimeSpan delay = Strategy switch
-        {
-            BackoffStrategy.Fixed => InitialDelay,
-            BackoffStrategy.Linear => TimeSpan.FromMilliseconds(
-                InitialDelay.TotalMilliseconds * (attemptNumber + 1)),
-            BackoffStrategy.Exponential => TimeSpan.FromMilliseconds(
-                InitialDelay.TotalMilliseconds * Math.Pow(BackoffMultiplier, attemptNumber)),
-            _ => InitialDelay
-        };
+        TimeSpan delay;
 
-        // Cap at max delay
-        if (delay > MaxDelay)
-            delay = MaxDelay;
-
-        // Add jitter
-        if (UseJitter)
+        switch (Strategy)
         {
-            var random = new Random();
-            var jitterFactor = random.NextDouble() * 0.1; // 0-10% jitter
-            var jitterMs = delay.TotalMilliseconds * jitterFactor;
-            delay = TimeSpan.FromMilliseconds(delay.TotalMilliseconds + jitterMs);
+            case BackoffStrategy.Fixed:
+                delay = BaseDelay;
+                break;
+            case BackoffStrategy.Linear:
+                delay = TimeSpan.FromMilliseconds(BaseDelay.TotalMilliseconds * (attemptNumber + 1));
+                break;
+            case BackoffStrategy.Exponential:
+                delay = TimeSpan.FromMilliseconds(BaseDelay.TotalMilliseconds * Math.Pow(BackoffMultiplier, attemptNumber));
+                break;
+            case BackoffStrategy.ExponentialWithJitter:
+                // AWS 'full jitter' algorithm: sleep = random_between(0, min(cap, base * 2 ** attempt))
+                double cap = MaxDelay.TotalMilliseconds;
+                double baseDelayMs = BaseDelay.TotalMilliseconds;
+                double exponentialBackoff = baseDelayMs * Math.Pow(2, attemptNumber);
+                double maxJitteredDelay = Math.Min(cap, exponentialBackoff);
+
+                // Apply JitterFactor: scale the random range
+                // If JitterFactor is 0, no jitter (random range is 0 to 0).
+                // If JitterFactor is 1 (full jitter), random range is 0 to maxJitteredDelay.
+                delay = TimeSpan.FromMilliseconds(_random.NextDouble() * maxJitteredDelay * JitterFactor);
+                break;
+            default:
+                delay = BaseDelay;
+                break;
         }
+
+        // Cap at max delay if not already handled by ExponentialWithJitter
+        if (Strategy != BackoffStrategy.ExponentialWithJitter && delay > MaxDelay)
+            delay = MaxDelay;
 
         return delay;
     }
@@ -171,9 +180,16 @@ public sealed class RetryPolicy : ResiliencyPolicy
         baseSnapshot.Metadata = new Dictionary<string, object>
         {
             { "MaxRetries", MaxRetries },
-            { "InitialDelay", InitialDelay.TotalMilliseconds },
+            { "BaseDelay", BaseDelay.TotalMilliseconds },
             { "Strategy", Strategy },
             { "TotalRetryAttempts", TotalRetryAttempts },
+            { "BackoffMultiplier", BackoffMultiplier },
+            { "JitterFactor", JitterFactor }
+        };
+        return baseSnapshot;
+    }
+}
+lRetryAttempts", TotalRetryAttempts },
             { "BackoffMultiplier", BackoffMultiplier }
         };
         return baseSnapshot;
