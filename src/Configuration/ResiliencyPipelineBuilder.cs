@@ -101,6 +101,24 @@ public sealed class ResiliencyPipelineBuilder
     }
 
     /// <summary>
+    /// Sets an asynchronous fallback action for the configured FallbackPolicy.
+    /// </summary>
+    /// <typeparam name="T">The return type of the operation.</typeparam>
+    /// <param name="fallbackAction">The asynchronous function to execute as a fallback.</param>
+    /// <returns>The current ResiliencyPipelineBuilder instance.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if no FallbackPolicy has been configured yet.</exception>
+    public ResiliencyPipelineBuilder WithFallbackAction<T>(Func<CancellationToken, Task<T>> fallbackAction)
+    {
+        if (_fallbackPolicy is null)
+        {
+            throw new InvalidOperationException("A FallbackPolicy must be configured before setting a fallback action. Use WithFallback first.");
+        }
+
+        _fallbackPolicy.SetFallbackAction(fallbackAction);
+        return this;
+    }
+
+    /// <summary>
     /// Builds and returns the configured pipeline service.
     /// </summary>
     public ResiliencyPipelineService Build()

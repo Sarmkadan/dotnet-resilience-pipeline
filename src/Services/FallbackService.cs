@@ -21,10 +21,9 @@ public sealed class FallbackService
     /// </summary>
     public async Task<PolicyResult<T>> ExecuteAsync<T>(
         FallbackPolicy policy,
-        Func<CancellationToken, Task<T>> operation,
         Exception primaryException,
         long primaryExecutionTimeMs,
-        CancellationToken cancellationToken) // ADDED
+        CancellationToken cancellationToken)
     {
         if (policy is null)
             throw new ArgumentNullException(nameof(policy));
@@ -37,15 +36,22 @@ public sealed class FallbackService
             return PolicyResult<T>.Failure(primaryException, policy.Name, primaryExecutionTimeMs);
         }
 
+        var fallbackAction = policy.GetFallbackAction();
+        if (fallbackAction is null)
+        {
+            // If no fallback action is set, just re-throw the primary exception or indicate no fallback configured
+            throw primaryException;
+        }
+
         var fallbackStopwatch = Stopwatch.StartNew();
-        // Link with the incoming cancellationToken
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(policy.FallbackTimeout);
 
         try
         {
-            var fallbackResult = await operation(cts.Token);
-            fallbackStopwatch.Stop();
+            // Execute the stored fallback action
+            object? rawFallbackResult = await fallbackAction(cts.Token);
+            T fallbackResult = (T)rawFallbackResult!; // Cast to the expected return type
 
             policy.RecordSuccessfulFallback(fallbackStopwatch.ElapsedMilliseconds);
 
