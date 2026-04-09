@@ -157,6 +157,22 @@ public sealed class PolicyRepository : IRepository<ResiliencyPolicy>
     }
 
     /// <summary>
+    /// Saves (creates or updates) a policy asynchronously.
+    /// </summary>
+    public Task SaveAsync(ResiliencyPolicy entity)
+    {
+        if (entity is null)
+            throw new ArgumentNullException(nameof(entity));
+
+        lock (_lockObj)
+        {
+            _storage[entity.Id] = entity;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
     /// Checks if a policy exists.
     /// </summary>
     public bool Exists(string id)

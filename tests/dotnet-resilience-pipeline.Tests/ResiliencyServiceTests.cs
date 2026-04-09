@@ -10,17 +10,18 @@ using DotNetResiliencePipeline.Services;
 using DotNetResiliencePipeline.Utilities;
 using FluentAssertions;
 using Moq;
+using Xunit;
 
 namespace DotNetResiliencePipeline.Tests;
 
+// Public interface used to verify operation invocation via Moq
+public interface IAsyncOperation
+{
+    Task<string> RunAsync();
+}
+
 public sealed class ResiliencyServiceTests
 {
-    // Local stub interface used to verify operation invocation via Moq
-    private interface IAsyncOperation
-    {
-        Task<string> RunAsync();
-    }
-
     [Fact]
     public async Task CircuitBreakerService_ExecuteAsync_WhenCircuitIsOpen_NeverInvokesOperation()
     {

@@ -9,7 +9,7 @@ namespace DotNetResiliencePipeline.Exceptions;
 /// <summary>
 /// Base exception for all resilience pipeline failures.
 /// </summary>
-public sealed class ResiliencyException : Exception
+public class ResiliencyException : Exception
 {
     public string PolicyName { get; set; }
     public string PolicyType { get; set; }

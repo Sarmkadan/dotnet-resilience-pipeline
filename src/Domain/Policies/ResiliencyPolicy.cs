@@ -14,7 +14,7 @@ public abstract class ResiliencyPolicy
     /// <summary>
     /// Unique identifier for this policy instance.
     /// </summary>
-    public string Id { get; } = Guid.NewGuid().ToString();
+    public string Id { get; set; } = Guid.NewGuid().ToString();
 
     /// <summary>
     /// Friendly name for the policy.
@@ -145,4 +145,5 @@ public sealed class PolicySnapshot
     public long FailedExecutions { get; set; }
     public double SuccessRate { get; set; }
     public DateTime SnapshotTime { get; set; }
+    public Dictionary<string, object>? Metadata { get; set; }
 }

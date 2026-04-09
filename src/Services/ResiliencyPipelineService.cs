@@ -120,12 +120,12 @@ public sealed class ResiliencyPipelineService
             {
                 var cbResult = await _circuitBreakerService.ExecuteAsync(
                     circuitBreaker,
-                    () => _executeWithRetryTimeoutBulkhead(operation, cancellationToken, retry, timeout, bulkhead), // UPDATED
-                    cancellationToken); // ADDED
+                    _ => _executeWithRetryTimeoutBulkhead(operation, cancellationToken, retry, timeout, bulkhead),
+                    cancellationToken);
 
                 stopwatch.Stop();
-                return cbResult is T result
-                    ? PolicyResult<T>.Success(result, "Pipeline", stopwatch.ElapsedMilliseconds)
+                return cbResult is T cbValue
+                    ? PolicyResult<T>.Success(cbValue, "Pipeline", stopwatch.ElapsedMilliseconds)
                     : throw new InvalidOperationException("Circuit breaker result type mismatch");
             }
 
@@ -182,14 +182,14 @@ public sealed class ResiliencyPipelineService
             {
                 await _circuitBreakerService.ExecuteAsync(
                     circuitBreaker,
-                    async () => { await operation(CancellationToken.None); return (object)null!; },
-                    cancellationToken); // ADDED
+                    async _ => { await operation(CancellationToken.None); return (object)null!; },
+                    cancellationToken);
             }
             else
             {
                 await _executeWithRetryTimeoutBulkhead(
-                    ct => operation(ct),
-                    cancellationToken, // UPDATED
+                    async ct => { await operation(ct); return (object)null!; },
+                    cancellationToken,
                     retry, timeout, bulkhead);
             }
 
