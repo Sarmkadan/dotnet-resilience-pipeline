@@ -14,7 +14,7 @@ namespace DotNetResiliencePipeline.Services;
 /// <summary>
 /// Main orchestrator service that manages and coordinates all resilience policies.
 /// </summary>
-public sealed class ResiliencyPipelineService
+public sealed class ResiliencyPipelineService : IPipelineMetrics
 {
     private readonly CircuitBreakerService _circuitBreakerService;
     private readonly RetryService _retryService;
@@ -251,6 +251,39 @@ public sealed class ResiliencyPipelineService
             {
                 policy.ResetStatistics();
             }
+        }
+    }
+
+    /// <inheritdoc />
+    public PipelineMetricsSnapshot GetStats()
+    {
+        lock (_lockObj)
+        {
+            long retryCount = _policies.Values
+                .OfType<RetryPolicy>()
+                .Sum(p => p.TotalRetryAttempts);
+
+            long circuitBreakerTrips = _policies.Values
+                .OfType<CircuitBreakerPolicy>()
+                .Sum(p => p.CircuitBreakerTrips);
+
+            long timeoutCount = _policies.Values
+                .OfType<TimeoutPolicy>()
+                .Sum(p => p.TimeoutCount);
+
+            var snapshots = _policies.Values.Select(p => p.GetSnapshot()).ToList();
+
+            return new PipelineMetricsSnapshot
+            {
+                TotalExecutions = TotalExecutions,
+                SuccessfulExecutions = SuccessfulExecutions,
+                FailedExecutions = FailedExecutions,
+                SuccessRate = TotalExecutions == 0 ? 0 : (SuccessfulExecutions * 100.0) / TotalExecutions,
+                RetryCount = retryCount,
+                CircuitBreakerTrips = circuitBreakerTrips,
+                TimeoutCount = timeoutCount,
+                PolicySnapshots = snapshots
+            };
         }
     }
 

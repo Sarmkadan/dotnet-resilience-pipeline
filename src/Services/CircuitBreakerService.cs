@@ -7,6 +7,8 @@
 using System.Diagnostics;
 using DotNetResiliencePipeline.Domain.Policies;
 using DotNetResiliencePipeline.Exceptions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace DotNetResiliencePipeline.Services;
 
@@ -15,6 +17,16 @@ namespace DotNetResiliencePipeline.Services;
 /// </summary>
 public sealed class CircuitBreakerService
 {
+    private readonly ILogger<CircuitBreakerService> _logger;
+
+    /// <summary>
+    /// Initializes the service with an optional logger.
+    /// </summary>
+    public CircuitBreakerService(ILogger<CircuitBreakerService>? logger = null)
+    {
+        _logger = logger ?? NullLogger<CircuitBreakerService>.Instance;
+    }
+
     /// <summary>
     /// Executes an operation through the circuit breaker policy.
     /// </summary>
@@ -44,6 +56,7 @@ public sealed class CircuitBreakerService
                 policy.ConsecutiveFailures);
         }
 
+        var stateBefore = policy.CurrentState;
         var stopwatch = Stopwatch.StartNew();
 
         try
@@ -65,6 +78,15 @@ public sealed class CircuitBreakerService
         {
             stopwatch.Stop();
             policy.RecordFailure();
+
+            if (stateBefore != CircuitBreakerPolicy.CircuitState.Open
+                && policy.CurrentState == CircuitBreakerPolicy.CircuitState.Open)
+            {
+                _logger.LogWarning(
+                    "Circuit breaker '{PolicyName}' tripped to Open after {Trips} total trip(s). " +
+                    "Consecutive failures: {ConsecutiveFailures}. Last error: {ErrorMessage}",
+                    policy.Name, policy.CircuitBreakerTrips, policy.ConsecutiveFailures, ex.Message);
+            }
 
             throw;
         }
