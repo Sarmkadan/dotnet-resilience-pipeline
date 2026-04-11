@@ -299,6 +299,69 @@ if (stats.SuccessRate < 0.95) // 95% threshold
 
 Minimal (<1% for statistics). Event subscription adds overhead only if you subscribe to many events.
 
+## Adaptive Timeout Questions
+
+### How does the adaptive timeout work?
+
+`AdaptiveTimeoutPolicy` maintains a sliding window of recent execution times. Once the window
+contains at least `MinSampleSize` observations it recomputes the timeout as:
+
+```
+newTimeout = Percentile(window, TargetPercentile) × HeadroomFactor
+```
+
+The result is clamped to `[MinTimeout, MaxTimeout]`. Recomputation happens at most once per
+`AdjustmentInterval`.
+
+Before the window is populated, `InitialTimeout` is used.
+
+### Does it support p99-based timeout adjustment?
+
+Yes. Set `TargetPercentile = 99.0` and choose a `HeadroomFactor` (e.g. `1.5` for 50% headroom):
+
+```csharp
+var policy = new AdaptiveTimeoutPolicy("payment-api")
+{
+    InitialTimeout     = TimeSpan.FromSeconds(5),
+    TargetPercentile   = 99.0,
+    HeadroomFactor     = 1.5,   // timeout = p99 × 1.5
+    MinTimeout         = TimeSpan.FromMilliseconds(500),
+    MaxTimeout         = TimeSpan.FromSeconds(30),
+};
+```
+
+You can also query any percentile on demand:
+
+```csharp
+long p50 = policy.GetPercentileExecutionTime(50);
+long p99 = policy.GetPercentileExecutionTime(99);
+```
+
+### What floor and ceiling should I set?
+
+- **MinTimeout** prevents the policy from becoming too aggressive under low-latency bursts.
+  A value like 200–500 ms is usually safe.
+- **MaxTimeout** acts as a safety net if latency spikes. Set it to the maximum acceptable
+  wait time for your SLA (e.g. 30 s).
+
+### How do I monitor adaptation?
+
+Use `AdaptiveTimeoutService.GetAdaptationSummary(policy)` to retrieve a snapshot dictionary
+containing `CurrentTimeoutMs`, `TotalAdjustments`, `P95ExecutionTimeMs`, `TimeoutPercentage`,
+and more. The `GetSnapshot()` method on the policy also includes `P50ExecutionTimeMs`,
+`P95ExecutionTimeMs`, and `P99ExecutionTimeMs`.
+
+### How do I register it with dependency injection?
+
+```csharp
+services.AddAdaptiveTimeout("payment-api", TimeSpan.FromSeconds(5), policy =>
+{
+    policy.TargetPercentile   = 99.0;
+    policy.HeadroomFactor     = 1.5;
+    policy.AdjustmentInterval = TimeSpan.FromSeconds(60);
+});
+```
+
 ## Troubleshooting Questions
 
 ### Why is the circuit breaker staying open?
