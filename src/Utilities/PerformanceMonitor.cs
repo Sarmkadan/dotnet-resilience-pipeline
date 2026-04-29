@@ -12,7 +12,7 @@ namespace DotNetResiliencePipeline.Utilities;
 /// Monitors performance metrics for policy executions.
 /// Tracks execution times, throughput, and identifies performance degradation.
 /// </summary>
-public class PerformanceMonitor
+public sealed class PerformanceMonitor
 {
     private readonly Dictionary<string, PerformanceMetrics> _metrics = new();
     private readonly object _lockObj = new object();
@@ -151,7 +151,7 @@ public class PerformanceMonitor
 /// <summary>
 /// Performance metrics for a policy.
 /// </summary>
-public class PerformanceMetrics
+public sealed class PerformanceMetrics
 {
     public string PolicyName { get; set; } = string.Empty;
     public long TotalExecutions { get; set; }
@@ -192,7 +192,7 @@ public class PerformanceMetrics
 /// <summary>
 /// Performance issue identified by the monitor.
 /// </summary>
-public class PerformanceIssue
+public sealed class PerformanceIssue
 {
     public string PolicyName { get; set; } = string.Empty;
     public string IssueType { get; set; } = string.Empty;
@@ -204,7 +204,7 @@ public class PerformanceIssue
 /// <summary>
 /// Comparative performance metrics between policies.
 /// </summary>
-public class PerformanceComparison
+public sealed class PerformanceComparison
 {
     public string PolicyName { get; set; } = string.Empty;
     public double AverageDurationMs { get; set; }

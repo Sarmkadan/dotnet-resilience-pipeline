@@ -15,7 +15,7 @@ namespace DotNetResiliencePipeline.Examples;
 /// <summary>
 /// Circuit breaker pattern simulation showing state transitions
 /// </summary>
-public class CircuitBreakerSimulationExample
+public sealed class CircuitBreakerSimulationExample
 {
     public static async Task Main()
     {

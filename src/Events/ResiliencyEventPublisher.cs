@@ -12,7 +12,7 @@ namespace DotNetResiliencePipeline.Events;
 /// Publisher for resilience pipeline events using pub-sub pattern.
 /// Enables decoupled event notification across the system.
 /// </summary>
-public class ResiliencyEventPublisher
+public sealed class ResiliencyEventPublisher
 {
     private readonly ConcurrentDictionary<string, List<Delegate>> _subscribers = new();
     private readonly List<ResiliencyEvent> _eventHistory = new();
@@ -144,7 +144,7 @@ public abstract class ResiliencyEvent
 /// <summary>
 /// Event raised when a policy executes successfully.
 /// </summary>
-public class PolicyExecutedSuccessfullyEvent : ResiliencyEvent
+public sealed class PolicyExecutedSuccessfullyEvent : ResiliencyEvent
 {
     public string PolicyName { get; set; } = string.Empty;
     public long DurationMs { get; set; }
@@ -154,7 +154,7 @@ public class PolicyExecutedSuccessfullyEvent : ResiliencyEvent
 /// <summary>
 /// Event raised when a policy execution fails.
 /// </summary>
-public class PolicyExecutionFailedEvent : ResiliencyEvent
+public sealed class PolicyExecutionFailedEvent : ResiliencyEvent
 {
     public string PolicyName { get; set; } = string.Empty;
     public string ExceptionType { get; set; } = string.Empty;
@@ -165,7 +165,7 @@ public class PolicyExecutionFailedEvent : ResiliencyEvent
 /// <summary>
 /// Event raised when a circuit breaker state changes.
 /// </summary>
-public class CircuitBreakerStateChangedEvent : ResiliencyEvent
+public sealed class CircuitBreakerStateChangedEvent : ResiliencyEvent
 {
     public string PolicyName { get; set; } = string.Empty;
     public string PreviousState { get; set; } = string.Empty;
@@ -176,7 +176,7 @@ public class CircuitBreakerStateChangedEvent : ResiliencyEvent
 /// <summary>
 /// Event raised when bulkhead capacity is exceeded.
 /// </summary>
-public class BulkheadRejectedEvent : ResiliencyEvent
+public sealed class BulkheadRejectedEvent : ResiliencyEvent
 {
     public string PolicyName { get; set; } = string.Empty;
     public int ActiveExecutions { get; set; }
@@ -187,7 +187,7 @@ public class BulkheadRejectedEvent : ResiliencyEvent
 /// <summary>
 /// Event raised when timeout occurs.
 /// </summary>
-public class TimeoutOccurredEvent : ResiliencyEvent
+public sealed class TimeoutOccurredEvent : ResiliencyEvent
 {
     public string PolicyName { get; set; } = string.Empty;
     public long TimeoutMs { get; set; }
@@ -197,7 +197,7 @@ public class TimeoutOccurredEvent : ResiliencyEvent
 /// <summary>
 /// Event raised when fallback is triggered.
 /// </summary>
-public class FallbackTriggeredEvent : ResiliencyEvent
+public sealed class FallbackTriggeredEvent : ResiliencyEvent
 {
     public string PolicyName { get; set; } = string.Empty;
     public string Reason { get; set; } = string.Empty;
@@ -207,7 +207,7 @@ public class FallbackTriggeredEvent : ResiliencyEvent
 /// <summary>
 /// Event raised when policy health changes.
 /// </summary>
-public class PolicyHealthChangedEvent : ResiliencyEvent
+public sealed class PolicyHealthChangedEvent : ResiliencyEvent
 {
     public string PolicyName { get; set; } = string.Empty;
     public string PreviousHealth { get; set; } = string.Empty;

@@ -15,7 +15,7 @@ namespace DotNetResiliencePipeline.Services;
 /// Service that executes operations under an <see cref="AdaptiveTimeoutPolicy"/>, automatically
 /// adjusting the timeout ceiling based on observed response-time percentiles.
 /// </summary>
-public class AdaptiveTimeoutService
+public sealed class AdaptiveTimeoutService
 {
     private readonly ILogger<AdaptiveTimeoutService> _logger;
 

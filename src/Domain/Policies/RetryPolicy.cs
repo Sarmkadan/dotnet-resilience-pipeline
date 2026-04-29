@@ -9,7 +9,7 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// <summary>
 /// Retry policy with exponential backoff and jitter for transient failure handling.
 /// </summary>
-public class RetryPolicy : ResiliencyPolicy
+public sealed class RetryPolicy : ResiliencyPolicy
 {
     public enum BackoffStrategy
     {

@@ -13,7 +13,7 @@ namespace DotNetResiliencePipeline.Services;
 /// <summary>
 /// Service handling timeout policy execution with configurable limits.
 /// </summary>
-public class TimeoutService
+public sealed class TimeoutService
 {
     /// <summary>
     /// Executes an operation with a timeout constraint.

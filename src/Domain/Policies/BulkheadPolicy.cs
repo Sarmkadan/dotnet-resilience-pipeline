@@ -10,7 +10,7 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// Bulkhead pattern implementation that isolates resources to prevent resource exhaustion.
 /// Limits concurrent executions to protect system resources.
 /// </summary>
-public class BulkheadPolicy : ResiliencyPolicy
+public sealed class BulkheadPolicy : ResiliencyPolicy
 {
     /// <summary>
     /// Maximum number of concurrent executions allowed.

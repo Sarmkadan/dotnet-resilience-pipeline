@@ -9,7 +9,7 @@ namespace DotNetResiliencePipeline.Data;
 /// <summary>
 /// Execution record for tracking individual operation executions.
 /// </summary>
-public class ExecutionRecord
+public sealed class ExecutionRecord
 {
     public string ExecutionId { get; set; } = Guid.NewGuid().ToString();
     public string PolicyName { get; set; } = string.Empty;
@@ -26,7 +26,7 @@ public class ExecutionRecord
 /// <summary>
 /// Repository for managing execution history and metrics.
 /// </summary>
-public class ExecutionHistoryRepository
+public sealed class ExecutionHistoryRepository
 {
     private readonly List<ExecutionRecord> _history;
     private readonly object _lockObj = new object();

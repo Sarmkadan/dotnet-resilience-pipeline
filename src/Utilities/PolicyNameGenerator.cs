@@ -13,7 +13,7 @@ namespace DotNetResiliencePipeline.Utilities;
 /// Generates meaningful, unique, and consistent policy names.
 /// Supports naming conventions, auto-numbering, and namespace prefixing.
 /// </summary>
-public class PolicyNameGenerator
+public sealed class PolicyNameGenerator
 {
     private readonly ConcurrentDictionary<string, int> _nameCounters = new();
     private readonly HashSet<string> _usedNames = new();
@@ -179,7 +179,7 @@ public class PolicyNameGenerator
 /// <summary>
 /// Suggested naming convention template for policies.
 /// </summary>
-public class NamingTemplate
+public sealed class NamingTemplate
 {
     public string Service { get; set; } = string.Empty;
     public string Operation { get; set; } = string.Empty;
