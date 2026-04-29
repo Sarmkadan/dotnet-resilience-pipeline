@@ -5,8 +5,10 @@
 // =============================================================================
 
 using Microsoft.Extensions.DependencyInjection;
+using DotNetResiliencePipeline.Api.Controllers;
 using DotNetResiliencePipeline.Data;
 using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Formatters;
 using DotNetResiliencePipeline.Services;
 
 namespace DotNetResiliencePipeline.Configuration;
@@ -36,6 +38,13 @@ public static class DependencyInjectionExtensions
         services.AddSingleton<TimeoutService>();
         services.AddSingleton<BulkheadService>();
         services.AddSingleton<FallbackService>();
+        services.AddSingleton<FailureInjectionService>();
+
+        // Register formatters / exporters
+        services.AddSingleton<MetricsExporter>();
+
+        // Register API controllers
+        services.AddSingleton<CircuitBreakerDashboardController>();
 
         // Register pipeline service
         services.AddSingleton(provider =>

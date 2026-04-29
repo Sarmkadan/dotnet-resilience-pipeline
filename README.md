@@ -18,6 +18,9 @@ A comprehensive, production-grade resilience library for .NET applications featu
 - [Examples](#examples)
 - [API Reference](#api-reference)
 - [Monitoring & Metrics](#monitoring--metrics)
+- [Circuit Breaker Dashboard](#circuit-breaker-dashboard)
+- [Failure Injection Testing](#failure-injection-testing)
+- [Resilience Metrics Export](#resilience-metrics-export)
 - [Deployment](#deployment)
 - [Troubleshooting](#troubleshooting)
 - [Testing](#testing)
@@ -55,6 +58,9 @@ Key use cases:
 - **Event Publishing**: Built-in event system for custom observability
 - **Policy Validation**: Compile-time and runtime configuration validation
 - **Performance Monitoring**: Real-time performance metrics and diagnostics
+- **Circuit Breaker Dashboard**: Real-time per-breaker health view with state, trip count, and reset API
+- **Failure Injection Testing**: Deterministic fault injection (exceptions, latency, timeouts) for resilience testing
+- **Resilience Metrics Export**: One-click export of pipeline and per-policy metrics as JSON, CSV, or Prometheus
 
 ## Installation
 
@@ -476,6 +482,167 @@ eventPublisher.Subscribe((PolicyEvent @event) =>
 {
     Console.WriteLine($"Event: {@event.EventType} - {@event.PolicyName}");
 });
+```
+
+## Circuit Breaker Dashboard
+
+`CircuitBreakerDashboardController` provides a real-time view of every circuit breaker registered in the pipeline.
+
+### API endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/dashboard/circuit-breakers` | Full dashboard — all breakers, overall health |
+| `GET` | `/api/dashboard/circuit-breakers/{name}` | Single breaker status |
+| `POST` | `/api/dashboard/circuit-breakers/{name}/reset` | Manually reset a breaker to Closed |
+| `GET` | `/api/dashboard/circuit-breakers/open` | Only Open breakers |
+
+### Programmatic usage
+
+```csharp
+var dashboard = new CircuitBreakerDashboardController(pipeline, circuitBreakerService);
+
+// Full overview
+var result = await dashboard.GetDashboardAsync();
+Console.WriteLine($"Health: {result.Data!.OverallHealth}");
+Console.WriteLine($"Open breakers: {result.Data.OpenCount}");
+
+foreach (var b in result.Data.Breakers)
+    Console.WriteLine($"  {b.Name}: {b.State} (trips={b.TripCount})");
+
+// Reset a breaker
+await dashboard.ResetBreakerAsync("payment-service-cb");
+```
+
+### CLI
+
+```bash
+# Show full dashboard
+dotnet run -- dashboard
+
+# Show a single breaker
+dotnet run -- dashboard --name payment-service-cb
+
+# Reset a breaker
+dotnet run -- dashboard --name payment-service-cb --reset
+```
+
+## Failure Injection Testing
+
+`FailureInjectionService` lets you inject controlled faults at any call-site to verify that your resilience policies behave correctly under adverse conditions.
+
+### Injection types
+
+| Type | Description |
+|------|-------------|
+| `Exception` | Throw a configurable exception (default: `InjectedFaultException`) |
+| `Latency` | Prepend an artificial delay before the real operation |
+| `Timeout` | Simulate a hung operation that exceeds your timeout threshold |
+
+### Usage
+
+```csharp
+var injector = new FailureInjectionService();
+
+// Always throw when calling "payment-api"
+injector.AddRule(new InjectionRule
+{
+    Key          = "payment-api",
+    Type         = InjectionType.Exception,
+    InjectionRate = 1.0,
+    ExceptionMessage = "Simulated payment gateway error"
+});
+
+// 50 % of calls to "inventory-api" experience 300 ms extra latency
+injector.AddRule(new InjectionRule
+{
+    Key          = "inventory-api",
+    Type         = InjectionType.Latency,
+    InjectionRate = 0.5,
+    LatencyDelay = TimeSpan.FromMilliseconds(300)
+});
+
+// Wrap real calls through the injector
+var result = await injector.ExecuteAsync(
+    "payment-api",
+    ct => callRealPaymentServiceAsync(ct));
+
+// Disable all rules between test cases
+injector.DisableAll();
+```
+
+### Dependency injection
+
+```csharp
+// Registered automatically by AddResiliencePipeline()
+var injector = provider.GetRequiredService<FailureInjectionService>();
+```
+
+### CLI
+
+```bash
+# Describe an injection rule (rules must be registered programmatically)
+dotnet run -- inject --rule payment-api --type exception --rate 1.0
+dotnet run -- inject --rule inventory-api --type latency --rate 0.5
+```
+
+## Resilience Metrics Export
+
+`MetricsExporter` serialises a `PipelineMetricsSnapshot` into three industry-standard formats.
+
+### Formats
+
+| Format | Description |
+|--------|-------------|
+| JSON | Structured payload — pipeline totals + per-policy breakdown |
+| CSV | Spreadsheet-friendly; one row per policy with a header |
+| Prometheus | OpenMetrics text exposition (v0.0.4) — ready for scraping |
+
+### Usage
+
+```csharp
+var exporter = new MetricsExporter();
+var snapshot = pipeline.GetStats();     // implements IPipelineMetrics
+
+// JSON
+string json = exporter.ExportJson(snapshot);
+await File.WriteAllTextAsync("metrics.json", json);
+
+// CSV
+string csv = exporter.ExportCsv(snapshot);
+await File.WriteAllTextAsync("metrics.csv", csv);
+
+// Prometheus
+string prom = exporter.ExportPrometheus(snapshot);
+// expose via an HTTP endpoint, e.g. GET /metrics
+```
+
+### Prometheus metric names
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `resilience_pipeline_executions_total` | counter | Total pipeline executions |
+| `resilience_pipeline_executions_success_total` | counter | Successful executions |
+| `resilience_pipeline_executions_failure_total` | counter | Failed executions |
+| `resilience_pipeline_success_rate` | gauge | Pipeline success rate (0–100) |
+| `resilience_pipeline_retry_total` | counter | Total retry attempts |
+| `resilience_pipeline_circuit_breaker_trips_total` | counter | Total circuit breaker trips |
+| `resilience_pipeline_timeout_total` | counter | Total timeout events |
+| `resilience_policy_executions_total` | counter | Per-policy executions |
+| `resilience_policy_success_rate` | gauge | Per-policy success rate |
+| `resilience_circuit_breaker_state` | gauge | CB state (0=Closed, 1=Open, 2=HalfOpen) |
+
+### CLI
+
+```bash
+# Print JSON to stdout
+dotnet run -- export
+
+# Export CSV to file
+dotnet run -- export --format csv --output metrics.csv
+
+# Export Prometheus text to file
+dotnet run -- export --format prometheus --output metrics.txt
 ```
 
 ### Logging Integration
