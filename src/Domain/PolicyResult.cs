@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -75,7 +76,7 @@ public class PolicyResult<T>
     /// </summary>
     public void OnSuccess(Action<T> action)
     {
-        if (IsSuccess && Data != null)
+        if (IsSuccess && Data is not null)
             action(Data);
     }
 
@@ -84,7 +85,7 @@ public class PolicyResult<T>
     /// </summary>
     public void OnFailure(Action<Exception> action)
     {
-        if (!IsSuccess && Exception != null)
+        if (!IsSuccess && Exception is not null)
             action(Exception);
     }
 
@@ -93,7 +94,7 @@ public class PolicyResult<T>
     /// </summary>
     public PolicyResult<TNew> Map<TNew>(Func<T, TNew> mapper)
     {
-        if (!IsSuccess || Data == null)
+        if (!IsSuccess || Data is null)
         {
             return PolicyResult<TNew>.Failure(
                 Exception ?? new InvalidOperationException("Result is not successful"),

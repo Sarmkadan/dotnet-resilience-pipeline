@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -26,7 +27,7 @@ public class PolicyRepository : IRepository<ResiliencyPolicy>
     /// </summary>
     public void Create(ResiliencyPolicy entity)
     {
-        if (entity == null)
+        if (entity is null)
             throw new ArgumentNullException(nameof(entity));
 
         lock (_lockObj)
@@ -57,7 +58,7 @@ public class PolicyRepository : IRepository<ResiliencyPolicy>
     /// </summary>
     public void Update(ResiliencyPolicy entity)
     {
-        if (entity == null)
+        if (entity is null)
             throw new ArgumentNullException(nameof(entity));
 
         lock (_lockObj)

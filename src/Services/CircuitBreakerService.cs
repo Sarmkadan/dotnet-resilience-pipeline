@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -21,7 +22,7 @@ public class CircuitBreakerService
         CircuitBreakerPolicy policy,
         Func<Task<T>> operation)
     {
-        if (policy == null)
+        if (policy is null)
             throw new ArgumentNullException(nameof(policy));
 
         if (!policy.IsEnabled)
@@ -65,7 +66,7 @@ public class CircuitBreakerService
     /// </summary>
     public void OpenCircuit(CircuitBreakerPolicy policy)
     {
-        if (policy == null)
+        if (policy is null)
             throw new ArgumentNullException(nameof(policy));
 
         // Simulate opening by setting high failure count
@@ -77,7 +78,7 @@ public class CircuitBreakerService
     /// </summary>
     public void ResetCircuit(CircuitBreakerPolicy policy)
     {
-        if (policy == null)
+        if (policy is null)
             throw new ArgumentNullException(nameof(policy));
 
         policy.ManualReset();
