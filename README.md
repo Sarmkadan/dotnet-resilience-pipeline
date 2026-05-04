@@ -19,6 +19,7 @@ A comprehensive, production-grade resilience library for .NET applications featu
 - [API Reference](#api-reference)
 - [Monitoring & Metrics](#monitoring--metrics)
 - [Circuit Breaker Dashboard](#circuit-breaker-dashboard)
+- [CliCommandValidator](#clicommandvalidator)
 - [Failure Injection Testing](#failure-injection-testing)
 - [Resilience Metrics Export](#resilience-metrics-export)
 - [Deployment](#deployment)
@@ -105,6 +106,52 @@ CircuitBreakerDiagnosticsValidation.EnsureValid(new CircuitBreakerConfiguration
 // Initialize properties
 });
 ```
+
+## CliCommandValidator
+
+The `CliCommandValidator` class is designed to validate CLI commands and their arguments before execution, ensuring that all required parameters are present and values are within acceptable ranges. It returns a `ValidationResult` which provides information about the validation status, including any detected errors or warnings.
+
+### Example Usage
+```csharp
+using DotNetResiliencePipeline.Cli;
+
+// Create the validator
+var validator = new CliCommandValidator();
+
+// Define command options
+var options = new CommandOptions { 
+    Command = "policy", 
+    Subcommand = "create",
+    PolicyName = "my-policy",
+    PolicyType = "retry" 
+};
+
+// Validate the options
+ValidationResult result = validator.Validate(options);
+
+// Check if valid using IsValid property
+if (result.IsValid)
+{
+    Console.WriteLine("Command is valid");
+}
+else
+{
+    // Use ToString() to print validation details
+    Console.WriteLine(result.ToString());
+}
+
+// Access Errors and Warnings lists
+foreach (var error in result.Errors)
+{
+    Console.WriteLine($"Error: {error}");
+}
+
+foreach (var warning in result.Warnings)
+{
+    Console.WriteLine($"Warning: {warning}");
+}
+```
+
 ## PoliciesControllerExtensions
 
 The `PoliciesControllerExtensions` class provides a set of extension methods for working with policy-related operations. It enables creating, retrieving, validating, and checking the existence of policies.
