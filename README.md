@@ -1,3 +1,7 @@
+[![Build](https://github.com/sarmkadan/dotnet-resilience-pipeline/actions/workflows/build.yml/badge.svg)](https://github.com/sarmkadan/dotnet-resilience-pipeline/actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
+
 # DotNet Resilience Pipeline
 
 A comprehensive, production-grade resilience library for .NET applications featuring circuit breaker, bulkhead, retry, timeout, and fallback patterns with fluent configuration and built-in observability.
