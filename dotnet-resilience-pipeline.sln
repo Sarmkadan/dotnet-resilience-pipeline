@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNetResiliencePipeline", "DotNetResiliencePipeline.csproj", "{8BEFEF3E-AA38-491B-BF29-97759539F773}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dotnet-resilience-pipeline.Tests", "tests\dotnet-resilience-pipeline.Tests\dotnet-resilience-pipeline.Tests.csproj", "{C2D3E4F5-A6B7-C8D9-E0F1-A2B3C4D5E6F7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,18 @@ Global
 		{8BEFEF3E-AA38-491B-BF29-97759539F773}.Release|x64.Build.0 = Release|Any CPU
 		{8BEFEF3E-AA38-491B-BF29-97759539F773}.Release|x86.ActiveCfg = Release|Any CPU
 		{8BEFEF3E-AA38-491B-BF29-97759539F773}.Release|x86.Build.0 = Release|Any CPU
+		{C2D3E4F5-A6B7-C8D9-E0F1-A2B3C4D5E6F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2D3E4F5-A6B7-C8D9-E0F1-A2B3C4D5E6F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2D3E4F5-A6B7-C8D9-E0F1-A2B3C4D5E6F7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C2D3E4F5-A6B7-C8D9-E0F1-A2B3C4D5E6F7}.Debug|x64.Build.0 = Debug|Any CPU
+		{C2D3E4F5-A6B7-C8D9-E0F1-A2B3C4D5E6F7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C2D3E4F5-A6B7-C8D9-E0F1-A2B3C4D5E6F7}.Debug|x86.Build.0 = Debug|Any CPU
+		{C2D3E4F5-A6B7-C8D9-E0F1-A2B3C4D5E6F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2D3E4F5-A6B7-C8D9-E0F1-A2B3C4D5E6F7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2D3E4F5-A6B7-C8D9-E0F1-A2B3C4D5E6F7}.Release|x64.ActiveCfg = Release|Any CPU
+		{C2D3E4F5-A6B7-C8D9-E0F1-A2B3C4D5E6F7}.Release|x64.Build.0 = Release|Any CPU
+		{C2D3E4F5-A6B7-C8D9-E0F1-A2B3C4D5E6F7}.Release|x86.ActiveCfg = Release|Any CPU
+		{C2D3E4F5-A6B7-C8D9-E0F1-A2B3C4D5E6F7}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
