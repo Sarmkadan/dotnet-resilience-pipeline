@@ -20,13 +20,16 @@ public sealed class CircuitBreakerService
     /// </summary>
     public async Task<T> ExecuteAsync<T>(
         CircuitBreakerPolicy policy,
-        Func<Task<T>> operation)
+        Func<CancellationToken, Task<T>> operation,
+        CancellationToken cancellationToken = default)
     {
         if (policy is null)
             throw new ArgumentNullException(nameof(policy));
 
         if (!policy.IsEnabled)
-            return await operation();
+            return await operation(cancellationToken);
+
+        cancellationToken.ThrowIfCancellationRequested();
 
         // Check if circuit should transition to half-open
         policy.AttemptReset();
@@ -45,12 +48,18 @@ public sealed class CircuitBreakerService
 
         try
         {
-            var result = await operation();
+            var result = await operation(cancellationToken);
             stopwatch.Stop();
 
             policy.RecordSuccess();
 
             return result;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            stopwatch.Stop();
+            // Do not count external cancellation as a circuit breaker failure
+            throw;
         }
         catch (Exception ex)
         {
@@ -59,6 +68,16 @@ public sealed class CircuitBreakerService
 
             throw;
         }
+    }
+
+    /// <summary>
+    /// Executes an operation through the circuit breaker policy (without cancellation support).
+    /// </summary>
+    public async Task<T> ExecuteAsync<T>(
+        CircuitBreakerPolicy policy,
+        Func<Task<T>> operation)
+    {
+        return await ExecuteAsync(policy, _ => operation(), CancellationToken.None);
     }
 
     /// <summary>
