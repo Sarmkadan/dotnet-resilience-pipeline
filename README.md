@@ -401,13 +401,14 @@ if (validationErrors.Any())
 
 See the `examples/` directory for complete, runnable examples:
 
-1. **BasicUsage.cs** - Simple circuit breaker and retry
-2. **MicroserviceIntegration.cs** - Realistic microservice scenarios
-3. **AdvancedConfiguration.cs** - Complex multi-policy setup
-4. **MetricsAndMonitoring.cs** - Performance tracking
-5. **ErrorHandling.cs** - Exception handling patterns
-6. **CacheIntegration.cs** - Caching with resilience
-7. **HealthChecks.cs** - Health checking with resilience
+1. **BasicUsage.cs** - Minimal setup and first call
+2. **AdvancedUsage.cs** - Fluent builder with fallback actions and bulkhead
+3. **IntegrationExample.cs** - ASP.NET Core DI integration and background services
+4. **BulkheadPatternExample.cs** - Resource isolation
+5. **CircuitBreakerSimulation.cs** - Fault simulation
+6. **FallbackPatternExample.cs** - Graceful degradation
+7. **MetricsMonitoringExample.cs** - Performance tracking
+8. **MicroserviceIntegration.cs** - Complex microservice scenarios
 
 ## API Reference
 
