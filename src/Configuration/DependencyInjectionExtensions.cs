@@ -5,6 +5,7 @@
 // =============================================================================
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using DotNetResiliencePipeline.Api.Controllers;
 using DotNetResiliencePipeline.Data;
 using DotNetResiliencePipeline.Domain.Policies;
@@ -58,13 +59,69 @@ public static class DependencyInjectionExtensions
     }
 
     /// <summary>
+    /// Adds resilience pipeline with configuration options using IOptions pattern.
+    /// </summary>
+    public static IServiceCollection AddResiliencePipelineWithOptions(
+        this IServiceCollection services,
+        Action<DotnetResiliencePipelineOptions> configureOptions)
+    {
+        if (services is null)
+            throw new ArgumentNullException(nameof(services));
+
+        if (configureOptions is null)
+            throw new ArgumentNullException(nameof(configureOptions));
+
+        // Configure options
+        services.Configure(configureOptions);
+
+        // Register options validator
+        services.AddSingleton<IValidateOptions<DotnetResiliencePipelineOptions>, DotnetResiliencePipelineOptionsValidator>();
+
+        // Register repositories
+        services.AddSingleton<PolicyRepository>();
+        services.AddSingleton<ExecutionHistoryRepository>();
+
+        // Register services
+        services.AddSingleton<CircuitBreakerService>();
+        services.AddSingleton<RetryService>();
+        services.AddSingleton<TimeoutService>();
+        services.AddSingleton<BulkheadService>();
+        services.AddSingleton<FallbackService>();
+        services.AddSingleton<FailureInjectionService>();
+
+        // Register formatters / exporters
+        services.AddSingleton<MetricsExporter>();
+
+        // Register API controllers
+        services.AddSingleton<CircuitBreakerDashboardController>();
+
+        // Register pipeline service with options
+        services.AddSingleton(provider =>
+        {
+            var options = provider.GetRequiredService<IOptions<DotnetResiliencePipelineOptions>>().Value;
+            var builder = new ResiliencyPipelineBuilder();
+
+            // Add policies from options
+            builder.WithCircuitBreaker("default-circuit-breaker", options.CircuitBreaker.ToPolicy);
+            builder.WithRetry("default-retry", options.Retry.ToPolicy);
+            builder.WithTimeout("default-timeout", options.Timeout.ToPolicy);
+            builder.WithBulkhead("default-bulkhead", options.Bulkhead.MaxParallelization, options.Bulkhead.MaxQueueLength);
+            builder.WithFallback("default-fallback", options.Fallback.ToPolicy);
+
+            return builder.Build();
+        });
+
+        return services;
+    }
+
+    /// <summary>
     /// Adds resilience pipeline with custom configuration.
     /// </summary>
     public static IServiceCollection AddResiliencePipeline<TConfig>(
         this IServiceCollection services,
         TConfig config,
         Action<TConfig, ResiliencyPipelineBuilder> configureBuilder)
-        where TConfig : class
+    where TConfig : class
     {
         if (services is null)
             throw new ArgumentNullException(nameof(services));
@@ -106,7 +163,7 @@ public static class DependencyInjectionExtensions
     public static IServiceCollection AddPolicy<TPolicy>(
         this IServiceCollection services,
         Func<IServiceProvider, TPolicy> factory)
-        where TPolicy : ResiliencyPolicy
+    where TPolicy : ResiliencyPolicy
     {
         if (services is null)
             throw new ArgumentNullException(nameof(services));

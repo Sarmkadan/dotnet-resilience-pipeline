@@ -401,6 +401,81 @@ services.AddResiliencePipeline(builder =>
 });
 ```
 
+### Configuration via appsettings.json (IOptions Pattern)
+
+Configure resilience policies using configuration files with validation:
+
+```json
+{
+  "DotnetResiliencePipeline": {
+    "CircuitBreaker": {
+      "FailureThreshold": 5,
+      "OpenDurationSeconds": 30,
+      "SuccessThresholdInHalfOpen": 3
+    },
+    "Retry": {
+      "MaxRetries": 3,
+      "InitialDelayMs": 100,
+      "Strategy": "Exponential",
+      "MaxDelayMs": 30000,
+      "BackoffMultiplier": 2.0,
+      "UseJitter": true,
+      "JitterFactor": 1.0
+    },
+    "Timeout": {
+      "TimeoutSeconds": 10
+    },
+    "Bulkhead": {
+      "MaxParallelization": 10,
+      "MaxQueueLength": 50
+    },
+    "Fallback": {
+      "FallbackOnAnyException": true,
+      "FallbackTimeoutSeconds": 5
+    }
+  }
+}
+```
+
+```csharp
+// In Program.cs or Startup.cs
+builder.Services.AddResiliencePipelineWithOptions(options =>
+{
+    options.CircuitBreaker.FailureThreshold = 5;
+    options.Retry.MaxRetries = 3;
+    options.Timeout.TimeoutSeconds = 10;
+    options.Bulkhead.MaxParallelization = 10;
+    options.Fallback.FallbackOnAnyException = true;
+});
+```
+
+### Configuration Options Reference
+
+#### CircuitBreaker Options
+- **FailureThreshold**: Number of consecutive failures before opening the circuit (default: 5, range: 1-1000)
+- **OpenDurationSeconds**: Duration the circuit remains open before transitioning to half-open (default: 30, range: 1-3600)
+- **SuccessThresholdInHalfOpen**: Number of successful executions in half-open state to close the circuit (default: 3, range: 1-100)
+
+#### Retry Options
+- **MaxRetries**: Maximum number of retry attempts (default: 3, range: 0-20)
+- **InitialDelayMs**: Initial delay between retries in milliseconds (default: 100, range: 1-10000)
+- **Strategy**: Backoff strategy (Fixed, Linear, Exponential, ExponentialWithJitter) (default: Exponential)
+- **MaxDelayMs**: Maximum delay between retries in milliseconds (default: 30000, range: 1-300000)
+- **BackoffMultiplier**: Multiplier for exponential/linear backoff (default: 2.0, range: 1.0-10.0)
+- **UseJitter**: Whether to apply jitter to exponential backoff (default: true)
+- **JitterFactor**: Random jitter factor (0.0 = no jitter, 1.0 = full jitter) (default: 1.0, range: 0.0-1.0)
+
+#### Timeout Options
+- **TimeoutSeconds**: Timeout duration in seconds (default: 10, range: 1-300)
+
+#### Bulkhead Options
+- **MaxParallelization**: Maximum number of concurrent executions (default: 10, range: 1-1000)
+- **MaxQueueLength**: Maximum queue length for requests waiting to execute (default: 50, range: 0-10000)
+
+#### Fallback Options
+- **FallbackOnAnyException**: Whether to fallback on any exception (default: true)
+- **FallbackTimeoutSeconds**: Fallback timeout duration in seconds (default: 5, range: 1-60)
+
 ### Configuration Validation
 
 ```csharp
