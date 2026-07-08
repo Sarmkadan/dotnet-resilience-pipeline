@@ -15,6 +15,7 @@
 
 <ItemGroup>
 <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
+<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.9" />
 </ItemGroup>
 
 <ItemGroup>
