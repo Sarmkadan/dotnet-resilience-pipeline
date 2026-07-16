@@ -114,6 +114,66 @@ if (openBreakersResponse.Success && openBreakersResponse.Data != null)
 }
 ```
 
+## CircuitBreakerDiagnostics
+
+The `CircuitBreakerDiagnostics` utility class provides comprehensive diagnostic capabilities for analyzing circuit breaker policies. It generates detailed reports, analyzes effectiveness, and suggests optimal configurations based on observed failure patterns and circuit breaker state.
+
+```csharp
+// Example: Using CircuitBreakerDiagnostics for circuit breaker analysis
+var circuitBreakerPolicy = new CircuitBreakerPolicy
+{
+    Id = "order-processing-circuit-breaker",
+    Name = "Order Processing Circuit Breaker",
+    FailureThreshold = 5,
+    OpenDuration = TimeSpan.FromSeconds(30),
+    SuccessThresholdInHalfOpen = 3,
+    IsEnabled = true
+};
+
+// Generate a diagnostic report
+var diagnosticReport = CircuitBreakerDiagnostics.GenerateDiagnosticReport(circuitBreakerPolicy);
+Console.WriteLine(diagnosticReport);
+
+if (diagnosticReport.HasIssues)
+{
+    Console.WriteLine("\nIssues detected:");
+    foreach (var issue in diagnosticReport.Issues)
+    {
+        Console.WriteLine($"  - {issue}");
+    }
+}
+
+// Analyze circuit breaker effectiveness
+await circuitBreakerPolicy.ExecuteAsync(async () => 
+{
+    // Simulate some operations
+    await Task.Delay(10);
+});
+
+var effectiveness = CircuitBreakerDiagnostics.AnalyzeEffectiveness(
+    circuitBreakerPolicy,
+    totalExecutions: 1000,
+    failedExecutions: 45
+);
+
+Console.WriteLine($"\nEffectiveness Analysis for '{effectiveness.PolicyName}':");
+Console.WriteLine($"  Total Executions: {effectiveness.TotalExecutions}");
+Console.WriteLine($"  Failed Executions: {effectiveness.FailedExecutions}");
+Console.WriteLine($"  Failure Rate: {effectiveness.FailureRate:F1}%");
+Console.WriteLine($"  Effectiveness Rating: {effectiveness.EffectivenessRating}");
+Console.WriteLine($"  Is Problematic: {effectiveness.IsProblematic}");
+
+// Suggest optimal configuration based on observed patterns
+var suggestedConfig = CircuitBreakerDiagnostics.SuggestOptimalConfiguration(
+    policyName: "payment-processing-circuit-breaker",
+    observedFailureRate: 12.5,
+    averageRecoveryTimeMs: 2500
+);
+
+Console.WriteLine($"\nSuggested Configuration:");
+Console.WriteLine(suggestedConfig);
+```
+
 ## ThrottlingHelper
 
 The `ThrottlingHelper` class provides rate limiting and throttling functionality using a leaky bucket algorithm. It manages individual `Throttle` instances for different policies, allowing you to enforce maximum request rates and burst capacities. The helper tracks statistics for each throttle, including request counts, throttled requests, and current token availability.
