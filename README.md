@@ -168,5 +168,62 @@ Console.WriteLine($"Trend direction: {trend.Direction}");
 await metricsCollector.StopAsync();
 ```
 
+## MetricsController
+
+The `MetricsController` provides REST API endpoints for retrieving execution statistics, health metrics, and execution history from the resilience pipeline. It exposes endpoints for pipeline-level metrics, per-policy metrics, health status checks, execution history, and metrics reset functionality.
+
+
+
+
+
+
+
+```csharp
+// Example: Using the MetricsController in an ASP.NET Core application
+var builder = WebApplication.CreateBuilder(args);
+
+// Add required services
+builder.Services.AddResiliencyPipelineServices();
+builder.Services.AddSingleton<ExecutionHistoryRepository>();
+builder.Services.AddControllers();
+
+var app = builder.Build();
+
+// Map endpoints
+app.MapGet("/api/metrics/pipeline", async (MetricsController controller) =>
+    await controller.GetPipelineMetricsAsync());
+
+app.MapGet("/api/metrics/policies", async (MetricsController controller) =>
+    await controller.GetPoliciesMetricsAsync());
+
+app.MapGet("/api/metrics/health", async (MetricsController controller) =>
+    await controller.GetHealthStatusAsync());
+
+app.MapGet("/api/metrics/history", async (MetricsController controller, int limit = 100) =>
+    await controller.GetExecutionHistoryAsync(limit));
+
+app.MapPost("/api/metrics/reset", async (MetricsController controller) =>
+    await controller.ResetMetricsAsync());
+
+// Initialize controller with injected dependencies
+var pipelineService = app.Services.GetRequiredService<ResiliencyPipelineService>();
+var historyRepository = app.Services.GetRequiredService<ExecutionHistoryRepository>();
+var metricsController = new MetricsController(pipelineService, historyRepository);
+
+// Example: Calling controller methods directly
+var pipelineMetrics = await metricsController.GetPipelineMetricsAsync();
+Console.WriteLine($"Pipeline ID: {pipelineMetrics.Data?.PipelineId}");
+Console.WriteLine($"Success Rate: {pipelineMetrics.Data?.SuccessRate:P}");
+Console.WriteLine($"Total Executions: {pipelineMetrics.Data?.TotalExecutions}");
+
+var healthStatus = await metricsController.GetHealthStatusAsync();
+Console.WriteLine($"Health Status: {healthStatus.Data?.Status}");
+
+var policiesMetrics = await metricsController.GetPoliciesMetricsAsync();
+foreach (var policy in policiesMetrics.Data ?? new List<PolicyMetricsDto>()) {
+    Console.WriteLine($"Policy {policy.PolicyName}: {policy.SuccessRate:P} success rate");
+}
+```
+
 ## ...
 
