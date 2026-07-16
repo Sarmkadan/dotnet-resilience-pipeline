@@ -114,6 +114,81 @@ if (openBreakersResponse.Success && openBreakersResponse.Data != null)
 }
 ```
 
+## ResiliencyHelper
+
+The `ResiliencyHelper` utility class provides helper methods for working with resilience policies and execution records. It offers functionality for creating policy results from execution records, converting execution results to records, validating policy configurations, generating health reports, and exporting policy configurations for monitoring and debugging purposes.
+
+```csharp
+// Example: Using ResiliencyHelper to create policy results and execution records
+var helper = new ResiliencyHelper();
+
+// Create an execution record from a successful policy execution
+var executionRecord = new ExecutionRecord
+{
+    PolicyName = "order-processing-circuit-breaker",
+    OperationKey = "process-order",
+    StartedAt = DateTime.UtcNow.AddSeconds(-5),
+    CompletedAt = DateTime.UtcNow,
+    IsSuccessful = true,
+    Exception = null,
+    Context = new Dictionary<string, object> { { "orderId", "12345" } }
+};
+
+// Convert execution record to policy result
+var policyResult = ResiliencyHelper.CreateResultFromRecord(executionRecord);
+Console.WriteLine($"Policy result created: Success={policyResult.Success}, Duration={policyResult.Duration.TotalMilliseconds}ms");
+
+// Create execution record from policy result
+var newRecord = ResiliencyHelper.CreateRecordFromResult(policyResult);
+Console.WriteLine($"Record created: PolicyName={newRecord.PolicyName}, IsSuccessful={newRecord.IsSuccessful}");
+
+// Validate a policy configuration
+var validationErrors = ResiliencyHelper.ValidatePolicy("order-processing-circuit-breaker");
+if (validationErrors.Count == 0)
+{
+    Console.WriteLine("Policy configuration is valid");
+}
+else
+{
+    Console.WriteLine($"Policy validation failed: {string.Join(", ", validationErrors)}");
+}
+
+// Generate a health report for the pipeline
+var healthReport = ResiliencyHelper.GenerateHealthReport("order-processing-pipeline");
+Console.WriteLine($"Pipeline health: {healthReport.HealthStatus}");
+Console.WriteLine($"Total executions: {healthReport.TotalExecutions}");
+Console.WriteLine($"Success rate: {healthReport.SuccessRate:P}");
+Console.WriteLine($"Policy count: {healthReport.PolicyCount}");
+
+// Determine pipeline health status
+var healthStatus = ResiliencyHelper.DeterminePipelineHealth(healthReport);
+Console.WriteLine($"Determined health status: {healthStatus}");
+
+// Export policy configuration for monitoring
+var configExport = ResiliencyHelper.ExportPolicyConfig("order-processing-circuit-breaker");
+foreach (var kvp in configExport)
+{
+    Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+}
+
+// Access pipeline health metrics
+var metrics = new PipelineHealthReport
+{
+    PipelineId = "order-processing-pipeline",
+    ReportGeneratedAt = DateTime.UtcNow,
+    TotalExecutions = 1500,
+    SuccessRate = 0.95,
+    PolicyCount = 3,
+    HealthStatus = HealthStatus.Healthy,
+    Policies = new List<PolicySnapshot>(),
+    HistoryStatistics = new Dictionary<string, object> { { "lastHour", 1200 } }
+};
+
+Console.WriteLine($"Pipeline {metrics.PipelineId} generated at {metrics.ReportGeneratedAt:O}");
+Console.WriteLine($"Success rate: {metrics.SuccessRate:P}");
+Console.WriteLine($"Health status: {metrics.HealthStatus}");
+```
+
 ## HealthCheckWorker
 
 The `HealthCheckWorker` is a background service that continuously monitors the health of resilience policies by periodically checking their success rates. It automatically detects when policies degrade below configured thresholds and publishes health change events. The worker provides real-time health status, historical metrics, and programmatic control over monitoring behavior.
