@@ -1168,3 +1168,135 @@ Console.WriteLine($"Snapshot - Total Executions: {snapshot.TotalExecutions}");
 policy.ResetStatistics();
 Console.WriteLine($"Statistics reset. Total executions: {policy.TotalExecutions}");
 ```
+
+## ResiliencyPipelineService
+
+The `ResiliencyPipelineService` serves as the central orchestrator for the DotNet Resilience Pipeline library. It manages all registered resilience policies (circuit breakers, retries, timeouts, bulkheads, and fallbacks) and provides a unified API for executing operations through the complete resilience pipeline. The service tracks comprehensive execution statistics across all policies and operations, enabling detailed monitoring and observability of the entire resilience system.
+
+### Features
+- Central policy registry for all resilience policies
+- Unified execution API supporting circuit breaker, retry, timeout, bulkhead, and fallback patterns
+- Comprehensive execution statistics tracking
+- Thread-safe policy management
+- Support for both typed and void operations
+- Automatic statistics aggregation across all policies
+
+### Example Usage
+```csharp
+using DotNetResiliencePipeline.Services;
+using DotNetResiliencePipeline.Domain.Policies;
+using System;
+using System.Threading.Tasks;
+
+// Create the pipeline service
+var pipelineService = new ResiliencyPipelineService();
+
+// Create and register policies
+var retryPolicy = new RetryPolicy("user-service-retry")
+{
+    MaxRetries = 3,
+    InitialDelay = TimeSpan.FromMilliseconds(100),
+    Strategy = BackoffStrategy.Exponential,
+    IsEnabled = true
+};
+
+var timeoutPolicy = new TimeoutPolicy("user-service-timeout")
+{
+    Timeout = TimeSpan.FromSeconds(5),
+    IsEnabled = true
+};
+
+var circuitBreakerPolicy = new CircuitBreakerPolicy("user-service-circuit-breaker")
+{
+    FailureThreshold = 5,
+    SamplingDuration = TimeSpan.FromSeconds(30),
+    TimeToHalfOpen = TimeSpan.FromSeconds(10),
+    IsEnabled = true
+};
+
+// Register policies
+pipelineService.RegisterPolicy(retryPolicy);
+pipelineService.RegisterPolicy(timeoutPolicy);
+pipelineService.RegisterPolicy(circuitBreakerPolicy);
+
+// Execute an operation with complete pipeline protection (circuit breaker + retry + timeout)
+var result = await pipelineService.ExecuteAsync(
+    async ct => await CallExternalUserService(),
+    cancellationToken: CancellationToken.None,
+    circuitBreaker: circuitBreakerPolicy,
+    retry: retryPolicy,
+    timeout: timeoutPolicy
+);
+
+if (result.IsSuccessful)
+{
+    Console.WriteLine($"Operation succeeded: {result.Data}");
+    Console.WriteLine($"Execution time: {result.ExecutionTimeMs}ms");
+}
+else
+{
+    Console.WriteLine($"Operation failed: {result.Exception?.Message}");
+}
+
+// Execute a typed operation
+var userResult = await pipelineService.ExecuteAsync<string>(
+    async ct => await FetchUserProfile(123),
+    cancellationToken: CancellationToken.None,
+    circuitBreaker: circuitBreakerPolicy,
+    retry: retryPolicy,
+    timeout: timeoutPolicy
+);
+
+if (userResult.IsSuccessful)
+{
+    Console.WriteLine($"User profile: {userResult.Data}");
+}
+
+// Get pipeline statistics
+var stats = pipelineService.GetStatistics();
+Console.WriteLine($"Pipeline ID: {stats.PipelineId}");
+Console.WriteLine($"Created: {stats.CreatedAt:yyyy-MM-dd HH:mm:ss}");
+Console.WriteLine($"Total executions: {stats.TotalExecutions}");
+Console.WriteLine($"Success rate: {stats.SuccessRate:P}");
+Console.WriteLine($"Registered policies: {stats.PolicyCount}");
+
+// Get aggregated metrics
+var metrics = pipelineService.GetStats();
+Console.WriteLine($"Total executions: {metrics.TotalExecutions}");
+Console.WriteLine($"Successful: {metrics.SuccessfulExecutions}");
+Console.WriteLine($"Failed: {metrics.FailedExecutions}");
+Console.WriteLine($"Retry attempts: {metrics.RetryCount}");
+Console.WriteLine($"Circuit breaker trips: {metrics.CircuitBreakerTrips}");
+Console.WriteLine($"Timeouts: {metrics.TimeoutCount}");
+
+// Manage policies dynamically
+var allPolicies = pipelineService.GetAllPolicies();
+Console.WriteLine($"Total policies: {allPolicies.Count}");
+
+var specificPolicy = pipelineService.GetPolicy(retryPolicy.Id);
+if (specificPolicy != null)
+{
+    Console.WriteLine($"Found policy: {specificPolicy.Name}");
+}
+
+// Remove a policy
+bool removed = pipelineService.RemovePolicy(timeoutPolicy.Id);
+Console.WriteLine($"Policy removed: {removed}");
+
+// Reset statistics
+pipelineService.ResetStatistics();
+Console.WriteLine("Statistics reset. All counters cleared.");
+
+// Example helper methods
+async Task<string> CallExternalUserService()
+{
+    await Task.Delay(100);
+    return "User data retrieved";
+}
+
+async Task<string> FetchUserProfile(int userId)
+{
+    await Task.Delay(200);
+    return $"User profile for {userId}";
+}
+```
