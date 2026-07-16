@@ -376,6 +376,65 @@ service.AddFallbackTrigger(policy, typeof(TimeoutException));
 service.RemoveFallbackTrigger(policy, typeof(InvalidOperationException));
 ```
 
+## TimeoutServiceTests
+
+The `TimeoutServiceTests` class provides unit tests for the `TimeoutService` class, verifying its functionality for executing operations with timeout policies, handling timeout scenarios, validating policy configurations, and recording execution metrics.
+
+Here's an example usage:
+
+```csharp
+// Create a timeout service
+var service = new TimeoutService();
+
+// Create a timeout policy with 2 second timeout
+var policy = new TimeoutPolicy("api-timeout")
+{
+    Timeout = TimeSpan.FromSeconds(2),
+    IsEnabled = true
+};
+
+// Example 1: Execute a successful operation within timeout
+var result = await service.ExecuteAsync<string>(
+    policy,
+    async ct => "successful-result"
+);
+
+Console.WriteLine($"Result: {result}");
+Console.WriteLine($"Successful executions: {policy.SuccessfulExecutions}");
+
+// Example 2: Execute with disabled policy (bypasses timeout)
+var disabledPolicy = new TimeoutPolicy("no-timeout")
+{
+    Timeout = TimeSpan.FromSeconds(1),
+    IsEnabled = false
+};
+
+var disabledResult = await service.ExecuteAsync<string>(
+    disabledPolicy,
+    async ct => 
+    {
+        await Task.Delay(5000, ct); // 5 second delay
+        return "completed-despite-timeout";
+    }
+);
+
+Console.WriteLine($"Disabled policy result: {disabledResult}");
+
+// Example 3: Check if timeout has been exceeded
+var hasExceeded = service.HasExceededTimeout(policy, 2500); // 2.5 seconds
+Console.WriteLine($"Timeout exceeded: {hasExceeded}");
+
+// Example 4: Get timeout in milliseconds
+var timeoutMs = service.GetTimeoutMilliseconds(policy);
+Console.WriteLine($"Timeout in milliseconds: {timeoutMs}");
+
+// Example 5: Handle null policy gracefully
+var safeResult = await service.ExecuteAsync<string>(
+    null,
+    ct => Task.FromResult("safe-execution")
+);
+```
+
 ## CircuitBreakerPolicyTests
 
 The `CircuitBreakerPolicyTests` class provides unit tests for the `CircuitBreakerPolicy` class, verifying its functionality for circuit breaker state transitions, failure threshold handling, success threshold validation, and manual reset operations.
