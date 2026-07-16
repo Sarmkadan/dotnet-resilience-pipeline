@@ -107,6 +107,61 @@ CircuitBreakerDiagnosticsValidation.EnsureValid(new CircuitBreakerConfiguration
 });
 ```
 
+## CommandOptions
+
+The `CommandOptions` class represents the command-line options and arguments for the CLI interface. It serves as the primary data structure for parsing and validating user input when executing resilience policy operations, monitoring commands, and configuration operations. The class includes properties for common policy configuration options like retry counts, timeout durations, failure thresholds, and output formatting preferences.
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Cli;
+
+// Create command options for creating a retry policy
+var options = new CommandOptions
+{
+    Command = "policy",
+    Subcommand = "create",
+    PolicyName = "user-service-retry",
+    PolicyType = "retry",
+    MaxRetries = 5,
+    Timeout = TimeSpan.FromSeconds(30),
+    Verbose = true,
+    JsonOutput = true,
+    Arguments = new Dictionary<string, string>
+    {
+        {"endpoint", "https://api.example.com/users"},
+        {"method", "GET"}
+    },
+    Flags = new List<string> { "--dry-run", "-v" }
+};
+
+// Access properties
+Console.WriteLine($"Executing command: {options.Command} {options.Subcommand}");
+Console.WriteLine($"Policy: {options.PolicyName} ({options.PolicyType})");
+Console.WriteLine($"Configuration: {options.MaxRetries} retries, {options.Timeout?.TotalSeconds} second timeout");
+
+// Check flags
+if (options.HasFlag("dry-run", "dryrun"))
+{
+    Console.WriteLine("Running in dry-run mode");
+}
+
+// Get argument values
+string endpoint = options.GetArgument("endpoint", "https://default.example.com");
+string method = options.GetArgument("method");
+
+// Validate options
+var validationErrors = options.Validate();
+if (validationErrors.Count > 0)
+{
+    Console.WriteLine("Validation errors:");
+    foreach (var error in validationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+```
+
 ## CliCommandValidator
 
 The `CliCommandValidator` class is designed to validate CLI commands and their arguments before execution, ensuring that all required parameters are present and values are within acceptable ranges. It returns a `ValidationResult` which provides information about the validation status, including any detected errors or warnings.
