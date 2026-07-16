@@ -431,6 +431,65 @@ Strategy = BackoffStrategy.Fixed
 var fixedResult = fixedRetry.Execute(() => Database.Query("SELECT * FROM users"));
 ```
 
+
+## TimeoutPolicy
+
+The `TimeoutPolicy` class enforces maximum execution time for operations, ensuring that long-running operations are terminated to prevent resource exhaustion. It tracks execution times, identifies timeouts, and provides detailed metrics including average, longest, and shortest execution times, as well as percentile-based performance analysis.
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using System;
+
+// Create a timeout policy with a 5-second timeout
+var timeoutPolicy = new TimeoutPolicy("user-service-timeout")
+{
+Timeout = TimeSpan.FromSeconds(5)
+};
+
+// Validate configuration
+if (!timeoutPolicy.IsValidConfiguration(out var configError))
+{
+Console.WriteLine($"Invalid configuration: {configError}");
+}
+
+// Record successful execution times
+// Simulate an API call that takes 150ms
+timeoutPolicy.RecordExecutionTime(150);
+timeoutPolicy.RecordExecutionTime(250);
+timeoutPolicy.RecordExecutionTime(80);
+
+// Check if an execution time would exceed the timeout
+bool isTimedOut = timeoutPolicy.IsTimedOutMs(6000); // 6 seconds
+Console.WriteLine($"Would 6 seconds timeout? {isTimedOut}"); // True
+
+// Access timeout statistics
+Console.WriteLine($"Timeout count: {timeoutPolicy.TimeoutCount}");
+Console.WriteLine($"Average execution time: {timeoutPolicy.AverageExecutionTimeMs:F1}ms");
+Console.WriteLine($"Longest execution time: {timeoutPolicy.LongestExecutionTimeMs}ms");
+Console.WriteLine($"Shortest execution time: {timeoutPolicy.ShortestExecutionTimeMs}ms");
+Console.WriteLine($"Timeout percentage: {timeoutPolicy.GetTimeoutPercentage():F1}%");
+
+// Record a timeout event
+// Simulate an operation that timed out after 7 seconds
+timeoutPolicy.RecordTimeout(7000);
+
+// Get percentile execution times for performance analysis
+Console.WriteLine($"P95 execution time: {timeoutPolicy.GetPercentile95ExecutionTime()}ms");
+Console.WriteLine($"P99 execution time: {timeoutPolicy.GetPercentile99ExecutionTime()}ms");
+
+// Get detailed snapshot for monitoring
+var snapshot = timeoutPolicy.GetSnapshot();
+Console.WriteLine($"Policy snapshot - Timeout: {snapshot.Metadata["TimeoutMs"]}ms");
+Console.WriteLine($"Policy snapshot - P95: {snapshot.Metadata["P95ExecutionTimeMs"]}ms");
+Console.WriteLine($"Policy snapshot - Timeout percentage: {snapshot.Metadata["TimeoutPercentage"]}%");
+
+// Reset statistics when needed (e.g., after maintenance)
+timeoutPolicy.ResetStatistics();
+Console.WriteLine("Statistics reset. All counters cleared.");
+```
+
 ## AdaptiveTimeoutPolicy
 
 The `AdaptiveTimeoutPolicy` implements an intelligent timeout strategy that automatically adjusts its timeout ceiling based on observed response-time percentiles within a sliding window of recent executions. This policy learns from actual performance characteristics and dynamically scales timeouts to balance responsiveness with reliability, preventing both premature timeouts and excessive waiting.
