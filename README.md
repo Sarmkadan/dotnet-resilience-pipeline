@@ -225,5 +225,107 @@ foreach (var policy in policiesMetrics.Data ?? new List<PolicyMetricsDto>()) {
 }
 ```
 
+## PoliciesController
+
+The `PoliciesController` is a REST API controller that manages resilience policies through CRUD operations and validation. It provides endpoints for creating, retrieving, updating, and deleting policies, as well as validating policy configurations before application. The controller supports multiple policy types including Circuit Breaker, Retry, Timeout, Bulkhead, and Fallback policies.
+
+
+
+
+
+
+
+
+
+
+```csharp
+// Example: Using the PoliciesController in an ASP.NET Core application
+var builder = WebApplication.CreateBuilder(args);
+
+// Add required services
+builder.Services.AddResiliencyPipelineServices();
+builder.Services.AddSingleton<PolicyRepository>();
+builder.Services.AddControllers();
+
+var app = builder.Build();
+
+// Map endpoints
+app.MapGet("/api/policies", async (PoliciesController controller) =>
+    await controller.GetAllPoliciesAsync());
+
+app.MapGet("/api/policies/{id}", async (PoliciesController controller, string id) =>
+    await controller.GetPolicyAsync(id));
+
+app.MapPost("/api/policies", async (PoliciesController controller, CreatePolicyRequest request) =>
+    await controller.CreatePolicyAsync(request));
+
+app.MapPut("/api/policies/{id}", async (PoliciesController controller, string id, UpdatePolicyRequest request) =>
+    await controller.UpdatePolicyAsync(id, request));
+
+app.MapDelete("/api/policies/{id}", async (PoliciesController controller, string id) =>
+    await controller.DeletePolicyAsync(id));
+
+app.MapPost("/api/policies/validate", async (PoliciesController controller, ValidatePolicyRequest request) =>
+    await controller.ValidatePolicyAsync(request));
+
+// Initialize controller with injected dependencies
+var pipelineService = app.Services.GetRequiredService<ResiliencyPipelineService>();
+var policyRepository = app.Services.GetRequiredService<PolicyRepository>();
+var policiesController = new PoliciesController(pipelineService, policyRepository);
+
+// Example: Creating a Circuit Breaker policy
+var circuitBreakerResponse = await policiesController.CreatePolicyAsync(new CreatePolicyRequest {
+    Name = "order-processing-circuit-breaker",
+    Type = "circuitbreaker",
+    FailureThreshold = 5,
+    OpenDurationSeconds = 30
+});
+
+if (circuitBreakerResponse.Success) {
+    Console.WriteLine($"Created policy: {circuitBreakerResponse.Data?.Name} ({circuitBreakerResponse.Data?.Id})");
+}
+
+// Example: Creating a Retry policy
+var retryResponse = await policiesController.CreatePolicyAsync(new CreatePolicyRequest {
+    Name = "api-call-retry",
+    Type = "retry",
+    MaxRetries = 3,
+    InitialDelayMs = 100
+});
+
+if (retryResponse.Success) {
+    Console.WriteLine($"Created policy: {retryResponse.Data?.Name} ({retryResponse.Data?.Id})");
+}
+
+// Example: Getting all policies
+var allPolicies = await policiesController.GetAllPoliciesAsync();
+if (allPolicies.Success) {
+    foreach (var policy in allPolicies.Data ?? new List<PolicyDto>()) {
+        Console.WriteLine($"Policy: {policy.Name} ({policy.Type}) - Status: {(policy.IsEnabled ? "Enabled" : "Disabled")}");
+    }
+}
+
+// Example: Updating a policy
+var updateResponse = await policiesController.UpdatePolicyAsync(
+    circuitBreakerResponse.Data!.Id,
+    new UpdatePolicyRequest {
+        IsEnabled = true,
+        CircuitBreakerConfig = new CircuitBreakerConfigDto {
+            FailureThreshold = 3,
+            OpenDurationSeconds = 60
+        }
+    }
+);
+
+// Example: Validating a policy configuration
+var validationResponse = await policiesController.ValidatePolicyAsync(new ValidatePolicyRequest {
+    Name = "test-policy",
+    Type = "circuitbreaker",
+    FailureThreshold = 5
+});
+
+Console.WriteLine($"Policy configuration is {(validationResponse.Data?.IsValid == true ? "valid" : "invalid")}");
+```
+
 ## ...
 
