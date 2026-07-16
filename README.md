@@ -1301,6 +1301,99 @@ async Task<string> FetchUserProfile(int userId)
 }
 ```
 
+## ResiliencyPipelineBuilder
+
+The `ResiliencyPipelineBuilder` class provides a fluent interface for configuring resilience pipelines with circuit breaker, retry, timeout, bulkhead, and fallback policies. It follows the builder pattern to enable clean, readable configuration of complex resilience strategies while maintaining type safety and compile-time validation.
+
+### Features
+- Fluent API for building resilience pipelines step-by-step
+- Configures all policy types: circuit breakers, retries, timeouts, bulkheads, and fallbacks
+- Supports policy-specific configuration through lambda expressions
+- Maintains a registry of all configured policies
+- Returns a configured `ResiliencyPipelineService` for execution
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Configuration;
+using DotNetResiliencePipeline.Domain.Policies;
+using System;
+using System.Threading.Tasks;
+
+// Create a pipeline builder
+var builder = new ResiliencyPipelineBuilder();
+
+// Configure a circuit breaker policy with custom settings
+builder.WithCircuitBreaker("user-service-circuit-breaker", policy =>
+{
+    policy.FailureThreshold = 5;
+    policy.SamplingDuration = TimeSpan.FromSeconds(30);
+    policy.TimeToHalfOpen = TimeSpan.FromSeconds(10);
+});
+
+// Configure a retry policy with exponential backoff
+builder.WithRetry("user-service-retry", policy =>
+{
+    policy.MaxRetries = 3;
+    policy.InitialDelay = TimeSpan.FromMilliseconds(100);
+    policy.Strategy = BackoffStrategy.Exponential;
+    policy.MaxDelay = TimeSpan.FromSeconds(30);
+    policy.BackoffMultiplier = 2.0;
+    policy.UseJitter = true;
+});
+
+// Configure a timeout policy with 5-second timeout
+builder.WithTimeout("user-service-timeout", TimeSpan.FromSeconds(5), policy =>
+{
+    policy.IsEnabled = true;
+});
+
+// Configure a bulkhead policy to limit concurrent access
+builder.WithBulkhead("user-service-bulkhead", maxParallelization: 10, maxQueueLength: 50);
+
+// Configure a fallback policy with a custom fallback action
+builder.WithFallback("user-service-fallback", policy =>
+{
+    policy.IsEnabled = true;
+    policy.FallbackTimeout = TimeSpan.FromSeconds(2);
+});
+
+// Set the fallback action (must be configured after WithFallback)
+builder.WithFallbackAction<string>(async ct =>
+{
+    await Task.Delay(100, ct);
+    return "Fallback response - service unavailable";
+});
+
+// Build the pipeline service
+var pipelineService = builder.Build();
+
+// Use the pipeline service to execute operations with all configured policies
+var result = await pipelineService.ExecuteAsync(
+    async ct => await CallExternalService(),
+    cancellationToken: CancellationToken.None,
+    circuitBreaker: builder.GetCircuitBreakerPolicy(),
+    retry: builder.GetRetryPolicy(),
+    timeout: builder.GetTimeoutPolicy()
+);
+
+if (result.IsSuccessful)
+{
+    Console.WriteLine($"Operation succeeded: {result.Data}");
+}
+else
+{
+    Console.WriteLine($"Operation failed: {result.Exception?.Message}");
+}
+
+// Access individual policies for monitoring or manual control
+var circuitBreakerPolicy = builder.GetCircuitBreakerPolicy();
+var retryPolicy = builder.GetRetryPolicy();
+var timeoutPolicy = builder.GetTimeoutPolicy();
+var bulkheadPolicy = builder.GetBulkheadPolicy();
+var fallbackPolicy = builder.GetFallbackPolicy();
+```
+
 ## PolicyRepository
 
 The `PolicyRepository` class provides centralized storage and management for resilience policies in the DotNet Resilience Pipeline library. It serves as a persistent store for policy definitions, enabling policy reuse across application restarts and providing query capabilities to find policies by name, type, or tags. The repository supports both in-memory and asynchronous persistence operations, making it suitable for both development and production scenarios.
