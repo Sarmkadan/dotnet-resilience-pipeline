@@ -958,6 +958,71 @@ catch (OperationCanceledException)
 }
 ```
 
+## FallbackService
+
+The `FallbackService` class provides a service layer for executing fallback policies that enable graceful degradation when primary operations fail. It handles the execution of fallback actions when the primary operation throws an exception that matches configured fallback triggers, returning a `PolicyResult<T>` that indicates whether the result came from the primary operation or the fallback. The service tracks fallback success rates and provides methods to manage exception types that should trigger fallback behavior.
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Services;
+using DotNetResiliencePipeline.Domain.Policies;
+using System;
+
+// Create a fallback policy with a timeout of 2 seconds
+var fallbackPolicy = new FallbackPolicy("user-service-fallback")
+{
+    FallbackTimeout = TimeSpan.FromSeconds(2),
+    IsEnabled = true
+};
+
+// Add exception types that should trigger fallback
+fallbackPolicy.AddFallbackTrigger(typeof(HttpRequestException));
+fallbackPolicy.AddFallbackTrigger(typeof(TimeoutException));
+
+// Create the fallback service
+var fallbackService = new FallbackService();
+
+// Execute an operation with fallback support
+try
+{
+    var result = await fallbackService.ExecuteAsync(
+        fallbackPolicy,
+        new HttpRequestException("External service unavailable"),
+        5000, // Primary execution time in milliseconds
+        CancellationToken.None
+    );
+
+    if (result.IsFallback)
+    {
+        Console.WriteLine($"Fallback executed successfully! Result: {result.Data}");
+        Console.WriteLine($"Fallback success rate: {fallbackService.GetFallbackSuccessRate(fallbackPolicy):P}");
+    }
+    else
+    {
+        Console.WriteLine($"Primary operation succeeded: {result.Data}");
+    }
+}
+catch (Exception ex) when (ex is not FallbackFailedException)
+{
+    Console.WriteLine($"Operation failed: {ex.Message}");
+}
+
+// Check if fallback should be triggered for an exception
+bool shouldFallback = fallbackService.ShouldTriggerFallback(
+    fallbackPolicy,
+    new TimeoutException("Request timed out")
+);
+Console.WriteLine($"Should trigger fallback for TimeoutException: {shouldFallback}");
+
+// Remove an exception type from fallback triggers
+fallbackService.RemoveFallbackTrigger(fallbackPolicy, typeof(TimeoutException));
+
+// Get current fallback success rate
+double successRate = fallbackService.GetFallbackSuccessRate(fallbackPolicy);
+Console.WriteLine($"Current fallback success rate: {successRate:P}");
+```
+
 ## AdaptiveTimeoutPolicy
 
 The `AdaptiveTimeoutPolicy` implements an intelligent timeout strategy that automatically adjusts its timeout ceiling based on observed response-time percentiles within a sliding window of recent executions. This policy learns from actual performance characteristics and dynamically scales timeouts to balance responsiveness with reliability, preventing both premature timeouts and excessive waiting.
