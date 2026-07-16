@@ -600,6 +600,74 @@ var validationResponse = await policiesController.ValidatePolicyAsync(new Valida
 Console.WriteLine($"Policy configuration is {(validationResponse.Data?.IsValid == true ? "valid" : "invalid")}");
 ```
 
+## PolicyValidationHelper
+
+The `PolicyValidationHelper` class provides comprehensive validation utilities for resilience policies. It validates policy configurations, identifies anti-patterns, and provides optimization suggestions to improve reliability and performance. The helper returns detailed validation reports with errors, warnings, and suggestions for configuration improvements.
+
+```csharp
+// Example: Validating and optimizing a Circuit Breaker policy
+var circuitBreakerPolicy = new CircuitBreakerPolicy
+{
+    Id = "order-processing-circuit-breaker",
+    Name = "Order Processing Circuit Breaker",
+    FailureThreshold = 5,
+    OpenDuration = TimeSpan.FromSeconds(30),
+    SuccessThresholdInHalfOpen = 3,
+    IsEnabled = true
+};
+
+// Validate the policy configuration
+var validationReport = PolicyValidationHelper.ValidatePolicy(circuitBreakerPolicy);
+
+Console.WriteLine(validationReport);
+
+if (!validationReport.IsValid)
+{
+    Console.WriteLine("\nPolicy has errors that need to be fixed:");
+    foreach (var error in validationReport.Errors)
+    {
+        Console.WriteLine($"  - {error}");
+    }
+}
+
+// Identify anti-patterns
+var antiPatterns = PolicyValidationHelper.IdentifyAntiPatterns(circuitBreakerPolicy);
+if (antiPatterns.Count > 0)
+{
+    Console.WriteLine("\nDetected anti-patterns:");
+    foreach (var pattern in antiPatterns)
+    {
+        Console.WriteLine($"  - {pattern}");
+    }
+}
+
+// Get optimization suggestions
+var suggestions = PolicyValidationHelper.SuggestOptimizations(circuitBreakerPolicy);
+if (suggestions.Count > 0)
+{
+    Console.WriteLine("\nOptimization suggestions:");
+    foreach (var suggestion in suggestions)
+    {
+        Console.WriteLine($"  → {suggestion}");
+    }
+}
+
+// Example with a Retry policy
+var retryPolicy = new RetryPolicy
+{
+    Id = "api-call-retry",
+    Name = "API Call Retry",
+    MaxRetries = 3,
+    InitialDelay = TimeSpan.FromMilliseconds(100),
+    Strategy = RetryPolicy.BackoffStrategy.Exponential,
+    IsEnabled = true
+};
+
+var retryValidation = PolicyValidationHelper.ValidatePolicy(retryPolicy);
+Console.WriteLine($"\nRetry policy validation: {(retryValidation.IsValid ? "Valid" : "Invalid")}");
+Console.WriteLine($"Errors: {retryValidation.Errors.Count}, Warnings: {retryValidation.Warnings.Count}");
+```
+
 ## PolicyCacheService
 
 The `PolicyCacheService` provides caching functionality for resilience policies, reducing repeated policy lookups and improving application performance. It caches policy configurations with configurable time-to-live (TTL) and enforces a maximum cache size to prevent memory exhaustion. The service tracks cache statistics including hit rates, access patterns, and expiration metrics.
