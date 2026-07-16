@@ -114,6 +114,66 @@ if (openBreakersResponse.Success && openBreakersResponse.Data != null)
 }
 ```
 
+## ThrottlingHelper
+
+The `ThrottlingHelper` class provides rate limiting and throttling functionality using a leaky bucket algorithm. It manages individual `Throttle` instances for different policies, allowing you to enforce maximum request rates and burst capacities. The helper tracks statistics for each throttle, including request counts, throttled requests, and current token availability.
+
+
+```csharp
+// Example: Using ThrottlingHelper for rate limiting
+var throttlingHelper = new ThrottlingHelper();
+
+// Create a throttle for a policy with 100 requests per second and burst size of 200
+var throttle = throttlingHelper.GetOrCreateThrottle("api-rate-limit", maxRequestsPerSecond: 100, burstSize: 200);
+
+// Check if a request should be throttled
+bool shouldThrottle = throttlingHelper.ShouldThrottle("api-rate-limit");
+Console.WriteLine($"Should throttle: {shouldThrottle}");
+
+// Get statistics for a specific throttle
+var stats = throttlingHelper.GetStatistics("api-rate-limit");
+Console.WriteLine($"Policy: {stats.PolicyName}");
+Console.WriteLine($"Max rate: {stats.MaxRate} requests/sec");
+Console.WriteLine($"Burst capacity: {stats.BurstCapacity}");
+Console.WriteLine($"Available tokens: {stats.AvailableTokens}");
+Console.WriteLine($"Total requests: {stats.TotalRequests}");
+Console.WriteLine($"Allowed requests: {stats.AllowedRequests}");
+Console.WriteLine($"Throttled requests: {stats.ThrottledRequests}");
+Console.WriteLine($"Throttle rate: {stats.ThrottleRate:F2}%");
+
+// Execute an operation with throttling protection
+try
+{
+    await throttlingHelper.ExecuteWithThrottlingAsync(
+        "api-rate-limit",
+        async () => 
+        {
+            // Your API call or operation here
+            await Task.Delay(10);
+            return "Success";
+        }
+    );
+    Console.WriteLine("Operation completed successfully");
+}
+catch (InvalidOperationException ex)
+{
+    Console.WriteLine($"Operation throttled: {ex.Message}");
+}
+
+// Get statistics for all throttles
+var allStats = throttlingHelper.GetAllStatistics();
+foreach (var kvp in allStats)
+{
+    Console.WriteLine($"Policy '{kvp.Key}': {kvp.Value.ThrottledRequests} throttled requests");
+}
+
+// Reset a specific throttle
+throttlingHelper.ResetThrottle("api-rate-limit");
+
+// Clear all throttles
+throttlingHelper.Clear();
+```
+
 ## ResiliencyHelper
 
 The `ResiliencyHelper` utility class provides helper methods for working with resilience policies and execution records. It offers functionality for creating policy results from execution records, converting execution results to records, validating policy configurations, generating health reports, and exporting policy configurations for monitoring and debugging purposes.
