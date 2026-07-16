@@ -24,6 +24,7 @@ A comprehensive, production-grade resilience library for .NET applications featu
 - [CliCommandValidator](#clicommandvalidator)
 - [FailureInjectionService](#failureinjectionservice)
 - [Failure Injection Testing](#failure-injection-testing)
+- [PolicyCacheService](#policycacheservice)
 - [Resilience Metrics Export](#resilience-metrics-export)
 - [Deployment](#deployment)
 - [Troubleshooting](#troubleshooting)
@@ -405,6 +406,55 @@ var validationResponse = await policiesController.ValidatePolicyAsync(new Valida
 });
 
 Console.WriteLine($"Policy configuration is {(validationResponse.Data?.IsValid == true ? "valid" : "invalid")}");
+```
+
+## PolicyCacheService
+
+The `PolicyCacheService` provides caching functionality for resilience policies, reducing repeated policy lookups and improving application performance. It caches policy configurations with configurable time-to-live (TTL) and enforces a maximum cache size to prevent memory exhaustion. The service tracks cache statistics including hit rates, access patterns, and expiration metrics.
+
+```csharp
+// Example: Using PolicyCacheService for caching policy configurations
+var cacheService = new PolicyCacheService
+{
+    DefaultTtl = TimeSpan.FromMinutes(10),
+    MaxCacheSize = 500
+};
+
+// Create a sample retry policy configuration
+var retryConfig = new
+{
+    MaxRetries = 3,
+    InitialDelayMs = 100,
+    Strategy = "exponential"
+};
+
+// Cache the policy configuration
+cacheService.Set("retry-policy", retryConfig, TimeSpan.FromMinutes(15));
+
+// Retrieve the cached policy
+var cachedPolicy = cacheService.Get("retry-policy");
+if (cachedPolicy != null)
+{
+    Console.WriteLine($"Policy '{cachedPolicy.PolicyName}' cached at {cachedPolicy.CreatedAt:O}");
+    Console.WriteLine($"Expires at: {cachedPolicy.ExpiresAt:O}");
+    Console.WriteLine($"Remaining TTL: {cachedPolicy.RemainingTtl.TotalSeconds:F0} seconds");
+    Console.WriteLine($"Access count: {cachedPolicy.AccessCount}");
+    Console.WriteLine($"Config: {cachedPolicy.Config}");
+}
+
+// Get cache statistics
+var stats = cacheService.GetStatistics();
+Console.WriteLine($"Total entries: {stats.TotalEntries}");
+Console.WriteLine($"Valid entries: {stats.ValidEntries}");
+Console.WriteLine($"Expired entries: {stats.ExpiredEntries}");
+Console.WriteLine($"Hit rate: {stats.HitRate:P}");
+Console.WriteLine($"Average TTL: {stats.AverageTtl.TotalSeconds:F0} seconds");
+
+// Invalidate a specific policy
+cacheService.Invalidate("retry-policy");
+
+// Clear the entire cache
+cacheService.Clear();
 ```
 
 ## ...
