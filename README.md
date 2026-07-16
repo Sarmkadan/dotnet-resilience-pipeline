@@ -373,6 +373,60 @@ foreach (var (error, count) in commonErrors)
 // errorHandler.Clear();
 ```
 
+## RateLimitingMiddleware
+
+The `RateLimitingMiddleware` class provides rate limiting functionality for API requests and policy executions using a token bucket algorithm. It allows you to configure default rate limits and track individual client consumption, making it ideal for protecting your services from excessive traffic and ensuring fair resource usage across clients.
+
+### Features
+- Token bucket rate limiting with configurable per-second and per-minute limits
+- Automatic token bucket refill based on elapsed time
+- Per-client rate limiting with isolated consumption tracking
+- Comprehensive status reporting for monitoring and debugging
+- Thread-safe implementation using concurrent collections
+
+### Example Usage
+```csharp
+using DotNetResiliencePipeline.Middleware;
+
+// Create middleware instance
+var rateLimiter = new RateLimitingMiddleware();
+
+// Configure default rate limits (100 requests per second, 5000 per minute)
+rateLimiter.ConfigureLimits(requestsPerSecond: 100, requestsPerMinute: 5000);
+
+// Check if a request is allowed for a client
+string clientId = "user-service-client-123";
+bool isAllowed = rateLimiter.IsRequestAllowed(clientId);
+Console.WriteLine($"Request allowed: {isAllowed}");
+
+// Check rate limit status for a client
+var status = rateLimiter.GetStatus(clientId);
+Console.WriteLine($"Client: {status.ClientId}");
+Console.WriteLine($"Requests per second: {status.RequestsPerSecond}");
+Console.WriteLine($"Remaining this second: {status.RemainingTokensPerSecond}");
+Console.WriteLine($"Remaining this minute: {status.RemainingTokensPerMinute}");
+Console.WriteLine($"Next reset (second): {status.NextResetSecond}");
+Console.WriteLine($"Next reset (minute): {status.NextResetMinute}");
+Console.WriteLine($"Is limited: {status.IsLimited}");
+
+// Get status for all clients
+var allStatus = rateLimiter.GetAllStatus();
+foreach (var clientStatus in allStatus)
+{
+    Console.WriteLine($"Client {clientStatus.Key}: {clientStatus.Value.RemainingTokensPerSecond} requests remaining");
+}
+
+// Reset rate limit for a specific client
+rateLimiter.ResetClient(clientId);
+
+// Clear all rate limiters
+// rateLimiter.ClearAll();
+
+// Check if multiple tokens can be consumed (e.g., for batch operations)
+bool batchAllowed = rateLimiter.IsRequestAllowed(clientId, tokensRequired: 5);
+Console.WriteLine($"Batch of 5 requests allowed: {batchAllowed}");
+```
+
 ## PolicyResult
 
 The `PolicyResult<T>` class encapsulates the outcome of a resilience policy execution, providing a standardized way to handle successes, failures, and fallback results. It contains metadata about the execution, such as attempt count, execution time, and any associated exceptions or custom metadata, allowing for consistent monitoring and error handling across the pipeline.
