@@ -684,6 +684,84 @@ timeoutPolicy.ResetStatistics();
 Console.WriteLine("Statistics reset. All counters cleared.");
 ```
 
+## BulkheadService
+
+The `BulkheadService` class provides a service layer for managing bulkhead policies that isolate resources to prevent resource exhaustion. It handles slot acquisition, queue management, and provides comprehensive metrics for monitoring bulkhead utilization, active executions, and queued requests. The service wraps the underlying `BulkheadPolicy` to provide a clean API for resource isolation patterns.
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Services;
+using DotNetResiliencePipeline.Domain.Policies;
+using System;
+
+// Create a bulkhead policy with 5 concurrent executions and 20 queue slots
+var bulkheadPolicy = new BulkheadPolicy("user-service-bulkhead")
+{
+    MaxParallelization = 5,
+    MaxQueueLength = 20
+};
+
+// Validate configuration
+var bulkheadService = new BulkheadService();
+if (!bulkheadService.IsValidConfiguration(bulkheadPolicy, out var configError))
+{
+    Console.WriteLine($"Invalid configuration: {configError}");
+}
+
+// Attempt to acquire a slot for execution
+bool acquired = bulkheadService.TryAcquireSlot(bulkheadPolicy);
+if (acquired)
+{
+    Console.WriteLine("Slot acquired successfully");
+}
+else
+{
+    Console.WriteLine("Slot not immediately available - request queued");
+}
+
+// Record queue wait time for queued requests
+bulkheadService.RecordQueueWaitTime(bulkheadPolicy, 150); // 150ms wait time
+
+// Get current bulkhead metrics
+int activeExecutions = bulkheadService.GetActiveExecutionCount(bulkheadPolicy);
+int queuedRequests = bulkheadService.GetQueuedRequestCount(bulkheadPolicy);
+double utilization = bulkheadService.GetUtilizationPercentage(bulkheadPolicy);
+
+Console.WriteLine($"Active executions: {activeExecutions}");
+Console.WriteLine($"Queued requests: {queuedRequests}");
+Console.WriteLine($"Utilization: {utilization:F1}%");
+
+// Execute work with bulkhead protection
+if (bulkheadService.TryAcquireSlot(bulkheadPolicy))
+{
+    try
+    {
+        // Your protected operation here
+        Console.WriteLine("Executing protected operation...");
+        
+        // Simulate work
+        await Task.Delay(100);
+    }
+    finally
+    {
+        bulkheadService.ReleaseSlot(bulkheadPolicy);
+    }
+}
+else
+{
+    Console.WriteLine("Request rejected - bulkhead at capacity");
+}
+
+// Dequeue a request when processing completes
+bulkheadService.DequeueRequest(bulkheadPolicy);
+
+// Access detailed statistics
+Console.WriteLine($"Active executions: {bulkheadService.GetActiveExecutionCount(bulkheadPolicy)}");
+Console.WriteLine($"Queued requests: {bulkheadService.GetQueuedRequestCount(bulkheadPolicy)}");
+Console.WriteLine($"Utilization: {bulkheadService.GetUtilizationPercentage(bulkheadPolicy):F1}%");
+```
+
 ## AdaptiveTimeoutPolicy
 
 The `AdaptiveTimeoutPolicy` implements an intelligent timeout strategy that automatically adjusts its timeout ceiling based on observed response-time percentiles within a sliding window of recent executions. This policy learns from actual performance characteristics and dynamically scales timeouts to balance responsiveness with reliability, preventing both premature timeouts and excessive waiting.
