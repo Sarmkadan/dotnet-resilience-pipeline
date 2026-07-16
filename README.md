@@ -16,6 +16,7 @@ A comprehensive, production-grade resilience library for .NET applications featu
 - [Policy Types](#policy-types)
 - [Configuration](#configuration)
 - [Examples](#examples)
+- [FallbackPolicy](#fallbackpolicy)
 - [API Reference](#api-reference)
 - [Monitoring & Metrics](#monitoring--metrics)
 - [Circuit Breaker Dashboard](#circuit-breaker-dashboard)
@@ -550,6 +551,85 @@ Console.WriteLine($"Consecutive failures: {snapshot.Metadata["ConsecutiveFailure
 Console.WriteLine($"Failure threshold: {snapshot.Metadata["FailureThreshold"]}");
 ```
 
+```
+
+## FallbackPolicy
+
+The `FallbackPolicy` provides alternative execution paths when primary operations fail, enabling graceful degradation and improved user experience during system failures. It tracks fallback invocations, success rates, and execution times, supporting both generic fallback actions and exception-specific triggers. The policy can be configured to handle any exception or only specific exception types, with configurable timeout settings.
+
+### Example Usage
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using System;
+using System.Threading.Tasks;
+
+// Create a fallback policy with a name
+var fallbackPolicy = new FallbackPolicy("UserServiceFallback")
+{
+    FallbackTimeout = TimeSpan.FromSeconds(3),
+    FallbackOnAnyException = true // Fallback on any exception by default
+};
+
+// Set a fallback action that returns a default value
+fallbackPolicy.SetFallbackAction(async (cancellationToken) => 
+{
+    await Task.Delay(100, cancellationToken);
+    return new User { Id = 0, Name = "Fallback User", IsActive = false };
+});
+
+// Configure to trigger fallback only for specific exceptions
+fallbackPolicy.FallbackOnAnyException = false;
+fallbackPolicy.AddFallbackTrigger(typeof(TimeoutException));
+fallbackPolicy.AddFallbackTrigger(typeof(HttpRequestException));
+
+// Check if an exception should trigger fallback
+var timeoutException = new TimeoutException("Request timed out");
+bool shouldFallback = fallbackPolicy.ShouldTriggerFallback(timeoutException);
+Console.WriteLine($"Should trigger fallback for TimeoutException: {shouldFallback}"); // True
+
+// Simulate a successful fallback execution
+fallbackPolicy.RecordSuccessfulFallback(150); // 150ms execution time
+Console.WriteLine($"Fallback invocation count: {fallbackPolicy.FallbackInvocationCount}");
+Console.WriteLine($"Successful fallback count: {fallbackPolicy.SuccessfulFallbackCount}");
+Console.WriteLine($"Fallback success rate: {fallbackPolicy.GetFallbackSuccessRate():F1}%");
+Console.WriteLine($"Average fallback execution time: {fallbackPolicy.AverageFallbackExecutionTimeMs:F1}ms");
+
+// Simulate a failed fallback execution
+try
+{
+    fallbackPolicy.RecordFailedFallback(
+        new InvalidOperationException("Fallback service unavailable"),
+        200
+    );
+}
+catch
+{
+    // Fallback failed
+}
+
+Console.WriteLine($"Failed fallback count: {fallbackPolicy.FailedFallbackCount}");
+Console.WriteLine($"Total fallback invocations: {fallbackPolicy.FallbackInvocationCount}");
+
+// Get fallback invocation percentage across all operations
+Console.WriteLine($"Fallback invocation percentage: {fallbackPolicy.GetFallbackInvocationPercentage():F1}%");
+
+// Remove a fallback trigger
+fallbackPolicy.RemoveFallbackTrigger(typeof(TimeoutException));
+
+// Validate configuration
+if (fallbackPolicy.IsValidConfiguration(out var error))
+{
+    Console.WriteLine("Fallback policy configuration is valid");
+}
+else
+{
+    Console.WriteLine($"Invalid configuration: {error}");
+}
+
+// Get detailed snapshot
+var snapshot = fallbackPolicy.GetSnapshot();
+Console.WriteLine($"Snapshot - Fallback invocations: {snapshot.Metadata["FallbackInvocationCount"]}");
+Console.WriteLine($"Snapshot - Success rate: {snapshot.Metadata["FallbackSuccessRate"]}%");
 ```
 ## ...
 
@@ -1541,6 +1621,85 @@ if (detailedValidationEx.ValidationErrors.Any())
 {
     Console.WriteLine($"Validation failed with {detailedValidationEx.ValidationErrors.Count} errors");
 }
+```
+
+## FallbackPolicy
+
+The `FallbackPolicy` provides alternative execution paths when primary operations fail, enabling graceful degradation and improved user experience during system failures. It tracks fallback invocations, success rates, and execution times, supporting both generic fallback actions and exception-specific triggers. The policy can be configured to handle any exception or only specific exception types, with configurable timeout settings.
+
+### Example Usage
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using System;
+using System.Threading.Tasks;
+
+// Create a fallback policy with a name
+var fallbackPolicy = new FallbackPolicy("UserServiceFallback")
+{
+    FallbackTimeout = TimeSpan.FromSeconds(3),
+    FallbackOnAnyException = true // Fallback on any exception by default
+};
+
+// Set a fallback action that returns a default value
+fallbackPolicy.SetFallbackAction(async (cancellationToken) => 
+{
+    await Task.Delay(100, cancellationToken);
+    return new User { Id = 0, Name = "Fallback User", IsActive = false };
+});
+
+// Configure to trigger fallback only for specific exceptions
+fallbackPolicy.FallbackOnAnyException = false;
+fallbackPolicy.AddFallbackTrigger(typeof(TimeoutException));
+fallbackPolicy.AddFallbackTrigger(typeof(HttpRequestException));
+
+// Check if an exception should trigger fallback
+var timeoutException = new TimeoutException("Request timed out");
+bool shouldFallback = fallbackPolicy.ShouldTriggerFallback(timeoutException);
+Console.WriteLine($"Should trigger fallback for TimeoutException: {shouldFallback}"); // True
+
+// Simulate a successful fallback execution
+fallbackPolicy.RecordSuccessfulFallback(150); // 150ms execution time
+Console.WriteLine($"Fallback invocation count: {fallbackPolicy.FallbackInvocationCount}");
+Console.WriteLine($"Successful fallback count: {fallbackPolicy.SuccessfulFallbackCount}");
+Console.WriteLine($"Fallback success rate: {fallbackPolicy.GetFallbackSuccessRate():F1}%");
+Console.WriteLine($"Average fallback execution time: {fallbackPolicy.AverageFallbackExecutionTimeMs:F1}ms");
+
+// Simulate a failed fallback execution
+try
+{
+    fallbackPolicy.RecordFailedFallback(
+        new InvalidOperationException("Fallback service unavailable"),
+        200
+    );
+}
+catch
+{
+    // Fallback failed
+}
+
+Console.WriteLine($"Failed fallback count: {fallbackPolicy.FailedFallbackCount}");
+Console.WriteLine($"Total fallback invocations: {fallbackPolicy.FallbackInvocationCount}");
+
+// Get fallback invocation percentage across all operations
+Console.WriteLine($"Fallback invocation percentage: {fallbackPolicy.GetFallbackInvocationPercentage():F1}%");
+
+// Remove a fallback trigger
+fallbackPolicy.RemoveFallbackTrigger(typeof(TimeoutException));
+
+// Validate configuration
+if (fallbackPolicy.IsValidConfiguration(out var error))
+{
+    Console.WriteLine("Fallback policy configuration is valid");
+}
+else
+{
+    Console.WriteLine($"Invalid configuration: {error}");
+}
+
+// Get detailed snapshot
+var snapshot = fallbackPolicy.GetSnapshot();
+Console.WriteLine($"Snapshot - Fallback invocations: {snapshot.Metadata["FallbackInvocationCount"]}");
+Console.WriteLine($"Snapshot - Success rate: {snapshot.Metadata["FallbackSuccessRate"]}%");
 ```
 
 ## ...
