@@ -762,6 +762,75 @@ Console.WriteLine($"Queued requests: {bulkheadService.GetQueuedRequestCount(bulk
 Console.WriteLine($"Utilization: {bulkheadService.GetUtilizationPercentage(bulkheadPolicy):F1}%");
 ```
 
+## CircuitBreakerService
+
+The `CircuitBreakerService` class provides a service layer for managing circuit breaker policies that prevent cascading failures in distributed systems. It handles policy execution, state transitions (closed → open → half-open → closed), and provides methods for manual circuit control. The service wraps the underlying `CircuitBreakerPolicy` to provide a clean API for fault tolerance patterns.
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Services;
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Exceptions;
+using System;
+
+// Create a circuit breaker policy with 5 consecutive failures before opening
+var circuitBreakerPolicy = new CircuitBreakerPolicy("user-service-circuit-breaker")
+{
+    FailureThreshold = 5,
+    SamplingDuration = TimeSpan.FromSeconds(30),
+    TimeToHalfOpen = TimeSpan.FromSeconds(10)
+};
+
+// Create the circuit breaker service
+var circuitBreakerService = new CircuitBreakerService();
+
+// Execute an operation with circuit breaker protection
+try
+{
+    var result = await circuitBreakerService.ExecuteAsync(
+        circuitBreakerPolicy,
+        async () => await CallExternalService()
+    );
+    
+    Console.WriteLine($"Operation succeeded: {result}");
+}
+catch (CircuitBreakerOpenException ex)
+{
+    Console.WriteLine($"Circuit breaker is open: {ex.Message}");
+    Console.WriteLine($"Time until half-open: {ex.TimeUntilHalfOpen.TotalSeconds}s");
+    Console.WriteLine($"Consecutive failures: {ex.ConsecutiveFailures}");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Operation failed: {ex.Message}");
+}
+
+// Manually open a circuit breaker
+circuitBreakerService.OpenCircuit(circuitBreakerPolicy);
+Console.WriteLine($"Circuit state: {circuitBreakerService.GetCircuitState(circuitBreakerPolicy)}");
+
+// Manually reset a circuit breaker
+circuitBreakerService.ResetCircuit(circuitBreakerPolicy);
+Console.WriteLine($"Circuit state after reset: {circuitBreakerService.GetCircuitState(circuitBreakerPolicy)}");
+
+// Execute with cancellation support
+var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+try
+{
+    var result = await circuitBreakerService.ExecuteAsync(
+        circuitBreakerPolicy,
+        async (ct) => await CallExternalServiceWithCancellation(ct),
+        cts.Token
+    );
+    Console.WriteLine($"Operation with cancellation succeeded: {result}");
+}
+catch (OperationCanceledException)
+{
+    Console.WriteLine("Operation was cancelled");
+}
+```
+
 ## AdaptiveTimeoutPolicy
 
 The `AdaptiveTimeoutPolicy` implements an intelligent timeout strategy that automatically adjusts its timeout ceiling based on observed response-time percentiles within a sliding window of recent executions. This policy learns from actual performance characteristics and dynamically scales timeouts to balance responsiveness with reliability, preventing both premature timeouts and excessive waiting.
