@@ -348,6 +348,71 @@ Console.WriteLine($"Time: {successResult.ExecutionTimeMs}ms");
 Console.WriteLine($"Attempts: {successResult.AttemptCount}");
 ```
 
+## ResiliencyPolicy
+
+The `ResiliencyPolicy` class serves as the base class for all resilience policies in the DotNet Resilience Pipeline library. It provides core functionality for tracking execution statistics, managing policy state, and generating snapshots for observability purposes. The class maintains comprehensive metrics including execution counts, success/failure rates, and timestamps for creation and modification, enabling detailed monitoring and analysis of policy behavior.
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using System;
+
+// Create a resiliency policy with a unique identifier and name
+var policy = new ResiliencyPolicy("user-service-policy-001", "UserServicePolicy")
+{
+    IsEnabled = true,
+    Tags = new List<string> { "user-service", "api", "production" },
+    Metadata = new Dictionary<string, object>
+    {
+        {"ServiceName", "UserService"},
+        {"Environment", "Production"},
+        {"Owner", "PlatformTeam"}
+    }
+};
+
+// Access basic properties
+Console.WriteLine($"Policy ID: {policy.Id}");
+Console.WriteLine($"Policy Name: {policy.Name}");
+Console.WriteLine($"Is Enabled: {policy.IsEnabled}");
+Console.WriteLine($"Created At: {policy.CreatedAt:yyyy-MM-dd HH:mm:ss}");
+Console.WriteLine($"Modified At: {policy.ModifiedAt:yyyy-MM-dd HH:mm:ss}");
+
+// Record successful executions
+policy.RecordSuccess();
+policy.RecordSuccess();
+
+// Record failed executions
+policy.RecordFailure();
+policy.RecordFailure();
+policy.RecordFailure();
+
+// Get success rate
+Console.WriteLine($"Success Rate: {policy.GetSuccessRate():P2}");
+
+// Access statistics
+Console.WriteLine($"Total Executions: {policy.TotalExecutions}");
+Console.WriteLine($"Successful Executions: {policy.SuccessfulExecutions}");
+Console.WriteLine($"Failed Executions: {policy.FailedExecutions}");
+
+// Get a snapshot for monitoring
+var snapshot = policy.GetSnapshot();
+Console.WriteLine($"Snapshot - Policy ID: {snapshot.PolicyId}");
+Console.WriteLine($"Snapshot - Policy Name: {snapshot.PolicyName}");
+Console.WriteLine($"Snapshot - Policy Type: {snapshot.PolicyType}");
+Console.WriteLine($"Snapshot - Is Enabled: {snapshot.IsEnabled}");
+Console.WriteLine($"Snapshot - Total Executions: {snapshot.TotalExecutions}");
+
+// Reset statistics when needed (e.g., after maintenance or testing)
+policy.ResetStatistics();
+Console.WriteLine($"Statistics reset. Total executions: {policy.TotalExecutions}");
+
+// Update policy configuration
+policy.IsEnabled = false;
+policy.Tags.Add("disabled");
+policy.Metadata["LastModified"] = DateTime.UtcNow;
+```
+
 ## CircuitBreakerPolicy
 
 The `CircuitBreakerPolicy` implements the circuit breaker pattern to prevent cascading failures in distributed systems. It monitors execution failures and, when a configurable threshold is reached, opens the circuit to fail-fast and avoid overwhelming failing dependencies. After a specified duration, it transitions to a half-open state to test recovery, and if successful, closes the circuit to resume normal operation.
