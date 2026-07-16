@@ -207,6 +207,86 @@ foreach (var warning in result.Warnings)
 }
 ```
 
+## CliCommandHandler
+
+The `CliCommandHandler` class executes CLI commands by routing them to appropriate service layer methods, handling error management, and formatting output. It validates commands using `CliCommandValidator`, delegates execution to specialized handlers based on the command type, and returns structured results containing success status, messages, exceptions, and exit codes.
+
+### Example Usage
+```csharp
+using DotNetResiliencePipeline.Cli;
+using DotNetResiliencePipeline.Services;
+using DotNetResiliencePipeline.Data;
+
+// Create required services
+var pipelineService = new ResiliencyPipelineService();
+var policyRepository = new PolicyRepository();
+var historyRepository = new ExecutionHistoryRepository();
+
+// Create the command handler
+var commandHandler = new CliCommandHandler(
+    pipelineService,
+    policyRepository,
+    historyRepository
+);
+
+// Execute a policy creation command
+var createOptions = new CommandOptions
+{
+    Command = "policy",
+    Subcommand = "create",
+    PolicyName = "user-service-retry",
+    PolicyType = "retry",
+    MaxRetries = 5,
+    Timeout = TimeSpan.FromSeconds(30),
+    Verbose = true,
+    JsonOutput = false,
+    Arguments = new Dictionary<string, string>
+    {
+        {"endpoint", "https://api.example.com/users"},
+        {"method", "GET"}
+    },
+    Flags = new List<string> { "--dry-run", "-v" }
+};
+
+// Execute the command
+CommandExecutionResult result = await commandHandler.ExecuteAsync(createOptions);
+
+// Check execution result
+if (result.Success)
+{
+    Console.WriteLine(result.Message);
+    Console.WriteLine($"Exit code: {result.ExitCode}");
+}
+else
+{
+    Console.WriteLine($"Command failed: {result.Message}");
+    if (result.Error != null)
+    {
+        Console.WriteLine($"Error: {result.Error.Message}");
+    }
+    Console.WriteLine($"Exit code: {result.ExitCode}");
+}
+
+// Execute a policy listing command
+var listOptions = new CommandOptions
+{
+    Command = "policy",
+    Subcommand = "list"
+};
+
+CommandExecutionResult listResult = await commandHandler.ExecuteAsync(listOptions);
+Console.WriteLine(listResult.Message);
+
+// Execute a metrics command
+var metricsOptions = new CommandOptions
+{
+    Command = "metrics"
+};
+
+CommandExecutionResult metricsResult = await commandHandler.ExecuteAsync(metricsOptions);
+Console.WriteLine(metricsResult.Message);
+```
+
 ## PoliciesControllerExtensions
 
 The `PoliciesControllerExtensions` class provides a set of extension methods for working with policy-related operations. It enables creating, retrieving, validating, and checking the existence of policies.
