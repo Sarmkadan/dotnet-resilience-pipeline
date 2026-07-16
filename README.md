@@ -1300,3 +1300,100 @@ async Task<string> FetchUserProfile(int userId)
     return $"User profile for {userId}";
 }
 ```
+
+## PolicyRepository
+
+The `PolicyRepository` class provides centralized storage and management for resilience policies in the DotNet Resilience Pipeline library. It serves as a persistent store for policy definitions, enabling policy reuse across application restarts and providing query capabilities to find policies by name, type, or tags. The repository supports both in-memory and asynchronous persistence operations, making it suitable for both development and production scenarios.
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Data;
+using DotNetResiliencePipeline.Domain.Policies;
+using System;
+using System.Threading.Tasks;
+
+// Create the policy repository
+var policyRepository = new PolicyRepository();
+
+// Create a retry policy
+var retryPolicy = new RetryPolicy("user-service-retry")
+{
+    MaxRetries = 5,
+    InitialDelay = TimeSpan.FromMilliseconds(100),
+    Strategy = BackoffStrategy.Exponential,
+    IsEnabled = true,
+    Tags = new List<string> { "user-service", "retry", "production" }
+};
+
+// Create a circuit breaker policy
+var circuitBreakerPolicy = new CircuitBreakerPolicy("user-service-circuit-breaker")
+{
+    FailureThreshold = 5,
+    SamplingDuration = TimeSpan.FromSeconds(30),
+    TimeToHalfOpen = TimeSpan.FromSeconds(10),
+    IsEnabled = true,
+    Tags = new List<string> { "user-service", "circuit-breaker", "production" }
+};
+
+// Create a timeout policy
+var timeoutPolicy = new TimeoutPolicy("user-service-timeout")
+{
+    Timeout = TimeSpan.FromSeconds(5),
+    IsEnabled = true,
+    Tags = new List<string> { "user-service", "timeout", "production" }
+};
+
+// Add policies to the repository
+policyRepository.Create(retryPolicy);
+policyRepository.Create(circuitBreakerPolicy);
+policyRepository.Create(timeoutPolicy);
+
+// Retrieve a policy by name
+var foundPolicy = policyRepository.GetByName("user-service-retry");
+if (foundPolicy != null)
+{
+    Console.WriteLine($"Found policy: {foundPolicy.Name} (Type: {foundPolicy.GetType().Name})");
+}
+
+// Get all policies
+var allPolicies = policyRepository.GetAll();
+Console.WriteLine($"Total policies in repository: {allPolicies.Count}");
+
+// Get policies by type
+var retryPolicies = policyRepository.GetByType<RetryPolicy>();
+Console.WriteLine($"Retry policies: {retryPolicies.Count}");
+
+var circuitBreakerPolicies = policyRepository.GetByType<CircuitBreakerPolicy>();
+Console.WriteLine($"Circuit breaker policies: {circuitBreakerPolicies.Count}");
+
+// Get policies by tag
+var productionPolicies = policyRepository.GetByTag("production");
+Console.WriteLine($"Production policies: {productionPolicies.Count}");
+
+// Check if a policy exists
+bool exists = policyRepository.Exists("user-service-circuit-breaker");
+Console.WriteLine($"Circuit breaker policy exists: {exists}");
+
+// Update a policy
+if (foundPolicy != null)
+{
+    foundPolicy.MaxRetries = 10; // Increase retry count
+    policyRepository.Update(foundPolicy);
+}
+
+// Count policies
+int policyCount = policyRepository.Count();
+Console.WriteLine($"Total policies: {policyCount}");
+
+// Delete a policy
+policyRepository.Delete("user-service-timeout");
+Console.WriteLine("Timeout policy deleted");
+
+// Save repository state asynchronously
+await policyRepository.SaveAsync();
+Console.WriteLine("Repository saved to storage");
+
+// Clear all policies (use with caution)
+// policyRepository.Clear();
+```
