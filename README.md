@@ -178,6 +178,98 @@ Console.WriteLine("\nPrometheus Metrics:");
 Console.WriteLine(prometheusMetrics);
 ```
 
+## CsvReportFormatter
+
+The `CsvReportFormatter` class formats resilience pipeline metrics, policies, execution history, performance data, logs, and errors as CSV for spreadsheet analysis and reporting. It provides methods to export various types of resilience data in a structured CSV format suitable for import into Excel, Google Sheets, or data analysis tools.
+
+
+
+
+Here's an example usage:
+
+```csharp
+// Create a CSV formatter
+var formatter = new CsvReportFormatter();
+
+// Create sample pipeline statistics
+var pipelineStats = new PipelineStatistics
+{
+    PipelineId = "order-processing-pipeline",
+    CreatedAt = DateTime.UtcNow,
+    TotalExecutions = 10000,
+    SuccessfulExecutions = 9500,
+    FailedExecutions = 500,
+    SuccessRate = 95.0,
+    PolicyCount = 5
+};
+
+// Format pipeline metrics as CSV
+string pipelineMetricsCsv = formatter.FormatPipelineMetrics(pipelineStats);
+Console.WriteLine("Pipeline Metrics CSV:");
+Console.WriteLine(pipelineMetricsCsv);
+
+// Create sample performance metrics
+var performanceMetrics = new List<PerformanceMetrics>
+{
+    new PerformanceMetrics
+    {
+        PolicyName = "order-processing-circuit-breaker",
+        TotalExecutions = 1000,
+        SuccessfulExecutions = 950,
+        FailedExecutions = 50,
+        AverageDurationMs = 45.5,
+        P50 = 30,
+        P90 = 60,
+        P99 = 100,
+        ThroughputPerSecond = 10.5
+    },
+    new PerformanceMetrics
+    {
+        PolicyName = "payment-processing-retry",
+        TotalExecutions = 500,
+        SuccessfulExecutions = 475,
+        FailedExecutions = 25,
+        AverageDurationMs = 20.2,
+        P50 = 15,
+        P90 = 30,
+        P99 = 50,
+        ThroughputPerSecond = 5.2
+    }
+};
+
+// Format performance metrics as CSV
+string performanceMetricsCsv = formatter.FormatPerformanceMetrics(performanceMetrics);
+Console.WriteLine("\nPerformance Metrics CSV:");
+Console.WriteLine(performanceMetricsCsv);
+
+// Create sample execution records
+var executionRecords = new List<ExecutionRecord>
+{
+    new ExecutionRecord
+    {
+        Timestamp = DateTime.UtcNow.AddMinutes(-5),
+        PolicyName = "order-processing-circuit-breaker",
+        IsSuccess = true,
+        ExecutionTimeMs = 45
+    },
+    new ExecutionRecord
+    {
+        Timestamp = DateTime.UtcNow.AddMinutes(-3),
+        PolicyName = "payment-processing-retry",
+        IsSuccess = false,
+        ExecutionTimeMs = 120
+    }
+};
+
+// Format execution history as CSV
+string executionHistoryCsv = formatter.FormatExecutionHistory(executionRecords);
+Console.WriteLine("\nExecution History CSV:");
+Console.WriteLine(executionHistoryCsv);
+
+// Export to file
+await formatter.ExportToFileAsync(pipelineMetricsCsv, "/tmp/pipeline-metrics.csv");
+```
+
 ## JsonPolicySerializer
 
 The `JsonPolicySerializer` class provides serialization and deserialization functionality for `ResiliencyPolicy` objects to and from JSON format. It supports serializing single policies, multiple policies, metrics, and file operations for importing/exporting policy configurations.
