@@ -376,6 +376,54 @@ service.AddFallbackTrigger(policy, typeof(TimeoutException));
 service.RemoveFallbackTrigger(policy, typeof(InvalidOperationException));
 ```
 
+## CircuitBreakerPolicyTests
+
+The `CircuitBreakerPolicyTests` class provides unit tests for the `CircuitBreakerPolicy` class, verifying its functionality for circuit breaker state transitions, failure threshold handling, success threshold validation, and manual reset operations.
+
+Here's an example usage:
+
+```csharp
+// Create a circuit breaker policy with specific thresholds
+var policy = new CircuitBreakerPolicy("payment-processing-circuit")
+{
+    FailureThreshold = 3,
+    SuccessThresholdInHalfOpen = 2,
+    OpenDuration = TimeSpan.FromSeconds(30)
+};
+
+// Test 1: Verify circuit opens at failure threshold
+policy.RecordFailure(); // 1st failure
+policy.RecordFailure(); // 2nd failure
+policy.RecordFailure(); // 3rd failure - circuit opens
+Console.WriteLine($"Circuit state after threshold: {policy.CurrentState}"); // Should be Open
+
+// Test 2: Verify circuit remains closed below threshold
+var inventoryPolicy = new CircuitBreakerPolicy("inventory-circuit")
+{
+    FailureThreshold = 5
+};
+inventoryPolicy.RecordFailure(); // 1st failure
+inventoryPolicy.RecordFailure(); // 2nd failure
+Console.WriteLine($"Circuit state below threshold: {inventoryPolicy.CurrentState}"); // Should be Closed
+
+// Test 3: Verify manual reset clears statistics
+policy.ManualReset();
+Console.WriteLine($"After manual reset - State: {policy.CurrentState}, Failures: {policy.ConsecutiveFailures}"); // Closed, 0
+
+// Test 4: Verify half-open to closed transition
+var orderPolicy = new CircuitBreakerPolicy("order-processing-circuit")
+{
+    FailureThreshold = 1,
+    SuccessThresholdInHalfOpen = 2,
+    OpenDuration = TimeSpan.Zero // Allows instant transition to HalfOpen
+};
+orderPolicy.RecordFailure(); // Opens circuit
+orderPolicy.AttemptReset(); // Transitions to HalfOpen
+orderPolicy.RecordSuccess(); // 1st success in HalfOpen
+orderPolicy.RecordSuccess(); // 2nd success - meets threshold, transitions to Closed
+Console.WriteLine($"Circuit state after success threshold: {orderPolicy.CurrentState}"); // Should be Closed
+```
+
 ## JsonPolicySerializer
 
 The `JsonPolicySerializer` class provides serialization and deserialization functionality for `ResiliencyPolicy` objects to and from JSON format. It supports serializing single policies, multiple policies, metrics, and file operations for importing/exporting policy configurations.
