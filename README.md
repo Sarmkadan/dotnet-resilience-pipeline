@@ -99,6 +99,85 @@ var comparisonReport = formatter.FormatComparison(comparison);
 Console.WriteLine(comparisonReport);
 ```
 
+## MetricsExporter
+
+The `MetricsExporter` class exports resilience pipeline metrics in multiple formats: JSON, CSV, and Prometheus text exposition format. It provides methods to export pipeline-level aggregated metrics as well as per-policy metrics with detailed execution statistics including total executions, successful/failed executions, success rate, retry count, circuit breaker trips, and timeout events.
+
+
+Here's an example usage:
+
+```csharp
+// Create a metrics exporter
+var exporter = new MetricsExporter();
+
+// Create sample pipeline metrics snapshot
+var snapshot = new PipelineMetricsSnapshot
+{
+    TotalExecutions = 10000,
+    SuccessfulExecutions = 9500,
+    FailedExecutions = 500,
+    SuccessRate = 95.0,
+    RetryCount = 250,
+    CircuitBreakerTrips = 15,
+    TimeoutCount = 8,
+    PolicySnapshots = new List<PolicySnapshot>
+    {
+        new PolicySnapshot
+        {
+            PolicyId = "retry-policy-001",
+            PolicyName = "Payment Processing Retry",
+            PolicyType = "RetryPolicy",
+            IsEnabled = true,
+            TotalExecutions = 5000,
+            SuccessfulExecutions = 4800,
+            FailedExecutions = 200,
+            SuccessRate = 96.0,
+            SnapshotTime = DateTime.UtcNow
+        },
+        new PolicySnapshot
+        {
+            PolicyId = "circuit-breaker-002", 
+            PolicyName = "Order Processing Circuit Breaker",
+            PolicyType = "CircuitBreakerPolicy",
+            IsEnabled = true,
+            TotalExecutions = 3000,
+            SuccessfulExecutions = 2700,
+            FailedExecutions = 300,
+            SuccessRate = 90.0,
+            SnapshotTime = DateTime.UtcNow,
+            Metadata = new Dictionary<string, object> { { "CircuitState", "Closed" } }
+        },
+        new PolicySnapshot
+        {
+            PolicyId = "timeout-policy-003",
+            PolicyName = "API Timeout Policy",
+            PolicyType = "TimeoutPolicy",
+            IsEnabled = true,
+            TotalExecutions = 2000,
+            SuccessfulExecutions = 1950,
+            FailedExecutions = 50,
+            SuccessRate = 97.5,
+            SnapshotTime = DateTime.UtcNow
+        }
+    }
+};
+
+// Export metrics in JSON format
+string jsonMetrics = exporter.ExportJson(snapshot);
+Console.WriteLine("JSON Metrics:");
+Console.WriteLine(jsonMetrics);
+
+// Export metrics in CSV format
+string csvMetrics = exporter.ExportCsv(snapshot);
+Console.WriteLine("\nCSV Metrics:");
+Console.WriteLine(csvMetrics);
+
+// Export metrics in Prometheus format
+string prometheusMetrics = exporter.ExportPrometheus(snapshot);
+Console.WriteLine("\nPrometheus Metrics:");
+Console.WriteLine(prometheusMetrics);
+```
+
 ## JsonPolicySerializer
 
 The `JsonPolicySerializer` class provides serialization and deserialization functionality for `ResiliencyPolicy` objects to and from JSON format. It supports serializing single policies, multiple policies, metrics, and file operations for importing/exporting policy configurations.
