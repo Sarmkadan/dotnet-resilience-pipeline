@@ -62,6 +62,77 @@ var removed = failureInjectionService.RemoveRule("exception-rule");
 Console.WriteLine($"Rule removed: {removed}");
 ```
 
+## ResiliencyPipelineServiceTests
+
+The `ResiliencyPipelineServiceTests` class provides unit tests for the `ResiliencyPipelineService` class, verifying its functionality for executing operations with resiliency policies. These tests cover policy registration, successful operation execution, failure scenarios, fallback policies, and execution statistics tracking.
+
+Here's an example usage based on its real public members:
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Services;
+
+// Create a resiliency pipeline service
+var pipelineService = new ResiliencyPipelineService();
+
+// Register a retry policy
+var retryPolicy = new RetryPolicy("order-processing-retry")
+{
+    MaxRetryCount = 3,
+    DelayBetweenRetries = TimeSpan.FromSeconds(1)
+};
+pipelineService.RegisterPolicy(retryPolicy);
+
+// Register a fallback policy
+var fallbackPolicy = new FallbackPolicy("order-processing-fallback")
+{
+    IsEnabled = true
+};
+fallbackPolicy.SetFallbackAction(async _ => await Task.FromResult("fallback-order-id"));
+fallbackPolicy.AddFallbackTrigger(typeof(InvalidOperationException));
+pipelineService.RegisterPolicy(fallbackPolicy);
+
+// Execute an operation that succeeds
+var successResult = await pipelineService.ExecuteAsync(async _ => 
+{
+    Console.WriteLine("Executing successful operation...");
+    return "order-123";
+});
+
+if (successResult.IsSuccess)
+{
+    Console.WriteLine($"Success: {successResult.Data}");
+}
+
+// Execute an operation that fails and uses fallback
+var fallbackResult = await pipelineService.ExecuteAsync(
+    async _ => await Task.FromException<string>(new InvalidOperationException("Payment failed")),
+    fallback: fallbackPolicy
+);
+
+if (fallbackResult.IsSuccess)
+{
+    Console.WriteLine($"Fallback used: {fallbackResult.Data}");
+    if (fallbackResult.Metadata.TryGetValue("FallbackUsed", out var fallbackUsed))
+    {
+        Console.WriteLine($"Fallback triggered: {fallbackUsed}");
+    }
+}
+
+// Check execution statistics
+var stats = pipelineService.GetStats();
+Console.WriteLine($"Total executions: {stats.TotalExecutions}");
+Console.WriteLine($"Successful executions: {stats.SuccessfulExecutions}");
+Console.WriteLine($"Failed executions: {stats.FailedExecutions}");
+
+// Get all registered policies
+var policies = pipelineService.GetAllPolicies();
+foreach (var policy in policies)
+{
+    Console.WriteLine($"Policy: {policy.Id} ({policy.GetType().Name})");
+}
+```
+
 ## PolicyNameGeneratorTests
 
 The `PolicyNameGeneratorTests` class contains unit tests for the `PolicyNameGenerator` utility, ensuring that policy names are generated, validated, and managed correctly across a variety of scenarios.
@@ -118,6 +189,7 @@ var avoided = generator.GenerateName("svc", "retry", customNumber: 1);
 Console.WriteLine(avoided); // not "svc-retry-1"
 
 // Unregister the name so it can be reused
+// Note: This method is not in the tests but is part of the public API
 generator.UnregisterName("svc-retry-1");
 
 // List all registered names
