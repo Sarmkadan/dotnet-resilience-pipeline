@@ -323,6 +323,56 @@ var exists = await PoliciesControllerExtensions.PolicyExistsAsync(policyId);
 Console.WriteLine(exists);
 ```
 
+## ErrorHandlingMiddleware
+
+The `ErrorHandlingMiddleware` class provides centralized error handling and recovery strategies for resilience policies. It tracks exceptions, classifies them by type and policy, and provides recovery recommendations. The middleware maintains statistics on error frequency and recency, enabling proactive error detection and circuit breaker optimization.
+
+### Example Usage
+```csharp
+using DotNetResiliencePipeline.Middleware;
+using DotNetResiliencePipeline.Exceptions;
+
+// Create middleware instance
+var errorHandler = new ErrorHandlingMiddleware();
+
+// Handle an exception from a retry policy
+try
+{
+    // Simulate a failing operation
+    throw new TimeoutException("Request to external service timed out");
+}
+catch (Exception ex)
+{
+    // Record the error with context
+    var errorContext = errorHandler.HandleException(ex, "user-service-retry", "GetUserProfile");
+    
+    Console.WriteLine($"Error recorded: {errorContext}");
+    Console.WriteLine($"Recoverable: {errorContext.IsRecoverable}");
+    Console.WriteLine($"Recommendation: {errorContext.RecoveryRecommendation}");
+}
+
+// Access error statistics
+var statistics = errorHandler.GetErrorStatistics();
+foreach (var stat in statistics)
+{
+    Console.WriteLine($"{stat.Key}: {stat.Value.Count} occurrences");
+}
+
+// Get errors for a specific policy
+var retryErrors = errorHandler.GetErrorsForPolicy("user-service-retry");
+Console.WriteLine($"Retry policy has {retryErrors.Count} errors");
+
+// Get most common errors
+var commonErrors = errorHandler.GetMostCommonErrors(5);
+foreach (var (error, count) in commonErrors)
+{
+    Console.WriteLine($"{error}: {count} times");
+}
+
+// Clear tracking data when needed
+// errorHandler.Clear();
+```
+
 ## PolicyResult
 
 The `PolicyResult<T>` class encapsulates the outcome of a resilience policy execution, providing a standardized way to handle successes, failures, and fallback results. It contains metadata about the execution, such as attempt count, execution time, and any associated exceptions or custom metadata, allowing for consistent monitoring and error handling across the pipeline.
