@@ -321,6 +321,33 @@ Console.WriteLine(validationResult.ToJson());
 var exists = await PoliciesControllerExtensions.PolicyExistsAsync(policyId);
 Console.WriteLine(exists);
 ```
+
+## PolicyResult
+
+The `PolicyResult<T>` class encapsulates the outcome of a resilience policy execution, providing a standardized way to handle successes, failures, and fallback results. It contains metadata about the execution, such as attempt count, execution time, and any associated exceptions or custom metadata, allowing for consistent monitoring and error handling across the pipeline.
+
+### Example Usage
+```csharp
+using DotNetResiliencePipeline.Domain;
+
+// Create a successful result
+var successResult = PolicyResult<string>.Success("Operation completed successfully", "MyRetryPolicy");
+successResult.OnSuccess(() => Console.WriteLine("Success!"));
+
+// Create a failed result
+var failureResult = PolicyResult<string>.Failure(new Exception("Operation failed"), "MyRetryPolicy");
+failureResult.OnFailure((ex) => Console.WriteLine($"Failed: {ex.Message}"));
+
+// Map to a new type
+var mappedResult = successResult.Map(data => data.Length);
+Console.WriteLine($"Length: {mappedResult.Data}");
+
+// Access result properties
+Console.WriteLine($"Policy: {successResult.PolicyName}");
+Console.WriteLine($"Time: {successResult.ExecutionTimeMs}ms");
+Console.WriteLine($"Attempts: {successResult.AttemptCount}");
+```
+```
 ## ...
 
 ## CircuitBreakerBenchmarks
