@@ -544,6 +544,71 @@ Console.WriteLine($"Policy configuration is {(validationResponse.Data?.IsValid =
 
 The `PolicyCacheService` provides caching functionality for resilience policies, reducing repeated policy lookups and improving application performance. It caches policy configurations with configurable time-to-live (TTL) and enforces a maximum cache size to prevent memory exhaustion. The service tracks cache statistics including hit rates, access patterns, and expiration metrics.
 
+## PerformanceMonitor
+
+The `PerformanceMonitor` class provides detailed performance tracking and analysis for resilience policy executions. It records execution durations, tracks success/failure rates, identifies performance issues, and enables comparison between different policies or time periods. The monitor maintains comprehensive metrics including average durations, failure rates, and execution history for trend analysis and troubleshooting.
+
+```csharp
+// Example: Using PerformanceMonitor to track and analyze policy performance
+var monitor = new PerformanceMonitor("order-processing-policy");
+
+// Record successful execution
+monitor.RecordExecution(true, 125);
+monitor.RecordExecution(true, 142);
+monitor.RecordExecution(true, 138);
+
+// Record failed execution
+monitor.RecordExecution(false, 89);
+
+// Record additional successful executions
+monitor.RecordExecution(true, 118);
+monitor.RecordExecution(true, 133);
+monitor.RecordExecution(true, 156);
+
+// Get current metrics
+var metrics = monitor.GetMetrics();
+Console.WriteLine($"Policy: {metrics.PolicyName}");
+Console.WriteLine($"Total executions: {metrics.TotalExecutions}");
+Console.WriteLine($"Successful executions: {metrics.SuccessfulExecutions}");
+Console.WriteLine($"Failed executions: {metrics.FailedExecutions}");
+Console.WriteLine($"Success rate: {(double)metrics.SuccessfulExecutions / metrics.TotalExecutions:P}");
+Console.WriteLine($"Average duration: {metrics.AverageDurationMs:F1}ms");
+Console.WriteLine($"Total duration: {metrics.TotalDurationMs}ms");
+
+// Get all historical metrics
+var allMetrics = monitor.GetAllMetrics();
+foreach (var metric in allMetrics)
+{
+    Console.WriteLine($"Execution at {metric.Timestamp:O}: {(metric.IsSuccessful ? "Success" : "Failure")} - {metric.DurationMs}ms");
+}
+
+// Identify performance issues
+var issues = monitor.IdentifyPerformanceIssues();
+foreach (var issue in issues)
+{
+    Console.WriteLine($"Performance issue detected: {issue.IssueType}");
+    Console.WriteLine($"  Policy: {issue.PolicyName}");
+    Console.WriteLine($"  Average duration: {issue.AverageDurationMs:F1}ms");
+    Console.WriteLine($"  Failure rate: {issue.FailureRate:P}");
+    Console.WriteLine($"  Severity: {issue.Severity}");
+}
+
+// Compare performance with another policy
+var comparisonMonitor = new PerformanceMonitor("payment-processing-policy");
+comparisonMonitor.RecordExecution(true, 95);
+comparisonMonitor.RecordExecution(true, 102);
+comparisonMonitor.RecordExecution(true, 98);
+
+var comparison = monitor.ComparePerformance(comparisonMonitor);
+Console.WriteLine($"Performance comparison: {comparison.PolicyName} vs {comparison.ComparisonPolicy}");
+Console.WriteLine($"Average duration difference: {comparison.AverageDurationDifference:F1}ms");
+Console.WriteLine($"Success rate difference: {comparison.SuccessRateDifference:P}");
+Console.WriteLine($"Is slower: {comparison.IsSlower}");
+
+// Clear metrics for a fresh start
+monitor.Clear();
+```
+
 ## PolicyNameGenerator
 
 The `PolicyNameGenerator` utility class generates meaningful, unique, and consistent names for resilience policies. It supports various naming conventions including service-based names, descriptive names with purpose, prefixed names for organizational purposes, and template-based naming. The generator ensures name uniqueness across the application and provides validation and management capabilities for registered policy names.
