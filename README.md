@@ -412,6 +412,72 @@ Console.WriteLine($"Policy configuration is {(validationResponse.Data?.IsValid =
 
 The `PolicyCacheService` provides caching functionality for resilience policies, reducing repeated policy lookups and improving application performance. It caches policy configurations with configurable time-to-live (TTL) and enforces a maximum cache size to prevent memory exhaustion. The service tracks cache statistics including hit rates, access patterns, and expiration metrics.
 
+## PolicyNameGenerator
+
+The `PolicyNameGenerator` utility class generates meaningful, unique, and consistent names for resilience policies. It supports various naming conventions including service-based names, descriptive names with purpose, prefixed names for organizational purposes, and template-based naming. The generator ensures name uniqueness across the application and provides validation and management capabilities for registered policy names.
+
+```csharp
+// Example: Basic policy name generation
+var generator = new PolicyNameGenerator();
+
+// Generate a circuit breaker policy name for the OrderService
+var circuitBreakerName = generator.GenerateName("OrderService", "CircuitBreaker");
+Console.WriteLine(circuitBreakerName); // Output: orderservice-cb-1
+
+// Generate a retry policy with a custom number
+var retryName = generator.GenerateName("PaymentService", "Retry", 5);
+Console.WriteLine(retryName); // Output: paymentservice-retry-5
+
+// Generate a descriptive policy name
+var descriptiveName = generator.GenerateDescriptiveName(
+    "UserService", 
+    "CircuitBreaker", 
+    "external-api-failures");
+Console.WriteLine(descriptiveName); // Output: userservice-external-api-failures-circuitbreaker
+
+// Generate a name with prefix
+var prefixedName = generator.GenerateNameWithPrefix("production", "InventoryService", "Timeout");
+Console.WriteLine(prefixedName); // Output: production-inventoryservice-timeout-1
+
+// Validate a policy name
+bool isValid = generator.IsValidPolicyName("orderservice-cb-1");
+Console.WriteLine(isValid); // Output: True
+
+// Suggest a name based on context
+var suggestedName = generator.SuggestName(
+    "NotificationService", 
+    "SendEmail", 
+    "smtp-connection-failure");
+Console.WriteLine(suggestedName); // Output: notificationservice-sendemail-smtp-connection-failure
+
+// Register and manage names
+var nameToRegister = generator.GenerateName("LoggingService", "Bulkhead");
+generator.RegisterName(nameToRegister);
+var allNames = generator.GetAllRegisteredNames();
+Console.WriteLine($"Registered names: {string.Join(", ", allNames)}");
+
+generator.UnregisterName(nameToRegister);
+generator.Clear();
+```
+
+## NamingTemplate
+
+The `NamingTemplate` class provides a structured approach to building policy names from template values. It allows you to construct names based on service, operation, policy type, and environment components, making it easy to maintain consistent naming conventions across different environments.
+
+```csharp
+// Example: Using the NamingTemplate
+var template = new NamingTemplate
+{
+    Service = "OrderProcessing",
+    Operation = "Checkout",
+    PolicyType = "CircuitBreaker",
+    Environment = "Production"
+};
+
+var templateName = template.BuildName();
+Console.WriteLine(templateName); // Output: orderprocessing-checkout-circuitbreaker-production
+```
+
 ```csharp
 // Example: Using PolicyCacheService for caching policy configurations
 var cacheService = new PolicyCacheService
