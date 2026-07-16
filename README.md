@@ -324,9 +324,73 @@ Console.WriteLine($"Change Percentage: {trend.ChangePercentage:P}");
 aggregator.Clear();
 ```
 
+## TimeoutPolicyTests
+
+The `TimeoutPolicyTests` class provides unit tests for the `TimeoutPolicy` class, verifying its functionality for timeout validation, execution time tracking, timeout detection, configuration validation, and metrics recording.
+
+
+Here's an example usage:
+
+```csharp
+// Create a timeout policy with 5 second timeout
+var policy = new TimeoutPolicy("api-timeout-policy")
+{
+    Timeout = TimeSpan.FromSeconds(5),
+    IsEnabled = true
+};
+
+// Record execution times to track performance
+policy.RecordExecutionTime(150);  // 150ms execution
+policy.RecordExecutionTime(220);  // 220ms execution
+policy.RecordExecutionTime(95);   // 95ms execution
+
+// Check if operations would timeout
+hasTimeout = policy.IsTimedOut(TimeSpan.FromSeconds(3));
+    // Returns false - 3 seconds < 5 second timeout
+
+hasTimeout = policy.IsTimedOut(TimeSpan.FromSeconds(10));
+    // Returns true - 10 seconds > 5 second timeout
+
+// Check timeout in milliseconds
+hasTimeoutMs = policy.IsTimedOutMs(6000);
+    // Returns true - 6000ms > 5000ms timeout
+
+// Get performance metrics
+averageTime = policy.AverageExecutionTimeMs;
+    // Returns 155 (average of 150, 220, 95)
+longestTime = policy.LongestExecutionTimeMs;
+    // Returns 220
+shortestTime = policy.ShortestExecutionTimeMs;
+    // Returns 95
+
+p95Time = policy.GetPercentile95ExecutionTime();
+    // Returns 220 (95th percentile of [95, 150, 220])
+p99Time = policy.GetPercentile99ExecutionTime();
+    // Returns 220 (99th percentile of [95, 150, 220])
+
+// Record a timeout event
+policy.RecordTimeout(5500);
+    // Increments timeout counter and records failure
+
+// Check timeout statistics
+timeoutCount = policy.TimeoutCount;
+    // Returns 1
+timeoutPercentage = policy.GetTimeoutPercentage();
+    // Returns 25 (1 timeout out of 4 total executions)
+
+// Validate configuration
+isValid = policy.IsValidConfiguration(out var error);
+    // Returns true, error is null
+
+// Reset statistics for new measurement period
+policy.ResetStatistics();
+    // Clears all metrics and counters
+```
+
 ## FallbackServiceTests
 
 The `FallbackServiceTests` class provides unit tests for the `FallbackService` class, verifying its functionality for executing fallback operations with various policy configurations, handling exceptions, timeout scenarios, and metrics recording.
+
 
 
 
