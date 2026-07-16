@@ -1,4 +1,6 @@
-// ... (rest of the README content)
+# DotNet Resilience Pipeline
+
+A comprehensive resilience library for .NET applications providing circuit breakers, retries, timeouts, bulkheads, and fallbacks with comprehensive metrics and health monitoring.
 
 ## MetricsFormatter
 
@@ -97,4 +99,75 @@ var comparisonReport = formatter.FormatComparison(comparison);
 Console.WriteLine(comparisonReport);
 ```
 
-// ... (rest of the README content)
+## JsonPolicySerializer
+
+The `JsonPolicySerializer` class provides serialization and deserialization functionality for `ResiliencyPolicy` objects to and from JSON format. It supports serializing single policies, multiple policies, metrics, and file operations for importing/exporting policy configurations.
+
+
+Here's an example usage:
+
+```csharp
+// Create a policy serializer
+var serializer = new JsonPolicySerializer("order-processing-policies");
+
+// Create a sample resiliency policy
+var policy = new ResiliencyPolicy
+{
+    Id = "policy-001",
+    Name = "Order Processing Circuit Breaker",
+    Type = "CircuitBreaker",
+    IsEnabled = true,
+    CreatedAt = DateTime.UtcNow,
+    FailureThreshold = 5,
+    OpenDurationSeconds = 30,
+    SuccessThreshold = 3,
+    MaxRetries = 3,
+    InitialDelayMs = 100,
+    Strategy = "ExponentialBackoff",
+    BackoffMultiplier = 2.0,
+    TimeoutSeconds = 10
+};
+
+// Serialize a single policy to JSON
+string json = serializer.Serialize(policy);
+Console.WriteLine(json);
+
+// Serialize multiple policies to JSON
+var policies = new List<ResiliencyPolicy> { policy };
+string multipleJson = serializer.SerializeMultiple(policies);
+Console.WriteLine(multipleJson);
+
+// Serialize metrics for a policy
+string metricsJson = serializer.SerializeMetrics(policy);
+Console.WriteLine(metricsJson);
+
+// Deserialize a policy from JSON
+string policyJson = @"{
+    \"Id\": \"policy-001\",
+    \"Name\": \"Order Processing Circuit Breaker\",
+    \"Type\": \"CircuitBreaker\",
+    \"IsEnabled\": true,
+    \"CreatedAt\": \"2024-01-15T10:30:00Z\",
+    \"FailureThreshold\": 5,
+    \"OpenDurationSeconds\": 30,
+    \"SuccessThreshold\": 3,
+    \"MaxRetries\": 3,
+    \"InitialDelayMs\": 100,
+    \"Strategy\": \"ExponentialBackoff\",
+    \"BackoffMultiplier\": 2.0,
+    \"TimeoutSeconds\": 10
+}";
+
+ResiliencyPolicy? deserializedPolicy = serializer.Deserialize(policyJson);
+if (deserializedPolicy != null)
+{
+    Console.WriteLine($"Deserialized policy: {deserializedPolicy.Name}");
+}
+
+// Export policies to a file
+await serializer.ExportToFileAsync(policies, "/tmp/policies.json");
+
+// Import policies from a file
+var importedPolicies = await serializer.ImportFromFileAsync("/tmp/policies.json");
+Console.WriteLine($"Imported {importedPolicies.Count} policies");
+```
