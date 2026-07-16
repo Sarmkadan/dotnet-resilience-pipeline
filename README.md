@@ -270,6 +270,60 @@ Console.WriteLine(executionHistoryCsv);
 await formatter.ExportToFileAsync(pipelineMetricsCsv, "/tmp/pipeline-metrics.csv");
 ```
 
+## MetricsAggregatorTests
+
+The `MetricsAggregatorTests` class provides unit tests for the `MetricsAggregator` class, verifying its functionality for recording metrics snapshots, aggregating metrics over time windows, analyzing trends, and managing snapshot history.
+
+
+
+Here's an example usage:
+
+```csharp
+// Create a metrics aggregator
+var aggregator = new MetricsAggregator();
+
+// Record metrics snapshots
+aggregator.RecordSnapshot(new MetricsSnapshot
+{
+    Timestamp = DateTime.UtcNow,
+    SuccessRate = 95.0,
+    AverageExecutionTimeMs = 45.5,
+    TotalExecutions = 1000,
+    SuccessfulExecutions = 950,
+    FailedExecutions = 50
+});
+
+aggregator.RecordSnapshot(new MetricsSnapshot
+{
+    Timestamp = DateTime.UtcNow.AddMinutes(-5),
+    SuccessRate = 92.0,
+    AverageExecutionTimeMs = 50.2,
+    TotalExecutions = 800,
+    SuccessfulExecutions = 736,
+    FailedExecutions = 64
+});
+
+// Get aggregated metrics for the last hour
+var metrics = aggregator.GetAggregatedMetrics(TimeSpan.FromHours(1));
+
+Console.WriteLine($"Snapshot Count: {metrics.SnapshotCount}");
+Console.WriteLine($"Average Success Rate: {metrics.AverageSuccessRate:P}");
+Console.WriteLine($"Min Success Rate: {metrics.MinSuccessRate:P}");
+Console.WriteLine($"Max Success Rate: {metrics.MaxSuccessRate:P}");
+Console.WriteLine($"Total Executions: {metrics.TotalExecutions}");
+Console.WriteLine($"Peak Executions: {metrics.PeakExecutions}");
+Console.WriteLine($"Average Execution Time: {metrics.AverageExecutionTimeMs}ms");
+
+// Analyze trend
+var trend = aggregator.AnalyzeTrend(TimeSpan.FromHours(1), "SuccessRate");
+Console.WriteLine($"Trend Direction: {trend.Direction}");
+Console.WriteLine($"Is Anomaly: {trend.IsAnomaly}");
+Console.WriteLine($"Change Percentage: {trend.ChangePercentage:P}");
+
+// Clear all snapshots
+aggregator.Clear();
+```
+
 ## JsonPolicySerializer
 
 The `JsonPolicySerializer` class provides serialization and deserialization functionality for `ResiliencyPolicy` objects to and from JSON format. It supports serializing single policies, multiple policies, metrics, and file operations for importing/exporting policy configurations.
