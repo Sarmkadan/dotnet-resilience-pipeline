@@ -33,7 +33,51 @@ A comprehensive, production-grade resilience library for .NET applications featu
 - [Contributing](#contributing)
 - [License](#license)
 
+## HealthCheckWorker
+
+The `HealthCheckWorker` is a background service that continuously monitors the health of resilience policies by periodically checking their success rates. It automatically detects when policies degrade below configured thresholds and publishes health change events. The worker provides real-time health status, historical metrics, and programmatic control over monitoring behavior.
+
+
+
+
+
+```csharp
+// Example: Setting up and using the HealthCheckWorker
+var pipelineService = new ResiliencyPipelineService();
+var eventPublisher = new ResiliencyEventPublisher();
+var healthChecker = new HealthCheckWorker(pipelineService, eventPublisher);
+
+// Configure health check interval (default: 30 seconds)
+healthChecker.CheckInterval = TimeSpan.FromSeconds(45);
+
+// Set health thresholds (default: 95% healthy, 80% degraded)
+healthChecker.HealthyThreshold = 0.92; // 92% healthy threshold
+healthChecker.DegradedThreshold = 0.75; // 75% degraded threshold
+
+// Start the health checker
+healthChecker.Start();
+
+// Get current health status
+var status = healthChecker.GetStatus();
+Console.WriteLine($"Running: {status.IsRunning}");
+Console.WriteLine($"Success rate: {status.PipelineSuccessRate:P}");
+Console.WriteLine($"Overall health: {status.OverallHealth}");
+Console.WriteLine($"Total policies: {status.TotalPolicies}");
+Console.WriteLine($"Total executions: {status.TotalExecutions}");
+Console.WriteLine($"Last check: {status.LastCheckTime:O}");
+
+// Check if worker is running
+if (healthChecker.IsRunning)
+{
+    Console.WriteLine("Health check worker is actively monitoring policies");
+}
+
+// Stop the health checker when application shuts down
+await healthChecker.StopAsync();
+```
+
 ## ...
+
 
 ## DotnetResiliencePipelineOptions
 
