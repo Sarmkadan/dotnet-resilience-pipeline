@@ -1397,3 +1397,103 @@ Console.WriteLine("Repository saved to storage");
 // Clear all policies (use with caution)
 // policyRepository.Clear();
 ```
+
+## ExecutionRecord
+
+The `ExecutionRecord` class represents a single execution of a resilience policy, capturing detailed metrics and metadata about the operation. It serves as the fundamental unit of observability in the DotNet Resilience Pipeline library, enabling comprehensive tracking of policy executions, success rates, execution times, and error details across all resilience patterns (circuit breakers, retries, timeouts, bulkheads, and fallbacks).
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Data;
+using System;
+using System.Collections.Generic;
+
+// Create an execution record for a successful retry operation
+var successRecord = new ExecutionRecord
+{
+    ExecutionId = Guid.NewGuid().ToString(),
+    PolicyName = "user-service-retry",
+    PolicyId = "retry-policy-001",
+    IsSuccess = true,
+    ExecutionTimeMs = 150,
+    AttemptCount = 3,
+    ExecutedAt = DateTime.UtcNow,
+    Metadata = new Dictionary<string, object>
+    {
+        {"Operation", "GetUserProfile"},
+        {"Endpoint", "https://api.example.com/users/123"},
+        {"ResponseSize", 4096},
+        {"HttpStatusCode", 200}
+    }
+};
+
+// Record the execution in the repository
+var historyRepository = new ExecutionHistoryRepository();
+historyRepository.Record(successRecord);
+
+// Retrieve execution history for analysis
+var allExecutions = historyRepository.GetAll();
+Console.WriteLine($"Total executions recorded: {allExecutions.Count}");
+
+// Get executions for a specific policy
+var retryExecutions = historyRepository.GetByPolicyId("retry-policy-001");
+Console.WriteLine($"Retry policy executions: {retryExecutions.Count}");
+
+// Get failed executions for troubleshooting
+var failedExecutions = historyRepository.GetFailedExecutions();
+Console.WriteLine($"Failed executions: {failedExecutions.Count}");
+
+// Get successful executions for performance analysis
+var successfulExecutions = historyRepository.GetSuccessfulExecutions();
+Console.WriteLine($"Successful executions: {successfulExecutions.Count}");
+
+// Get the latest executions
+var latestExecutions = historyRepository.GetLatest(10);
+Console.WriteLine($"Latest 10 executions:");
+foreach (var execution in latestExecutions)
+{
+    Console.WriteLine($" - {execution.ExecutedAt:yyyy-MM-dd HH:mm:ss} | {execution.PolicyName} | {(execution.IsSuccess ? "SUCCESS" : "FAILED")} | {execution.ExecutionTimeMs}ms");
+}
+
+// Calculate metrics
+var avgExecutionTime = historyRepository.GetAverageExecutionTime();
+var successRate = historyRepository.GetSuccessRate();
+
+Console.WriteLine($"Average execution time: {avgExecutionTime:F1}ms");
+Console.WriteLine($"Success rate: {successRate:P}");
+
+// Get executions within a specific time range
+var startTime = DateTime.UtcNow.AddHours(-1);
+var endTime = DateTime.UtcNow;
+var recentExecutions = historyRepository.GetByTimeRange(startTime, endTime);
+Console.WriteLine($"Executions in last hour: {recentExecutions.Count}");
+
+// Create an execution record for a failed operation
+var failureRecord = new ExecutionRecord
+{
+    ExecutionId = Guid.NewGuid().ToString(),
+    PolicyName = "user-service-circuit-breaker",
+    PolicyId = "circuit-breaker-policy-001",
+    IsSuccess = false,
+    ExecutionTimeMs = 5000,
+    AttemptCount = 1,
+    ErrorMessage = "Service unavailable",
+    ErrorType = "HttpRequestException",
+    ExecutedAt = DateTime.UtcNow,
+    Metadata = new Dictionary<string, object>
+    {
+        {"Operation", "ProcessPayment"},
+        {"Endpoint", "https://api.payment.com/process"},
+        {"HttpStatusCode", 503}
+    }
+};
+
+// Record the failed execution
+historyRepository.Record(failureRecord);
+
+// Access error statistics
+var failedCount = historyRepository.GetFailedExecutions().Count;
+var totalCount = historyRepository.GetAll().Count;
+Console.WriteLine($"Error rate: {(double)failedCount / totalCount:P}");
+```
