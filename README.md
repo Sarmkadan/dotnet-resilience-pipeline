@@ -61,3 +61,71 @@ Console.WriteLine($"Result with disabled rule: {resultDisabled}");
 var removed = failureInjectionService.RemoveRule("exception-rule");
 Console.WriteLine($"Rule removed: {removed}");
 ```
+
+## PolicyNameGeneratorTests
+
+The `PolicyNameGeneratorTests` class contains unit tests for the `PolicyNameGenerator` utility, ensuring that policy names are generated, validated, and managed correctly across a variety of scenarios.
+
+Below is a realistic usage example that demonstrates the public members exercised by the tests:
+
+```csharp
+using DotNetResiliencePipeline.Utilities;
+
+var generator = new PolicyNameGenerator();
+
+// Generate names for different policy types
+var circuitBreakerName = generator.GenerateName("payment", "circuitbreaker");
+var retryName = generator.GenerateName("order", "retry");
+var timeoutName = generator.GenerateName("catalog", "timeout");
+var bulkheadName = generator.GenerateName("inventory", "bulkhead");
+var fallbackName = generator.GenerateName("shipping", "fallback");
+
+// Ensure uniqueness for the same service and type
+var first = generator.GenerateName("svc", "retry");
+var second = generator.GenerateName("svc", "retry");
+Console.WriteLine(first); // e.g., svc-retry-1
+Console.WriteLine(second); // e.g., svc-retry-2
+
+// Normalize service names with special characters
+var normalized = generator.GenerateName("Payment Service", "retry");
+Console.WriteLine(normalized); // e.g., payment-service-retry-1
+
+// Use a custom number
+var custom = generator.GenerateName("svc", "timeout", customNumber: 42);
+Console.WriteLine(custom); // svc-timeout-42
+
+// Build a descriptive name with a purpose
+var descriptive = generator.GenerateDescriptiveName("payment", "retry", "network");
+Console.WriteLine(descriptive); // payment-network-retry
+
+// Build a descriptive name without a purpose
+var simple = generator.GenerateDescriptiveName("payment", "timeout");
+Console.WriteLine(simple); // payment-timeout
+
+// Validate generated names
+bool isValid = generator.IsValidPolicyName(circuitBreakerName);
+Console.WriteLine(isValid); // true
+
+// Suggest a name based on service, operation, and scenario
+var suggested = generator.SuggestName("payment", "charge", "network-error");
+Console.WriteLine(suggested); // payment-charge-network-error
+
+// Register a name to reserve it
+generator.RegisterName("svc-retry-1");
+
+// Attempt to generate the same name (will be avoided)
+var avoided = generator.GenerateName("svc", "retry", customNumber: 1);
+Console.WriteLine(avoided); // not "svc-retry-1"
+
+// Unregister the name so it can be reused
+generator.UnregisterName("svc-retry-1");
+
+// List all registered names
+var allRegistered = generator.GetAllRegisteredNames();
+Console.WriteLine(string.Join(", ", allRegistered));
+
+// Clear all registrations and reset counters
+generator.Clear();
+var freshName = generator.GenerateName("svc", "retry");
+Console.WriteLine(freshName); // svc-retry-1
+```
