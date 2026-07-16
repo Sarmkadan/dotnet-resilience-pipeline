@@ -350,6 +350,34 @@ Console.WriteLine($"Attempts: {successResult.AttemptCount}");
 ```
 ## ...
 
+## IPipelineMetrics
+
+The `IPipelineMetrics` interface provides a unified view of execution counters across all policies in the pipeline. It allows for the retrieval of an aggregated `PipelineMetricsSnapshot` containing statistics such as total, successful, and failed executions, as well as retry counts, circuit breaker trips, and timeout occurrences.
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Domain;
+
+// Assume pipelineMetrics is an implementation of IPipelineMetrics
+IPipelineMetrics pipelineMetrics = GetPipelineMetrics();
+
+// Get the aggregated metrics snapshot
+PipelineMetricsSnapshot stats = pipelineMetrics.GetStats();
+
+Console.WriteLine($"Total Executions: {stats.TotalExecutions}");
+Console.WriteLine($"Success Rate: {stats.SuccessRate}%");
+Console.WriteLine($"Retries: {stats.RetryCount}");
+Console.WriteLine($"Circuit Breaker Trips: {stats.CircuitBreakerTrips}");
+Console.WriteLine($"Timeouts: {stats.TimeoutCount}");
+
+// Inspect per-policy snapshots
+foreach (var snapshot in stats.PolicySnapshots)
+{
+    Console.WriteLine($"Policy '{snapshot.PolicyName}': {snapshot.ExecutionCount} executions");
+}
+```
+
 ## CircuitBreakerBenchmarks
 
 The `CircuitBreakerBenchmarks` class provides performance benchmarks for the `CircuitBreakerPolicy`. It measures the execution time and memory allocation of various circuit breaker operations, including recording success and failure events, state transitions, and retrieving the current state and circuit breaker trips.
