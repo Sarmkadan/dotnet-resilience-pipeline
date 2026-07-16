@@ -348,6 +348,87 @@ Console.WriteLine($"Time: {successResult.ExecutionTimeMs}ms");
 Console.WriteLine($"Attempts: {successResult.AttemptCount}");
 ```
 
+## RetryPolicy
+
+The `RetryPolicy` class implements retry logic with configurable backoff strategies to handle transient failures in distributed systems. It supports multiple backoff algorithms (fixed, linear, exponential), configurable retry limits, jitter for avoiding thundering herd problems, and comprehensive retry tracking with detailed metrics.
+
+### Example Usage
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using System;
+
+// Create a retry policy with exponential backoff strategy
+var retryPolicy = new RetryPolicy("user-service-retry")
+{
+    MaxRetries = 5,
+    InitialDelay = TimeSpan.FromMilliseconds(100),
+    Strategy = BackoffStrategy.Exponential,
+    MaxDelay = TimeSpan.FromSeconds(30),
+    BackoffMultiplier = 2.0,
+    UseJitter = true,
+    JitterFactor = 0.2,
+    RetryableExceptions = new List<Type> { typeof(TimeoutException), typeof(HttpRequestException) }
+};
+
+// Validate configuration
+if (!retryPolicy.IsValidConfiguration)
+{
+    Console.WriteLine("Invalid retry policy configuration!");
+    foreach (var error in retryPolicy.GetSnapshot().ValidationErrors)
+    {
+        Console.WriteLine($"  - {error}");
+    }
+}
+
+// Check if an exception is retryable
+bool shouldRetry = retryPolicy.IsRetryable(new TimeoutException("Request timed out"));
+Console.WriteLine($"Should retry on TimeoutException: {shouldRetry}");
+
+// Calculate delay for the next retry attempt
+long nextDelayMs = retryPolicy.GetNextDelayMs(3); // 3rd retry attempt
+Console.WriteLine($"Next delay for attempt 3: {nextDelayMs}ms");
+
+// Record a retry attempt
+retryPolicy.RecordRetryAttempt();
+Console.WriteLine($"Total retry attempts so far: {retryPolicy.TotalRetryAttempts}");
+
+// Execute an operation with retry protection
+var result = retryPolicy.Execute(() =>
+{
+    // Your transient operation here
+    return CallExternalService();
+});
+
+// Access execution statistics
+var snapshot = retryPolicy.GetSnapshot();
+Console.WriteLine($"Policy '{snapshot.PolicyName}' executed {snapshot.ExecutionCount} times");
+Console.WriteLine($"Success rate: {snapshot.SuccessRate:P}");
+Console.WriteLine($"Total retry attempts: {retryPolicy.TotalRetryAttempts}");
+
+// Configure retry policy with linear backoff
+var linearRetry = new RetryPolicy("linear-retry")
+{
+    MaxRetries = 3,
+    InitialDelay = TimeSpan.FromSeconds(1),
+    Strategy = BackoffStrategy.Linear,
+    MaxDelay = TimeSpan.FromSeconds(10)
+};
+
+// Execute with linear backoff
+var linearResult = linearRetry.Execute(() => ExternalApi.GetUser(123));
+
+// Configure retry policy with fixed interval
+var fixedRetry = new RetryPolicy("fixed-retry")
+{
+    MaxRetries = 2,
+    InitialDelay = TimeSpan.FromMilliseconds(500),
+    Strategy = BackoffStrategy.Fixed
+};
+
+// Execute with fixed interval
+var fixedResult = fixedRetry.Execute(() => Database.Query("SELECT * FROM users"));
+```
+
 ## ResiliencyPolicy
 
 The `ResiliencyPolicy` class serves as the base class for all resilience policies in the DotNet Resilience Pipeline library. It provides core functionality for tracking execution statistics, managing policy state, and generating snapshots for observability purposes. The class maintains comprehensive metrics including execution counts, success/failure rates, and timestamps for creation and modification, enabling detailed monitoring and analysis of policy behavior.
