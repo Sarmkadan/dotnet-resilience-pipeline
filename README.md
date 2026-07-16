@@ -21,6 +21,7 @@ A comprehensive, production-grade resilience library for .NET applications featu
 - [Monitoring & Metrics](#monitoring--metrics)
 - [Circuit Breaker Dashboard](#circuit-breaker-dashboard)
 - [CliCommandValidator](#clicommandvalidator)
+- [FailureInjectionService](#failureinjectionservice)
 - [Failure Injection Testing](#failure-injection-testing)
 - [Resilience Metrics Export](#resilience-metrics-export)
 - [Deployment](#deployment)
@@ -166,6 +167,132 @@ Console.WriteLine($"- {error}");
 ## CliCommandValidator
 
 The `CliCommandValidator` class is designed to validate CLI commands and their arguments before execution, ensuring that all required parameters are present and values are within acceptable ranges. It returns a `ValidationResult` which provides information about the validation status, including any detected errors or warnings.
+
+## FailureInjectionService
+
+The `FailureInjectionService` injects configurable faults into operations to verify that resilience policies behave correctly under adverse conditions. It supports three types of injections:
+
+- **Exception**: Throws a configurable exception (either a custom exception or `InjectedFaultException`)
+- **Latency**: Adds artificial delay before delegating to the real operation
+- **Timeout**: Simulates a hung operation that never completes within a reasonable time
+
+Rules are configured with injection rates (0.0–1.0), enabling you to control how frequently faults are injected. The service tracks statistics including total injections performed and per-rule injection counts.
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Services;
+using DotNetResiliencePipeline.Exceptions;
+
+// Create the failure injection service
+var failureInjectionService = new FailureInjectionService();
+
+// Configure an exception injection rule (100% injection rate)
+var exceptionRule = new FailureInjectionService.InjectionRule
+{
+    Key = "payment-service-exception",
+    Type = FailureInjectionService.InjectionType.Exception,
+    InjectionRate = 1.0,
+    ExceptionMessage = "Simulated payment service failure"
+};
+failureInjectionService.AddRule(exceptionRule);
+
+// Configure a latency injection rule (inject 30% of the time)
+var latencyRule = new FailureInjectionService.InjectionRule
+{
+    Key = "payment-service-latency",
+    Type = FailureInjectionService.InjectionType.Latency,
+    InjectionRate = 0.3,
+    LatencyDelay = TimeSpan.FromSeconds(2)
+};
+failureInjectionService.AddRule(latencyRule);
+
+// Configure a timeout injection rule (inject 5% of the time)
+var timeoutRule = new FailureInjectionService.InjectionRule
+{
+    Key = "payment-service-timeout",
+    Type = FailureInjectionService.InjectionType.Timeout,
+    InjectionRate = 0.05,
+    TimeoutDuration = TimeSpan.FromSeconds(10)
+};
+failureInjectionService.AddRule(timeoutRule);
+
+// Test exception injection with a retry policy
+try
+{
+    await failureInjectionService.ExecuteAsync("payment-service-exception", async ct =>
+    {
+        // This will always throw the injected exception
+        return await CallPaymentService();
+    });
+}
+catch (InjectedFaultException ex)
+{
+    Console.WriteLine($"Injected fault caught: {ex.Message} (Rule: {ex.RuleKey})");
+}
+
+// Test latency injection with a circuit breaker
+var circuitBreakerPolicy = new CircuitBreakerPolicy("payment-service-circuit")
+{
+    FailureThreshold = 3,
+    SamplingDuration = TimeSpan.FromSeconds(30),
+    TimeToHalfOpen = TimeSpan.FromSeconds(5)
+};
+
+var circuitBreakerService = new CircuitBreakerService();
+
+// Execute with latency injection (30% chance of 2-second delay)
+var result = await circuitBreakerService.ExecuteAsync(
+    circuitBreakerPolicy,
+    async ct => await failureInjectionService.ExecuteAsync(
+        "payment-service-latency",
+        async ct2 => await CallPaymentService(),
+        ct
+    ),
+    cancellationToken
+);
+
+// Test timeout injection
+try
+{
+    await failureInjectionService.ExecuteAsync("payment-service-timeout", async ct =>
+    {
+        // This will timeout after 10 seconds
+        await Task.Delay(Timeout.Infinite, ct);
+        return "Should not reach here";
+    });
+}
+catch (OperationCanceledException ex)
+{
+    Console.WriteLine($"Timeout occurred: {ex.Message}");
+}
+
+// Manage rules
+bool removed = failureInjectionService.RemoveRule("payment-service-exception");
+Console.WriteLine($"Rule removed: {removed}");
+
+// Get all rules
+var allRules = failureInjectionService.GetRules();
+Console.WriteLine($"Total rules configured: {allRules.Count}");
+
+// Disable all rules temporarily
+failureInjectionService.DisableAll();
+
+// Check statistics
+await failureInjectionService.ExecuteAsync("payment-service-exception", async ct =>
+{
+    return await CallPaymentService();
+});
+
+Console.WriteLine($"Total injections performed: {failureInjectionService.TotalInjections}");
+
+foreach (var rule in failureInjectionService.GetRules())
+{
+    Console.WriteLine($"Rule '{rule.Key}': {rule.InjectionsPerformed} injections");
+}
+```
+
+## CliCommandHandler
 
 ### Example Usage
 ```csharp
