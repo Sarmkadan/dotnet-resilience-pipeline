@@ -347,6 +347,63 @@ Console.WriteLine($"Policy: {successResult.PolicyName}");
 Console.WriteLine($"Time: {successResult.ExecutionTimeMs}ms");
 Console.WriteLine($"Attempts: {successResult.AttemptCount}");
 ```
+
+## CircuitBreakerPolicy
+
+The `CircuitBreakerPolicy` implements the circuit breaker pattern to prevent cascading failures in distributed systems. It monitors execution failures and, when a configurable threshold is reached, opens the circuit to fail-fast and avoid overwhelming failing dependencies. After a specified duration, it transitions to a half-open state to test recovery, and if successful, closes the circuit to resume normal operation.
+
+### Example Usage
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using System;
+
+// Create a circuit breaker policy with a name
+var circuitBreaker = new CircuitBreakerPolicy("DatabaseCircuitBreaker")
+{
+    FailureThreshold = 5,       // Open circuit after 5 consecutive failures
+    OpenDuration = TimeSpan.FromSeconds(30) // Keep circuit open for 30 seconds
+};
+
+// Check initial state
+Console.WriteLine($"Initial state: {circuitBreaker.CurrentState}"); // Closed
+
+// Simulate successful operations
+circuitBreaker.RecordSuccess();
+circuitBreaker.RecordSuccess();
+
+// Simulate failures until threshold is reached
+for (int i = 0; i < 4; i++)
+{
+    circuitBreaker.RecordFailure();
+    Console.WriteLine($"Consecutive failures: {circuitBreaker.ConsecutiveFailures}");
+}
+
+// This failure will open the circuit
+circuitBreaker.RecordFailure();
+Console.WriteLine($"Circuit state after threshold: {circuitBreaker.CurrentState}"); // Open
+Console.WriteLine($"Circuit breaker trips: {circuitBreaker.CircuitBreakerTrips}");
+
+// Attempt to reset checks if enough time has passed
+circuitBreaker.AttemptReset();
+Console.WriteLine($"State after attempt reset: {circuitBreaker.CurrentState}"); // HalfOpen
+
+// Simulate successful recovery in half-open state
+circuitBreaker.RecordSuccess();
+circuitBreaker.RecordSuccess();
+circuitBreaker.RecordSuccess(); // 3 successful operations close the circuit
+Console.WriteLine($"Circuit state after recovery: {circuitBreaker.CurrentState}"); // Closed
+
+// Manually reset the circuit breaker
+circuitBreaker.ManualReset();
+Console.WriteLine($"Circuit state after manual reset: {circuitBreaker.CurrentState}"); // Closed
+
+// Get detailed snapshot
+var snapshot = circuitBreaker.GetSnapshot();
+Console.WriteLine($"Snapshot - Circuit state: {snapshot.Metadata["CircuitState"]}");
+Console.WriteLine($"Consecutive failures: {snapshot.Metadata["ConsecutiveFailures"]}");
+Console.WriteLine($"Failure threshold: {snapshot.Metadata["FailureThreshold"]}");
+```
+
 ```
 ## ...
 
