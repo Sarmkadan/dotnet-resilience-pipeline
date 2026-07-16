@@ -19,6 +19,7 @@ A comprehensive, production-grade resilience library for .NET applications featu
 - [FallbackPolicy](#fallbackpolicy)
 - [API Reference](#api-reference)
 - [Monitoring & Metrics](#monitoring--metrics)
+- [MetricsCollectorWorker](#metricscolllectorworker)
 - [Circuit Breaker Dashboard](#circuit-breaker-dashboard)
 - [CliCommandValidator](#clicommandvalidator)
 - [FailureInjectionService](#failureinjectionservice)
@@ -84,6 +85,43 @@ Console.WriteLine($"Retry: {retryPolicy.MaxRetries}");
 Console.WriteLine($"Timeout: {timeoutPolicy.TimeoutSeconds}");
 Console.WriteLine($"Bulkhead: {options.Bulkhead.MaxParallelization}");
 Console.WriteLine($"Fallback: {options.Fallback.FallbackOnAnyException}");
+```
+
+## MetricsCollectorWorker
+
+The `MetricsCollectorWorker` is a background service that periodically collects and aggregates resilience metrics from all configured policies. It maintains time-series data for trend analysis, generates performance reports, and provides programmatic access to historical metrics through a fluent API.
+
+
+```csharp
+// Example: Setting up and using the MetricsCollectorWorker
+var pipelineService = new ResiliencyPipelineService();
+var aggregator = new MetricsAggregator();
+var metricsCollector = new MetricsCollectorWorker(pipelineService, aggregator);
+
+// Configure collection interval (default: 10 seconds)
+metricsCollector.CollectionInterval = TimeSpan.FromSeconds(15);
+
+// Start the collector
+metricsCollector.Start();
+
+// Get current status
+var status = metricsCollector.GetStatus();
+Console.WriteLine($"Running: {status.IsRunning}, Collections: {status.TotalCollections}");
+
+// Retrieve metrics for last 5 minutes
+var recentMetrics = metricsCollector.GetMetricsForTimeRange(TimeSpan.FromMinutes(5));
+Console.WriteLine($"Success rate: {recentMetrics.SuccessRate:P}");
+
+// Generate a performance report for the last hour
+var report = metricsCollector.GenerateReport(TimeSpan.FromHours(1));
+Console.WriteLine($"Total executions: {report.TotalExecutions}");
+
+// Analyze trends
+var trend = metricsCollector.GetTrendAnalysis(TimeSpan.FromHours(24));
+Console.WriteLine($"Trend direction: {trend.Direction}");
+
+// Stop the collector when application shuts down
+await metricsCollector.StopAsync();
 ```
 
 ## ...
