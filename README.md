@@ -427,6 +427,96 @@ bool batchAllowed = rateLimiter.IsRequestAllowed(clientId, tokensRequired: 5);
 Console.WriteLine($"Batch of 5 requests allowed: {batchAllowed}");
 ```
 
+## ResiliencyLoggingMiddleware
+
+The `ResiliencyLoggingMiddleware` class provides comprehensive logging and observability for resilience pipeline operations. It tracks execution time, success/failure status, policy types, and exceptions for all operations executed through the resilience pipeline. The middleware maintains a bounded log history (default 1000 entries) and provides filtering and summary capabilities for monitoring and debugging.
+
+### Features
+- Logs all resilience pipeline operations with detailed metrics
+- Tracks execution time, success/failure, and policy types
+- Provides filtering by policy name, time range, and failure status
+- Generates summary statistics and reports
+- Thread-safe implementation with bounded log storage
+- Configurable maximum log entries to prevent memory issues
+
+### Example Usage
+```csharp
+using DotNetResiliencePipeline.Middleware;
+using DotNetResiliencePipeline.Services;
+using System;
+
+// Create required services
+var pipelineService = new ResiliencyPipelineService();
+
+// Create middleware instance
+var loggingMiddleware = new ResiliencyLoggingMiddleware(pipelineService);
+
+// Log a successful operation
+loggingMiddleware.LogExecution(
+    policyName: "user-service-retry",
+    operationName: "GetUserProfile",
+    success: true,
+    durationMs: 150
+);
+
+// Log a failed operation with exception
+try
+{
+    // Simulate a failing operation
+    throw new TimeoutException("Request to external service timed out");
+}
+catch (Exception ex)
+{
+    loggingMiddleware.LogExecution(
+        policyName: "user-service-timeout",
+        operationName: "GetProductDetails",
+        success: false,
+        durationMs: 5000,
+        exception: ex
+    );
+}
+
+// Retrieve all logs
+var allLogs = loggingMiddleware.GetLogs();
+Console.WriteLine($"Total log entries: {allLogs.Count}");
+
+// Filter logs by policy name
+var retryLogs = loggingMiddleware.GetLogsByPolicy("user-service-retry");
+Console.WriteLine($"Retry policy logs: {retryLogs.Count}");
+
+// Get failed logs only
+var failedLogs = loggingMiddleware.GetFailedLogs();
+Console.WriteLine($"Failed executions: {failedLogs.Count}");
+
+// Get logs within a time range
+var startTime = DateTime.UtcNow.AddHours(-1);
+var endTime = DateTime.UtcNow;
+var recentLogs = loggingMiddleware.GetLogsBetween(startTime, endTime);
+Console.WriteLine($"Recent logs: {recentLogs.Count}");
+
+// Get summary statistics
+var summary = loggingMiddleware.GetSummary();
+Console.WriteLine($"Total entries: {summary.TotalEntries}");
+Console.WriteLine($"Success rate: {summary.SuccessRate:P}");
+Console.WriteLine($"Average duration: {summary.AverageDurationMs:F1}ms");
+Console.WriteLine($"Successful executions: {summary.SuccessfulExecutions}");
+Console.WriteLine($"Failed executions: {summary.FailedExecutions}");
+
+// Clear logs when needed
+// loggingMiddleware.Clear();
+
+// Access individual log entry properties
+foreach (var log in allLogs.Take(3))
+{
+    Console.WriteLine(log.ToString());
+    Console.WriteLine($"  Policy: {log.PolicyName}");
+    Console.WriteLine($"  Operation: {log.OperationName}");
+    Console.WriteLine($"  Duration: {log.DurationMs}ms");
+    Console.WriteLine($"  Exception: {log.Exception}");
+    Console.WriteLine($"  Message: {log.Message}");
+}
+```
+
 ## PolicyResult
 
 The `PolicyResult<T>` class encapsulates the outcome of a resilience policy execution, providing a standardized way to handle successes, failures, and fallback results. It contains metadata about the execution, such as attempt count, execution time, and any associated exceptions or custom metadata, allowing for consistent monitoring and error handling across the pipeline.
