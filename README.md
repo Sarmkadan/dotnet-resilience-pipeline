@@ -19,8 +19,8 @@ A comprehensive, production-grade resilience library for .NET applications featu
 - [FallbackPolicy](#fallbackpolicy)
 - [API Reference](#api-reference)
 - [Monitoring & Metrics](#monitoring--metrics)
+- [CircuitBreakerDashboardController](#circuitbreakerdashboardcontroller)
 - [MetricsCollectorWorker](#metricscolllectorworker)
-- [Circuit Breaker Dashboard](#circuit-breaker-dashboard)
 - [CliCommandValidator](#clicommandvalidator)
 - [FailureInjectionService](#failureinjectionservice)
 - [Failure Injection Testing](#failure-injection-testing)
@@ -32,6 +32,86 @@ A comprehensive, production-grade resilience library for .NET applications featu
 - [Related Projects](#related-projects)
 - [Contributing](#contributing)
 - [License](#license)
+
+## CircuitBreakerDashboardController
+
+The `CircuitBreakerDashboardController` is a REST API controller that provides real-time visibility into all circuit breakers within the resilience pipeline. It exposes endpoints for retrieving dashboard summaries, individual breaker statuses, breaker resets, and tracking open breakers. The controller aggregates state information, failure metrics, and health indicators to help operations teams monitor circuit breaker behavior and troubleshoot failures.
+
+```csharp
+// Example: Using the CircuitBreakerDashboardController in an ASP.NET Core application
+var builder = WebApplication.CreateBuilder(args);
+
+// Add required services
+builder.Services.AddResiliencyPipelineServices();
+builder.Services.AddSingleton<CircuitBreakerService>();
+builder.Services.AddControllers();
+
+var app = builder.Build();
+
+// Map endpoints
+app.MapGet("/api/dashboard/circuit-breakers", async (CircuitBreakerDashboardController controller) =>
+    await controller.GetDashboardAsync());
+
+app.MapGet("/api/dashboard/circuit-breakers/{name}", async (CircuitBreakerDashboardController controller, string name) =>
+    await controller.GetBreakerStatusAsync(name));
+
+app.MapPost("/api/dashboard/circuit-breakers/{name}/reset", async (CircuitBreakerDashboardController controller, string name) =>
+    await controller.ResetBreakerAsync(name));
+
+app.MapGet("/api/dashboard/circuit-breakers/open", async (CircuitBreakerDashboardController controller) =>
+    await controller.GetOpenBreakersAsync());
+
+// Initialize controller with injected dependencies
+var pipelineService = app.Services.GetRequiredService<ResiliencyPipelineService>();
+var circuitBreakerService = app.Services.GetRequiredService<CircuitBreakerService>();
+var dashboardController = new CircuitBreakerDashboardController(pipelineService, circuitBreakerService);
+
+// Example: Getting the full dashboard
+var dashboardResponse = await dashboardController.GetDashboardAsync();
+if (dashboardResponse.Success && dashboardResponse.Data != null)
+{
+    var dashboard = dashboardResponse.Data;
+    Console.WriteLine($"Dashboard generated at: {dashboard.GeneratedAt:O}");
+    Console.WriteLine($"Total breakers: {dashboard.TotalBreakers}");
+    Console.WriteLine($"Open breakers: {dashboard.OpenCount}");
+    Console.WriteLine($"Half-open breakers: {dashboard.HalfOpenCount}");
+    Console.WriteLine($"Total trips: {dashboard.TotalTrips}");
+    Console.WriteLine($"Overall health: {dashboard.OverallHealth}");
+    
+    foreach (var breaker in dashboard.Breakers)
+    {
+        Console.WriteLine($"Breaker '{breaker.Name}': {breaker.State} (Failures: {breaker.ConsecutiveFailures}/{breaker.FailureThreshold})");
+    }
+}
+
+// Example: Getting status for a specific breaker
+var statusResponse = await dashboardController.GetBreakerStatusAsync("order-processing-circuit-breaker");
+if (statusResponse.Success && statusResponse.Data != null)
+{
+    var status = statusResponse.Data;
+    Console.WriteLine($"Breaker '{status.Name}' is {status.State}");
+    Console.WriteLine($"Consecutive failures: {status.ConsecutiveFailures}");
+    Console.WriteLine($"Trip count: {status.TripCount}");
+    Console.WriteLine($"Seconds until half-open: {status.SecondsUntilHalfOpen}");
+}
+
+// Example: Resetting a breaker
+var resetResponse = await dashboardController.ResetBreakerAsync("payment-service-circuit-breaker");
+if (resetResponse.Success)
+{
+    Console.WriteLine("Circuit breaker reset successfully");
+}
+
+// Example: Getting all open breakers
+var openBreakersResponse = await dashboardController.GetOpenBreakersAsync();
+if (openBreakersResponse.Success && openBreakersResponse.Data != null)
+{
+    foreach (var breaker in openBreakersResponse.Data)
+    {
+        Console.WriteLine($"Open breaker: {breaker.Name} (Consecutive failures: {breaker.ConsecutiveFailures})");
+    }
+}
+```
 
 ## HealthCheckWorker
 
