@@ -324,6 +324,58 @@ Console.WriteLine($"Change Percentage: {trend.ChangePercentage:P}");
 aggregator.Clear();
 ```
 
+## FallbackServiceTests
+
+The `FallbackServiceTests` class provides unit tests for the `FallbackService` class, verifying its functionality for executing fallback operations with various policy configurations, handling exceptions, timeout scenarios, and metrics recording.
+
+
+
+
+Here's an example usage:
+
+```csharp
+// Create a fallback service
+var service = new FallbackService();
+
+// Create a fallback policy with specific trigger exceptions
+var policy = new FallbackPolicy("order-processing-fallback")
+{
+    FallbackOnAnyException = false,
+    FallbackTriggerExceptions = new List<Type> { typeof(InvalidOperationException) },
+    FallbackTimeout = TimeSpan.FromSeconds(5)
+};
+
+// Set a fallback action that returns a default value
+policy.SetFallbackAction<string>(async (ct) => "default-order");
+
+// Execute with a primary operation that fails
+var result = await service.ExecuteAsync<string>(
+    policy,
+    new InvalidOperationException("Database unavailable"),
+    timeoutMilliseconds: 1000,
+    CancellationToken.None
+);
+
+if (result.IsSuccess)
+{
+    Console.WriteLine($"Fallback succeeded: {result.Data}");
+}
+else
+{
+    Console.WriteLine($"Fallback failed: {result.Exception?.Message}");
+}
+
+// Check fallback metrics
+var successRate = service.GetFallbackSuccessRate(policy);
+Console.WriteLine($"Fallback success rate: {successRate:P}");
+
+// Add a new exception type to trigger fallback
+service.AddFallbackTrigger(policy, typeof(TimeoutException));
+
+// Remove a fallback trigger
+service.RemoveFallbackTrigger(policy, typeof(InvalidOperationException));
+```
+
 ## JsonPolicySerializer
 
 The `JsonPolicySerializer` class provides serialization and deserialization functionality for `ResiliencyPolicy` objects to and from JSON format. It supports serializing single policies, multiple policies, metrics, and file operations for importing/exporting policy configurations.
