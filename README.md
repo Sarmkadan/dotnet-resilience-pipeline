@@ -699,6 +699,106 @@ TimeSpan timeout = benchmarks.FallbackPolicy_Get_FallbackTimeout();
 long invocationCount = benchmarks.FallbackPolicy_Get_FallbackInvocationCount();
 ```
 
+## BulkheadPolicy
+
+The `BulkheadPolicy` class implements the bulkhead isolation pattern to limit concurrent access to protected resources and prevent resource exhaustion. It maintains separate execution slots and request queues, tracking metrics such as active executions, queued requests, rejection counts, and queue wait times. This pattern is particularly useful for protecting downstream services from being overwhelmed during traffic spikes or partial failures.
+
+### Example Usage
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using System;
+using System.Threading.Tasks;
+
+// Create a bulkhead policy with 10 concurrent executions and 50 queue slots
+var bulkheadPolicy = new BulkheadPolicy("user-service-bulkhead")
+{
+    MaxParallelization = 10,
+    MaxQueueLength = 50
+};
+
+// Validate configuration before use
+if (!bulkheadPolicy.IsValidConfiguration)
+{
+    Console.WriteLine("Invalid bulkhead configuration!");
+    foreach (var error in bulkheadPolicy.GetSnapshot().ValidationErrors)
+    {
+        Console.WriteLine($" - {error}");
+    }
+    return;
+}
+
+// Check current utilization
+Console.WriteLine($"Utilization: {bulkheadPolicy.GetUtilizationPercentage():F1}%");
+Console.WriteLine($"Queued: {bulkheadPolicy.GetQueuedPercentage():F1}%");
+Console.WriteLine($"Rejected: {bulkheadPolicy.GetRejectionPercentage():F1}%");
+
+// Attempt to acquire a slot (non-blocking)
+if (bulkheadPolicy.TryAcquireSlot())
+{
+    try
+    {
+        // Execute protected operation
+        var result = await CallExternalService();
+        
+        Console.WriteLine($"Active executions: {bulkheadPolicy.ActiveExecutions}");
+        Console.WriteLine($"Queued requests: {bulkheadPolicy.QueuedRequests}");
+        
+        return result;
+    }
+    finally
+    {
+        bulkheadPolicy.ReleaseSlot();
+    }
+}
+else
+{
+    // Handle rejection - either queue or fail fast
+    Console.WriteLine($"Bulkhead rejected request. Rejected count: {bulkheadPolicy.RejectedCount}");
+    throw new InvalidOperationException("Service temporarily unavailable - try again later");
+}
+
+// Execute multiple operations in parallel with controlled concurrency
+var tasks = new List<Task>();
+for (int i = 0; i < 20; i++)
+{
+    tasks.Add(Task.Run(async () =>
+    {
+        if (bulkheadPolicy.TryAcquireSlot())
+        {
+            try
+            {
+                await ProcessUserRequest(i);
+            }
+            finally
+            {
+                bulkheadPolicy.ReleaseSlot();
+            }
+        }
+        else
+        {
+            bulkheadPolicy.DequeueRequest();
+            Console.WriteLine($"Request queued. Queue length: {bulkheadPolicy.QueuedRequests}");
+        }
+    }));
+}
+
+await Task.WhenAll(tasks);
+
+// Access detailed metrics
+Console.WriteLine($"Max parallelization: {bulkheadPolicy.MaxParallelization}");
+Console.WriteLine($"Max queue length: {bulkheadPolicy.MaxQueueLength}");
+Console.WriteLine($"Active executions: {bulkheadPolicy.ActiveExecutions}");
+Console.WriteLine($"Queued requests: {bulkheadPolicy.QueuedRequests}");
+Console.WriteLine($"Rejected count: {bulkheadPolicy.RejectedCount}");
+Console.WriteLine($"Queued count: {bulkheadPolicy.QueuedCount}");
+Console.WriteLine($"Average queue time: {bulkheadPolicy.AverageQueueTimeMs:F2}ms");
+Console.WriteLine($"Longest queue time: {bulkheadPolicy.LongestQueueTimeMs}ms");
+
+// Reset statistics when needed (e.g., after maintenance)
+bulkheadPolicy.ResetStatistics();
+```
+
 ## BulkheadBenchmarks
 
 The `BulkheadBenchmarks` class provides performance benchmarks for the `BulkheadPolicy`, measuring execution time and memory allocation for various bulkhead operations. It benchmarks slot acquisition and release, queue wait time recording, and retrieval of utilization metrics including active executions, queued percentage, rejection percentage, and configured capacity limits.
