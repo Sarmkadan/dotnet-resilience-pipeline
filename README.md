@@ -287,6 +287,63 @@ Console.WriteLine($"Bulkhead: {options.Bulkhead.MaxParallelization}");
 Console.WriteLine($"Fallback: {options.Fallback.FallbackOnAnyException}");
 ```
 
+## MetricsAggregator
+
+The `MetricsAggregator` class aggregates metrics across multiple resilience policies and provides system-wide analytics. It maintains a time-series of metrics snapshots, supports trend analysis, period comparisons, and generates comprehensive performance reports with health assessments.
+
+
+
+
+```csharp
+// Example: Using MetricsAggregator for system-wide metrics aggregation
+var aggregator = new MetricsAggregator { MaxSnapshots = 500 };
+
+// Record a metrics snapshot (typically done by MetricsCollectorWorker)
+var snapshot = new MetricsAggregator.MetricsSnapshot
+{
+    Timestamp = DateTime.UtcNow,
+    TotalExecutions = 1500,
+    SuccessfulExecutions = 1425,
+    FailedExecutions = 75,
+    SuccessRate = 0.95,
+    AverageExecutionTimeMs = 45.5,
+    ActivePolicies = 8
+};
+aggregator.RecordSnapshot(snapshot);
+
+// Get aggregated metrics for the last 5 minutes
+var recentMetrics = aggregator.GetAggregatedMetrics(TimeSpan.FromMinutes(5));
+Console.WriteLine($"Success rate: {recentMetrics.AverageSuccessRate:P}");
+Console.WriteLine($"Average execution time: {recentMetrics.AverageExecutionTimeMs:F1}ms");
+Console.WriteLine($"Total executions: {recentMetrics.TotalExecutions}");
+Console.WriteLine($"Peak executions: {recentMetrics.PeakExecutions}");
+
+// Analyze trends over the last hour
+var trend = aggregator.AnalyzeTrend(TimeSpan.FromHours(1), "SuccessRate");
+Console.WriteLine($"Trend direction: {trend.Direction}");
+Console.WriteLine($"Change percentage: {trend.ChangePercentage:F1}%");
+Console.WriteLine($"Current value: {trend.Current:P}");
+Console.WriteLine($"Is anomaly: {trend.IsAnomaly}");
+
+// Compare performance between two time periods
+var comparison = aggregator.ComparePeriods(
+    TimeSpan.FromHours(1),
+    TimeSpan.FromHours(24)
+);
+Console.WriteLine($"Success rate difference: {comparison.SuccessRateDifference:P}");
+Console.WriteLine($"Execution time difference: {comparison.ExecutionTimeDifference:F1}ms");
+Console.WriteLine($"Is improving: {comparison.IsImproving}");
+
+// Generate a comprehensive performance report
+var report = aggregator.GenerateReport(TimeSpan.FromHours(24));
+Console.WriteLine($"Health status: {report.HealthStatus}");
+Console.WriteLine($"Generated at: {report.GeneratedAt:O}");
+Console.WriteLine($"Snapshot count: {report.AggregatedMetrics.SnapshotCount}");
+
+// Clear all recorded snapshots
+aggregator.Clear();
+```
+
 ## MetricsCollectorWorker
 
 The `MetricsCollectorWorker` is a background service that periodically collects and aggregates resilience metrics from all configured policies. It maintains time-series data for trend analysis, generates performance reports, and provides programmatic access to historical metrics through a fluent API.
