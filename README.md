@@ -50,6 +50,47 @@ dotnet run --project DotNetResiliencePipeline.csproj
 
 See [docs/architecture.md](docs/architecture.md) for the component breakdown, actual policy composition order (circuit breaker → bulkhead → timeout → retry → operation, fallback on failure), extension points and known limitations. Per-type reference docs live in [docs/](docs/), and [QUICK_REFERENCE.md](QUICK_REFERENCE.md) has a condensed API cheat sheet.
 
+## TimeoutPolicyTestsExtensions
+
+`TimeoutPolicyTestsExtensions` provides a collection of helper extension methods that simplify writing unit tests for `TimeoutPolicy`. The methods enable quick creation of test policies, recording of execution times and timeouts, generation of deterministic or random execution sequences, and fluent assertions on statistics and configuration validity.
+
+**Example usage**
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Tests;
+using System.Collections.Generic;
+
+// Inside a test method
+var testHelper = new TimeoutPolicyTests();
+
+// Create a policy with a 500 ms timeout
+var policy = testHelper.CreateTestPolicy(timeoutMs: 500);
+
+// Record some execution times and timeouts
+testHelper.RecordExecutionTimes(policy, new[] { 100, 200, 300 });
+testHelper.RecordTimeouts(policy, new[] { 500, 600 });
+
+// Generate a deterministic sequence of execution times
+IEnumerable<int> seq = testHelper.CreateExecutionTimeSequence(policy, count: 5);
+
+// Assert statistics
+testHelper.ShouldHaveTimeoutCount(policy, expectedTimeoutCount: 2);
+testHelper.ShouldHaveTimeoutPercentage(policy, expectedPercentage: 40);
+testHelper.ShouldHaveExecutionStats(policy, expectedAverage: 200, expectedMin: 100, expectedMax: 300);
+testHelper.ShouldHavePercentileTimes(policy, expectedP95: 300, expectedP99: 300);
+testHelper.ShouldHaveValidConfiguration(policy, shouldBeValid: true);
+
+// Generate a normal‑distributed set of execution times for more advanced scenarios
+IEnumerable<int> normalTimes = testHelper.CreateNormalDistributionExecutionTimes(
+    policy,
+    mean: 250,
+    stdDev: 50,
+    count: 10);
+```
+
+The example demonstrates how the extension methods can be chained together to set up a `TimeoutPolicy`, feed it with synthetic data, and verify its internal statistics without needing to write repetitive boilerplate code.
+
 ## MicroserviceIntegrationExample
 
 The `MicroserviceIntegrationExample` class demonstrates how to integrate multiple resilience policies into a microservice architecture. It provides a `Main` method to execute a sample workflow, and properties to access the circuit breaker, retry, timeout, bulkhead, and fallback policies. Here's an example of how to use it:
