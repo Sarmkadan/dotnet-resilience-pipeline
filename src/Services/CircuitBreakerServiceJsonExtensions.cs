@@ -58,8 +58,11 @@ public static class CircuitBreakerServiceJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized service instance if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     public static bool TryFromJson(string json, out CircuitBreakerService? value)
     {
+        ArgumentNullException.ThrowIfNull(json);
+
         value = null;
 
         if (string.IsNullOrWhiteSpace(json))
@@ -79,15 +82,8 @@ public static class CircuitBreakerServiceJsonExtensions
     /// <summary>
     /// Creates a new <see cref="JsonSerializerOptions"/> with the specified indentation setting.
     /// </summary>
-    private static JsonSerializerOptions WithIndented(this JsonSerializerOptions options, bool indented)
-    {
-        if (options.WriteIndented == indented)
-            return options;
-
-        var newOptions = new JsonSerializerOptions(options)
-        {
-            WriteIndented = indented
-        };
-        return newOptions;
-    }
+    private static JsonSerializerOptions WithIndented(this JsonSerializerOptions options, bool indented) =>
+        options.WriteIndented == indented
+            ? options
+            : new JsonSerializerOptions(options) { WriteIndented = indented };
 }
