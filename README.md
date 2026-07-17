@@ -58,6 +58,45 @@ See [docs/architecture.md](docs/architecture.md) for the component breakdown, ac
 
 `MetricsAggregatorTestsExtensions` provides extension methods for testing `MetricsAggregator` functionality. It includes methods to create aggregators with predefined snapshots, verify aggregated metrics, and validate trend analysis results.
 
+## CircuitBreakerHalfOpenBugTestsExtensions
+
+`CircuitBreakerHalfOpenBugTestsExtensions` provides extension methods for testing circuit breaker policies in the half-open state. The methods enable creating test policies with configurable thresholds, transitioning between states, recording successes and failures, and verifying circuit breaker state and statistics.
+
+**Example usage**
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Tests;
+using System;
+
+// Inside a test method
+var testHelper = new CircuitBreakerHalfOpenBugTests();
+
+// Create a realistic half-open test policy with 3 success threshold, 2 failure threshold, and 500ms open duration
+var policy = testHelper.CreateRealisticHalfOpenTestPolicy(successThreshold: 3, failureThreshold: 2, openDurationMilliseconds: 500);
+
+// Verify the circuit breaker is initially in closed state
+policy.CurrentState.Should().Be(CircuitBreakerPolicy.CircuitState.Closed);
+
+// Transition the circuit breaker from open to half-open state
+policy.RecordFailure(); // Record a failure to open the circuit
+policy.RecordFailure(); // Ensure we meet failure threshold
+policy.AttemptReset(); // Attempt to reset to half-open
+policy.ShouldBeInHalfOpenState();
+
+// Record 2 successful operations in half-open state
+policy.RecordSuccess();
+policy.RecordSuccess();
+
+// Verify the circuit breaker closes after meeting success threshold
+policy.RecordSuccess(); // Record one more success to close
+policy.CurrentState.Should().Be(CircuitBreakerPolicy.CircuitState.Closed);
+
+// Get statistics
+int consecutiveFailures = testHelper.GetConsecutiveFailures(policy);
+int successfulInHalfOpen = testHelper.GetSuccessfulInHalfOpen(policy);
+```
+
 **Example usage**
 
 ```csharp
