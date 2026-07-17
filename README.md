@@ -1,43 +1,47 @@
 // ... existing content ...
 
-## ResiliencyHelperTests
+## PolicyResultTests
 
-The `ResiliencyHelperTests` class provides unit tests for the `ResiliencyHelper` class, verifying its functionality in determining pipeline health status and validating/exorting resiliency policies. These tests cover various scenarios, including success rates, policy configurations, and validation errors.
+The `PolicyResultTests` class provides unit tests for the `PolicyResult` class, verifying its behavior when handling policy execution outcomes, including success, failure, and fallback scenarios. These tests cover various properties and methods of the `PolicyResult` class, ensuring its correctness and reliability.
 
 Here's a realistic usage example based on its public members:
 
 ```csharp
-using DotNetResiliencePipeline.Utilities;
-using Xunit;
+using DotNetResiliencePipeline.Domain;
 
-public class ResiliencyHelperUsage
+public class PolicyResultUsage
 {
     public void RunExamples()
     {
-        // Verifies: DeterminePipelineHealth_SuccessRateAbove95_ReturnsHealthy
-        var health = ResiliencyHelper.DeterminePipelineHealth(97);
-        health.Should().Be(HealthStatus.Healthy);
+        // Verifies: Success_SetsIsSuccessTrueWithData
+        var result = PolicyResult<string>.Success("hello", "my-policy", 42, attempts: 1);
+        result.IsSuccess.Should().BeTrue();
+        result.Data.Should().Be("hello");
+        result.PolicyName.Should().Be("my-policy");
+        result.ExecutionTimeMs.Should().Be(42);
+        result.AttemptCount.Should().Be(1);
+        result.Exception.Should().BeNull();
 
-        // Verifies: ExportPolicyConfig_CircuitBreaker_ContainsAllBaseFields
-        var policy = new CircuitBreakerPolicy("export-cb") { IsEnabled = true };
-        var config = ResiliencyHelper.ExportPolicyConfig(policy);
-        config.Should().ContainKey("Id");
-        config.Should().ContainKey("Name");
-        config.Should().ContainKey("Type");
-        config.Should().ContainKey("IsEnabled");
-        config.Should().ContainKey("CreatedAt");
-        config.Should().ContainKey("ModifiedAt");
-        config.Should().ContainKey("Tags");
-        config.Should().ContainKey("Metadata");
-        config["Name"].Should().Be("export-cb");
-        config["Type"].Should().Be("CircuitBreakerPolicy");
-        config["IsEnabled"].Should().Be(true);
+        // Verifies: Failure_SetsIsSuccessFalseWithException
+        var ex = new InvalidOperationException("boom");
+        var failureResult = PolicyResult<string>.Failure(ex, "fail-policy", 100, attempts: 2);
+        failureResult.IsSuccess.Should().BeFalse();
+        failureResult.Data.Should().BeNull();
+        failureResult.Exception.Should().BeSameAs(ex);
+        failureResult.PolicyName.Should().Be("fail-policy");
+        failureResult.AttemptCount.Should().Be(2);
 
-        // Verifies: ValidatePolicy_ValidCircuitBreaker_ReturnsEmptyErrors
-        var errors = ResiliencyHelper.ValidatePolicy(policy);
-        errors.Should().BeEmpty();
+        // Verifies: Fallback_SetsIsSuccessTrueAndFallbackMetadata
+        var primaryEx = new TimeoutException("primary");
+        var fallbackResult = PolicyResult<string>.Fallback("fallback-value", primaryEx, "fallback-policy", 200);
+        fallbackResult.IsSuccess.Should().BeTrue();
+        fallbackResult.Data.Should().Be("fallback-value");
+        fallbackResult.Exception.Should().BeSameAs(primaryEx);
+        fallbackResult.Metadata.Should().ContainKey("FallbackUsed");
+        fallbackResult.Metadata["FallbackUsed"].Should().Be(true);
     }
 }
 ```
 
 // ... rest of existing content
+```
