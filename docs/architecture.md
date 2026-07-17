@@ -189,66 +189,45 @@ Supporting components for operation.
 
 ## Execution Flow
 
-### Single Policy Execution
+### Pipeline Execution (actual composition order)
+
+`ResiliencyPipelineService.ExecuteAsync` accepts each policy as an optional
+parameter. The nesting, from outermost to innermost, is:
 
 ```
 User Code
     │
-    └─→ ResiliencyPipelineService.ExecuteAsync()
+    └─→ ResiliencyPipelineService.ExecuteAsync(operation, ct, cb, retry, timeout, bulkhead, fallback)
             │
-            ├─→ PolicyService.ExecuteAsync()
-            │       │
-            │       ├─→ Policy State Check (if applicable)
-            │       │
-            │       ├─→ Pre-Execution Hooks
-            │       │
-            │       ├─→ ExecutionHistoryRepository.RecordStart()
-            │       │
-            │       ├─→ User Operation (CancellationToken aware)
-            │       │
-            │       ├─→ ExecutionHistoryRepository.RecordCompletion()
-            │       │
-            │       ├─→ MetricsAggregator.UpdateMetrics()
-            │       │
-            │       └─→ ResiliencyEventPublisher.PublishEvent()
+            ├─→ Circuit Breaker (if enabled)
+            │   └─→ If Open and open-duration not elapsed: CircuitBreakerOpenException
             │
-            └─→ Return PolicyResult<T>
+            ├─→ Bulkhead (if enabled)
+            │   └─→ TryAcquireSlot; on rejection: BulkheadRejectedException (no queuing/waiting)
+            │
+            ├─→ Timeout (if enabled)
+            │   └─→ Linked CancellationTokenSource with CancelAfter(policy.Timeout)
+            │
+            ├─→ Retry loop (if enabled)
+            │   └─→ Backoff per RetryPolicy.Strategy (+ optional jitter)
+            │
+            ├─→ User Operation (receives the effective CancellationToken)
+            │
+            └─→ On any exception, if Fallback enabled:
+                └─→ FallbackService.ExecuteAsync → PolicyResult<T> with FallbackUsed metadata
 ```
 
-### Multi-Policy Pipeline Execution
+Notes grounded in the code (`ResiliencyPipelineService._executeWithRetryTimeoutBulkhead`):
 
-```
-User Code
-    │
-    └─→ ResiliencyPipelineService.ExecuteAsync()
-            │
-            ├─→ Validation Phase
-            │
-            ├─→ CircuitBreaker Check
-            │   └─→ If Open: throw CircuitBreakerOpenException
-            │
-            ├─→ Retry Loop (if retry policy present)
-            │   ├─→ Timeout Check (if timeout policy present)
-            │   │   └─→ CancellationToken enforcement
-            │   │
-            │   ├─→ Bulkhead Check (if bulkhead policy present)
-            │   │   └─→ Slot acquisition
-            │   │
-            │   ├─→ Execute User Operation
-            │   │
-            │   ├─→ Bulkhead Release (if applicable)
-            │   │
-            │   └─→ Check retry condition
-            │       └─→ If needed: calculate backoff, wait, retry
-            │
-            ├─→ Fallback Execution (if primary failed & fallback present)
-            │   └─→ Execute fallback operation
-            │
-            ├─→ Record Execution
-            │   └─→ History, metrics, events
-            │
-            └─→ Return PolicyResult<T>
-```
+- When both timeout and retry are enabled, the timeout wraps the whole retry
+  loop - the timeout budget covers all attempts, not each attempt individually.
+- The bulkhead is fail-fast: `TryAcquireSlot` either grants a slot or throws
+  `BulkheadRejectedException`; there is no waiting queue despite
+  `MaxQueueLength` being configurable on the policy.
+- `ExecutionHistoryRepository`, `MetricsAggregator` and
+  `ResiliencyEventPublisher` are NOT invoked automatically inside
+  `ExecuteAsync`. They are standalone components the caller wires up (see
+  `src/Program.cs`, which records `ExecutionRecord`s manually after each call).
 
 ## State Management
 
@@ -364,39 +343,46 @@ User Code
 
 ### Custom Policies
 
-Implement `ResiliencyPolicy` base class:
+`ResiliencyPolicy` is a data/statistics base class - it has no abstract
+`ExecuteAsync`. A subclass carries configuration and counters; execution logic
+lives in a service. To add a new policy type you therefore:
+
+1. Derive from `ResiliencyPolicy` (gets `Id`, `Name`, `IsEnabled`,
+   success/failure counters, `GetSnapshot()`, `ResetStatistics()`).
+2. Write a corresponding service with an `ExecuteAsync` that interprets it
+   (see `RetryService` / `TimeoutService` for the shape).
+3. Register the policy via `ResiliencyPipelineService.RegisterPolicy` or the
+   `AddPolicy<TPolicy>` DI extension so it shows up in statistics and snapshots.
 
 ```csharp
 public class CustomPolicy : ResiliencyPolicy
 {
-    public override Task<PolicyResult<T>> ExecuteAsync<T>(
-        Func<CancellationToken, Task<T>> operation,
-        CancellationToken cancellationToken)
-    {
-        // Custom implementation
-    }
+    public CustomPolicy(string name) { Name = name; }
+    // configuration properties; call RecordSuccess()/RecordFailure() from your service
 }
 ```
 
 ### Custom Repositories
 
-Implement `IRepository<T>` interface:
+Implement the synchronous CRUD contract in `IRepository<T>`:
 
 ```csharp
-public class CustomRepository<T> : IRepository<T>
+public class CustomRepository<T> : IRepository<T> where T : class
 {
-    public Task<T> GetAsync(string key) { }
-    public Task SaveAsync(string key, T value) { }
-    // ...
+    public void Create(T entity) { /* ... */ }
+    public T? Read(string id) { /* ... */ }
+    public bool Update(T entity) { /* ... */ }
+    public bool Delete(string id) { /* ... */ }
+    public List<T> GetAll() { /* ... */ }
 }
 ```
 
 ### Event Subscribers
 
-Subscribe to pipeline events:
+`ResiliencyEventPublisher.Subscribe` is keyed by event type name:
 
 ```csharp
-eventPublisher.Subscribe((PolicyEvent @event) =>
+publisher.Subscribe<ResiliencyEvent>("CircuitBreakerStateChanged", evt =>
 {
     // Custom event handling
 });
@@ -458,3 +444,22 @@ eventPublisher.Subscribe((PolicyEvent @event) =>
 - Minimal memory footprint per policy instance
 - Lock-based synchronization suitable for moderate concurrency
 - Consider distributed circuit breakers for multi-instance scenarios
+
+## Known Limitations
+
+- **Bulkhead has no real queue.** `BulkheadService.TryAcquireSlot` rejects
+  immediately when `MaxParallelization` is reached; `MaxQueueLength` is
+  tracked for statistics but callers are never parked waiting for a slot.
+- **One policy per type per builder.** `ResiliencyPipelineBuilder` keeps a
+  single field per policy kind; calling `WithRetry` twice registers both
+  policies in the service but only the last one is returned by
+  `GetRetryPolicy()`.
+- **Policies are passed explicitly per call.** Registering a policy in the
+  pipeline does not make `ExecuteAsync` use it automatically - the caller must
+  fetch it (`GetPolicyByName`) and pass it as an argument (see `src/Program.cs`).
+- **Observability is opt-in.** Execution history, metrics aggregation and
+  events must be wired by the host application; the orchestrator only keeps
+  its own success/failure counters.
+- **All state is in-memory.** Circuit breaker state, execution history and
+  policy repositories do not survive process restarts and are not shared
+  across instances.
