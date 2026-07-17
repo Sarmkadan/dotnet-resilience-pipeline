@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace DotNetResiliencePipeline.Benchmarks;
 
@@ -51,10 +50,7 @@ public static class PolicyComparisonBenchmarksValidation
     /// </summary>
     /// <param name="value">The benchmarks instance to check.</param>
     /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
-    public static bool IsValid(this PolicyComparisonBenchmarks value)
-    {
-        return Validate(value).Count == 0;
-    }
+    public static bool IsValid(this PolicyComparisonBenchmarks value) => Validate(value).Count == 0;
 
     /// <summary>
     /// Ensures that the specified <see cref="PolicyComparisonBenchmarks"/> instance is valid.
@@ -69,13 +65,15 @@ public static class PolicyComparisonBenchmarksValidation
         var errors = Validate(value);
         if (errors.Count > 0)
         {
-            throw new ArgumentException(
-                $"PolicyComparisonBenchmarks instance is not valid. Errors: {string.Join("; ", errors)}");
+            throw new ArgumentException($"PolicyComparisonBenchmarks instance is not valid. Errors: {string.Join("; ", errors)}");
         }
     }
 
     private static void ValidateRetryPolicy(PolicyComparisonBenchmarks benchmarks, string propertyName, List<string> errors)
     {
+        ArgumentNullException.ThrowIfNull(benchmarks);
+        ArgumentException.ThrowIfNullOrEmpty(propertyName);
+
         try
         {
             // These are delay values returned by GetNextDelayMs, should be positive and reasonable
@@ -109,6 +107,9 @@ public static class PolicyComparisonBenchmarksValidation
 
     private static void ValidateCircuitBreakerPolicy(PolicyComparisonBenchmarks benchmarks, string propertyName, List<string> errors)
     {
+        ArgumentNullException.ThrowIfNull(benchmarks);
+        ArgumentException.ThrowIfNullOrEmpty(propertyName);
+
         // These methods don't return values that need validation, but we ensure they can be called
         try
         {
@@ -129,6 +130,9 @@ public static class PolicyComparisonBenchmarksValidation
 
     private static void ValidateCircuitBreakerState(PolicyComparisonBenchmarks benchmarks, string propertyName, List<string> errors)
     {
+        ArgumentNullException.ThrowIfNull(benchmarks);
+        ArgumentException.ThrowIfNullOrEmpty(propertyName);
+
         try
         {
             var state = benchmarks.CircuitBreakerComparison_GetState_All();
@@ -145,6 +149,9 @@ public static class PolicyComparisonBenchmarksValidation
 
     private static void ValidateCircuitBreakerTrips(PolicyComparisonBenchmarks benchmarks, string propertyName, List<string> errors)
     {
+        ArgumentNullException.ThrowIfNull(benchmarks);
+        ArgumentException.ThrowIfNullOrEmpty(propertyName);
+
         try
         {
             var trips = benchmarks.CircuitBreakerComparison_GetTrips_All();
@@ -161,6 +168,9 @@ public static class PolicyComparisonBenchmarksValidation
 
     private static void ValidateBulkheadAcquisition(PolicyComparisonBenchmarks benchmarks, string propertyName, List<string> errors)
     {
+        ArgumentNullException.ThrowIfNull(benchmarks);
+        ArgumentException.ThrowIfNullOrEmpty(propertyName);
+
         try
         {
             var result = propertyName switch
@@ -182,6 +192,9 @@ public static class PolicyComparisonBenchmarksValidation
 
     private static void ValidateBulkheadUtilization(PolicyComparisonBenchmarks benchmarks, string propertyName, List<string> errors)
     {
+        ArgumentNullException.ThrowIfNull(benchmarks);
+        ArgumentException.ThrowIfNullOrEmpty(propertyName);
+
         try
         {
             var utilization = benchmarks.BulkheadComparison_GetUtilization_All();
@@ -198,6 +211,9 @@ public static class PolicyComparisonBenchmarksValidation
 
     private static void ValidateBulkheadQueueAndReject(PolicyComparisonBenchmarks benchmarks, string propertyName, List<string> errors)
     {
+        ArgumentNullException.ThrowIfNull(benchmarks);
+        ArgumentException.ThrowIfNullOrEmpty(propertyName);
+
         try
         {
             var result = benchmarks.BulkheadComparison_Queue_And_Reject();
