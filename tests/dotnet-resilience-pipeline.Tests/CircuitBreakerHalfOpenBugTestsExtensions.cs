@@ -15,6 +15,11 @@ namespace DotNetResiliencePipeline.Tests;
 /// Extension methods for <see cref="CircuitBreakerHalfOpenBugTests"/> that provide
 /// additional utility and verification capabilities for circuit breaker half-open state testing.
 /// </summary>
+/// <remarks>
+/// All extension methods validate their parameters using guard clauses and throw appropriate exceptions.
+/// Methods use expression-bodied syntax for one-liners and follow idiomatic C# patterns.
+/// The class is sealed to prevent inheritance and ensure consistent behavior.
+/// </remarks>
 public static class CircuitBreakerHalfOpenBugTestsExtensions
 {
     /// <summary>
@@ -22,9 +27,9 @@ public static class CircuitBreakerHalfOpenBugTestsExtensions
     /// </summary>
     /// <param name="successThreshold">The number of consecutive successes required to close the circuit from half-open state.</param>
     /// <param name="failureThreshold">The number of failures required to open the circuit.</param>
-    /// <param name="openDuration">The duration the circuit stays open before transitioning to half-open.</param>
+    /// <param name="openDuration">The duration the circuit stays open before transitioning to half-open. Defaults to <see cref="TimeSpan.Zero"/>.</param>
     /// <returns>A configured <see cref="CircuitBreakerPolicy"/> instance.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when any threshold is less than 1.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="successThreshold"/> or <paramref name="failureThreshold"/> is less than 1.</exception>
     public static CircuitBreakerPolicy CreateHalfOpenTestPolicy(
         this CircuitBreakerHalfOpenBugTests _,
         int successThreshold = 2,
@@ -47,7 +52,7 @@ public static class CircuitBreakerHalfOpenBugTestsExtensions
     /// </summary>
     /// <param name="policy">The circuit breaker policy to transition.</param>
     /// <returns>The same policy instance for method chaining.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when policy is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is <see langword="null"/>.</exception>
     public static CircuitBreakerPolicy TransitionToHalfOpen(
         this CircuitBreakerHalfOpenBugTests _,
         CircuitBreakerPolicy policy)
@@ -64,9 +69,9 @@ public static class CircuitBreakerHalfOpenBugTestsExtensions
     /// Verifies that the circuit breaker is in the expected half-open state.
     /// </summary>
     /// <param name="policy">The circuit breaker policy to verify.</param>
-    /// <param name="expectedSuccessfulInHalfOpen">The expected count of successful requests in half-open state.</param>
+    /// <param name="expectedSuccessfulInHalfOpen">The expected count of successful requests in half-open state. If greater than 0, validates the count matches.</param>
     /// <returns>The same policy instance for method chaining.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when policy is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is <see langword="null"/>.</exception>
     public static CircuitBreakerPolicy ShouldBeInHalfOpenState(
         this CircuitBreakerHalfOpenBugTests _,
         CircuitBreakerPolicy policy,
@@ -91,8 +96,8 @@ public static class CircuitBreakerHalfOpenBugTestsExtensions
     /// <param name="policy">The circuit breaker policy.</param>
     /// <param name="successCount">The number of consecutive successes to record.</param>
     /// <returns>The same policy instance for method chaining.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when policy is null.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when successCount is less than 1.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="successCount"/> is less than 1.</exception>
     public static CircuitBreakerPolicy RecordSuccessesAndCloseCircuit(
         this CircuitBreakerHalfOpenBugTests _,
         CircuitBreakerPolicy policy,
@@ -116,8 +121,8 @@ public static class CircuitBreakerHalfOpenBugTestsExtensions
     /// <param name="policy">The circuit breaker policy.</param>
     /// <param name="failureCount">The number of failures to record.</param>
     /// <returns>The same policy instance for method chaining.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when policy is null.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when failureCount is less than 1.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="failureCount"/> is less than 1.</exception>
     public static CircuitBreakerPolicy RecordFailuresAndReopenCircuit(
         this CircuitBreakerHalfOpenBugTests _,
         CircuitBreakerPolicy policy,
@@ -140,8 +145,10 @@ public static class CircuitBreakerHalfOpenBugTestsExtensions
     /// </summary>
     /// <param name="policy">The circuit breaker policy.</param>
     /// <returns>The consecutive failures count.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when policy is null.</exception>
-    public static int GetConsecutiveFailures(this CircuitBreakerHalfOpenBugTests _, CircuitBreakerPolicy policy)
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is <see langword="null"/>.</exception>
+    public static int GetConsecutiveFailures(
+        this CircuitBreakerHalfOpenBugTests _,
+        CircuitBreakerPolicy policy)
     {
         ArgumentNullException.ThrowIfNull(policy);
         return policy.ConsecutiveFailures;
@@ -152,8 +159,10 @@ public static class CircuitBreakerHalfOpenBugTestsExtensions
     /// </summary>
     /// <param name="policy">The circuit breaker policy.</param>
     /// <returns>The successful requests count in half-open state.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when policy is null.</exception>
-    public static int GetSuccessfulInHalfOpen(this CircuitBreakerHalfOpenBugTests _, CircuitBreakerPolicy policy)
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is <see langword="null"/>.</exception>
+    public static int GetSuccessfulInHalfOpen(
+        this CircuitBreakerHalfOpenBugTests _,
+        CircuitBreakerPolicy policy)
     {
         ArgumentNullException.ThrowIfNull(policy);
         return (int)policy.Metadata["SuccessfulInHalfOpen"];
@@ -166,7 +175,7 @@ public static class CircuitBreakerHalfOpenBugTestsExtensions
     /// <param name="failureThreshold">The number of failures required to open the circuit.</param>
     /// <param name="openDurationMilliseconds">The duration in milliseconds the circuit stays open before transitioning to half-open.</param>
     /// <returns>A configured <see cref="CircuitBreakerPolicy"/> instance.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when any parameter is invalid.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when any parameter is less than 1.</exception>
     public static CircuitBreakerPolicy CreateRealisticHalfOpenTestPolicy(
         this CircuitBreakerHalfOpenBugTests _,
         int successThreshold = 3,
