@@ -1,0 +1,3 @@
+
+## Notes
+These extension methods are designed to be used in a testing context and should not be used in production code. The methods are not thread-safe and should be used with caution in multi-threaded environments. Additionally, the `CreateRealisticHalfOpenTestPolicy` method creates a policy with more realistic settings, but these settings may still not reflect the exact requirements of a production environment.
