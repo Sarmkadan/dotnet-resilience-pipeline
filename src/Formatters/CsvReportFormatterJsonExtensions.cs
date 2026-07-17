@@ -1,9 +1,11 @@
 #nullable enable
+
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
 // =====================================================================
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -31,11 +33,9 @@ public static class CsvReportFormatterJsonExtensions
     public static string ToJson(this CsvReportFormatter value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
-
         var options = indented
             ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true }
             : _jsonOptions;
-
         return JsonSerializer.Serialize(value, options);
     }
 
@@ -45,18 +45,11 @@ public static class CsvReportFormatterJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized <see cref="CsvReportFormatter"/> instance, or null if deserialization fails.</returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
+    /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static CsvReportFormatter? FromJson(string json)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
-
-        try
-        {
-            return JsonSerializer.Deserialize<CsvReportFormatter>(json, _jsonOptions);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
+        return JsonSerializer.Deserialize<CsvReportFormatter>(json, _jsonOptions);
     }
 
     /// <summary>
@@ -66,14 +59,14 @@ public static class CsvReportFormatterJsonExtensions
     /// <param name="value">Receives the deserialized instance if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
-    public static bool TryFromJson(string json, out CsvReportFormatter? value)
+    public static bool TryFromJson(string json, [NotNullWhen(true)] out CsvReportFormatter? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
 
         try
         {
             value = JsonSerializer.Deserialize<CsvReportFormatter>(json, _jsonOptions);
-            return true;
+            return value is not null;
         }
         catch (JsonException)
         {
