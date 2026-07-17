@@ -78,6 +78,12 @@ public static class TimeoutPolicyValidation
             }
         }
 
+        // Validate TotalExecutions is not negative
+        if (value.TotalExecutions < 0)
+        {
+            errors.Add("TotalExecutions cannot be negative.");
+        }
+
         return errors.AsReadOnly();
     }
 
@@ -89,7 +95,8 @@ public static class TimeoutPolicyValidation
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
     public static bool IsValid(this TimeoutPolicy value)
     {
-        return Validate(value).Count == 0;
+        ArgumentNullException.ThrowIfNull(value);
+        return value.Validate().Count == 0;
     }
 
     /// <summary>
@@ -105,9 +112,7 @@ public static class TimeoutPolicyValidation
         var errors = Validate(value);
         if (errors.Count > 0)
         {
-            throw new ArgumentException(
-                $"TimeoutPolicy validation failed:{Environment.NewLine}- {
-                    string.Join($"{Environment.NewLine}- ", errors)}");
+            throw new ArgumentException($"""TimeoutPolicy validation failed:{Environment.NewLine}- {string.Join($"{Environment.NewLine}- ", errors)}""");
         }
     }
 }
