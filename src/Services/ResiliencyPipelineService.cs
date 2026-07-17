@@ -124,9 +124,19 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
                     cancellationToken);
 
                 stopwatch.Stop();
-                return cbResult is T cbValue
-                    ? PolicyResult<T>.Success(cbValue, "Pipeline", stopwatch.ElapsedMilliseconds)
-                    : throw new InvalidOperationException("Circuit breaker result type mismatch");
+
+                if (cbResult is T cbValue)
+                {
+                    lock (_lockObj)
+                    {
+                        TotalExecutions++;
+                        SuccessfulExecutions++;
+                    }
+
+                    return PolicyResult<T>.Success(cbValue, "Pipeline", stopwatch.ElapsedMilliseconds);
+                }
+
+                throw new InvalidOperationException("Circuit breaker result type mismatch");
             }
 
             // Direct execution with retry, timeout, bulkhead
@@ -299,13 +309,19 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
 
         try
         {
+            // Compose timeout around retry so both apply when both are enabled:
+            // the timeout budget covers the whole retry loop.
             if (timeout?.IsEnabled == true)
-                return await _timeoutService.ExecuteAsync(timeout, operation, cancellationToken); // Correct
+            {
+                return retry?.IsEnabled == true
+                    ? await _timeoutService.ExecuteAsync(timeout, ct => _retryService.ExecuteAsync(retry, operation, ct), cancellationToken)
+                    : await _timeoutService.ExecuteAsync(timeout, operation, cancellationToken);
+            }
 
             if (retry?.IsEnabled == true)
-                return await _retryService.ExecuteAsync(retry, operation, cancellationToken); // Correct
+                return await _retryService.ExecuteAsync(retry, operation, cancellationToken);
 
-            return await operation(cancellationToken); // Correct
+            return await operation(cancellationToken);
         }
         finally
         {
