@@ -10,6 +10,10 @@ using Xunit;
 /// <summary>
 /// Extension methods for <see cref="MetricsAggregatorTests"/> that provide additional test scenarios and helper methods.
 /// </summary>
+/// <remarks>
+/// All extension methods validate parameters using <see cref="ArgumentNullException.ThrowIfNull"/> and <see cref="ArgumentException.ThrowIfNullOrEmpty"/>.
+/// Methods use expression-bodied syntax where appropriate for one-liners.
+/// </remarks>
 public static class MetricsAggregatorTestsExtensions
 {
     /// <summary>
@@ -30,6 +34,7 @@ public static class MetricsAggregatorTestsExtensions
         {
             aggregator.RecordSnapshot(snapshot);
         }
+
         return aggregator;
     }
 
@@ -55,6 +60,9 @@ public static class MetricsAggregatorTestsExtensions
         ArgumentOutOfRangeException.ThrowIfLessThan(count, 1);
 
         var aggregator = new MetricsAggregator();
+        var successfulExecutions = (long)(total * successRate / 100);
+        var failedExecutions = (long)(total * (1 - successRate / 100));
+
         for (var i = 0; i < count; i++)
         {
             var snapshot = new MetricsSnapshot
@@ -63,11 +71,12 @@ public static class MetricsAggregatorTestsExtensions
                 SuccessRate = successRate,
                 AverageExecutionTimeMs = avgExecutionMs,
                 TotalExecutions = total,
-                SuccessfulExecutions = (long)(total * successRate / 100),
-                FailedExecutions = (long)(total * (1 - successRate / 100))
+                SuccessfulExecutions = successfulExecutions,
+                FailedExecutions = failedExecutions
             };
             aggregator.RecordSnapshot(snapshot);
         }
+
         return aggregator;
     }
 
@@ -104,12 +113,12 @@ public static class MetricsAggregatorTestsExtensions
         metrics.TotalExecutions.Should().Be(expectedTotalExecutions);
         metrics.PeakExecutions.Should().Be(expectedPeakExecutions);
 
-        if (expectedMinSuccessRate.HasValue)
+        if (expectedMinSuccessRate is not null)
         {
             metrics.MinSuccessRate.Should().BeApproximately(expectedMinSuccessRate.Value, 0.01);
         }
 
-        if (expectedMaxSuccessRate.HasValue)
+        if (expectedMaxSuccessRate is not null)
         {
             metrics.MaxSuccessRate.Should().BeApproximately(expectedMaxSuccessRate.Value, 0.01);
         }
@@ -124,6 +133,9 @@ public static class MetricsAggregatorTestsExtensions
     /// <param name="expectedIsAnomaly">The expected anomaly state.</param>
     /// <exception cref="ArgumentNullException"><paramref name="test"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="trend"/> is <see langword="null"/>.</exception>
+    /// <remarks>
+    /// Uses pattern matching for null checks and direct property assertions.
+    /// </remarks>
     public static void ShouldHaveTrend(
         this MetricsAggregatorTests test,
         MetricsTrend trend,
@@ -162,19 +174,21 @@ public static class MetricsAggregatorTestsExtensions
 
         var aggregator = new MetricsAggregator();
         var currentTime = DateTime.UtcNow;
-        var snapshots = new List<MetricsSnapshot>();
 
-        foreach (var (rate, interval) in successRates.Zip(timeIntervals, (r, i) => (r, i)))
+        foreach (var (rate, interval) in successRates.Zip(timeIntervals, static (r, i) => (r, i)))
         {
             currentTime += interval;
+            var successfulExecutions = (long)(total * rate / 100);
+            var failedExecutions = (long)(total * (1 - rate / 100));
+
             var snapshot = new MetricsSnapshot
             {
                 Timestamp = currentTime,
                 SuccessRate = rate,
                 AverageExecutionTimeMs = avgExecutionMs,
                 TotalExecutions = total,
-                SuccessfulExecutions = (long)(total * rate / 100),
-                FailedExecutions = (long)(total * (1 - rate / 100))
+                SuccessfulExecutions = successfulExecutions,
+                FailedExecutions = failedExecutions
             };
             aggregator.RecordSnapshot(snapshot);
         }
