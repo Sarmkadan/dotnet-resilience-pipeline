@@ -54,6 +54,70 @@ See [docs/architecture.md](docs/architecture.md) for the component breakdown, ac
 
 `TimeoutPolicyTestsExtensions` provides a collection of helper extension methods that simplify writing unit tests for `TimeoutPolicy`. The methods enable quick creation of test policies, recording of execution times and timeouts, generation of deterministic or random execution sequences, and fluent assertions on statistics and configuration validity.
 
+## MetricsAggregatorTestsExtensions
+
+`MetricsAggregatorTestsExtensions` provides extension methods for testing `MetricsAggregator` functionality. It includes methods to create aggregators with predefined snapshots, verify aggregated metrics, and validate trend analysis results.
+
+**Example usage**
+
+```csharp
+using DotNetResiliencePipeline.Utilities;
+using DotNetResiliencePipeline.Tests;
+using System;
+using System.Collections.Generic;
+
+// Inside a test method
+var testHelper = new MetricsAggregatorTests();
+
+// Create an aggregator with specific snapshots
+var snapshots = new List<MetricsSnapshot>
+{
+    new MetricsSnapshot
+    {
+        Timestamp = DateTime.UtcNow,
+        SuccessRate = 95.0,
+        AverageExecutionTimeMs = 45.2,
+        TotalExecutions = 1000,
+        SuccessfulExecutions = 950,
+        FailedExecutions = 50
+    },
+    new MetricsSnapshot
+    {
+        Timestamp = DateTime.UtcNow.AddMinutes(1),
+        SuccessRate = 92.5,
+        AverageExecutionTimeMs = 48.7,
+        TotalExecutions = 1000,
+        SuccessfulExecutions = 925,
+        FailedExecutions = 75
+    }
+};
+var aggregator = testHelper.WithSnapshots(snapshots);
+
+// Create an aggregator with repeated snapshots (e.g., 10 snapshots with 90% success rate)
+var aggregator2 = testHelper.WithRepeatedSnapshots(successRate: 90.0, count: 10);
+
+// Assert aggregated metrics
+var metrics = aggregator.GetAggregatedMetrics(TimeSpan.FromMinutes(5));
+testHelper.ShouldHaveMetrics(
+    aggregator,
+    expectedSnapshotCount: 2,
+    expectedAvgSuccessRate: 93.75,
+    expectedTotalExecutions: 2000,
+    expectedPeakExecutions: 1000,
+    expectedMinSuccessRate: 92.5,
+    expectedMaxSuccessRate: 95.0
+);
+
+// Create an aggregator with time-spaced snapshots
+var successRates = new List<double> { 95.0, 90.0, 85.0 };
+var timeIntervals = new List<TimeSpan> { TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(2) };
+var aggregator3 = testHelper.WithTimeSpacedSnapshots(successRates, timeIntervals);
+
+// Assert trend analysis
+var trend = aggregator.GetTrend(TimeSpan.FromMinutes(5));
+testHelper.ShouldHaveTrend(trend, expectedDirection: "Decreasing", expectedIsAnomaly: true);
+```
+
 **Example usage**
 
 ```csharp
