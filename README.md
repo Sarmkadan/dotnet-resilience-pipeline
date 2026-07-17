@@ -1,55 +1,48 @@
 // ... existing content ...
 
-## BulkheadServiceTests
+## MetricsExporterTests
 
-The `BulkheadServiceTests` class contains comprehensive unit tests for the `BulkheadService` class, verifying its behavior in various scenarios, including slot acquisition, release, queue operations, and configuration validation.
+The `MetricsExporterTests` class provides comprehensive unit tests for the `MetricsExporter` class, verifying its functionality in exporting metrics snapshots to JSON, CSV, and Prometheus formats. These tests cover various scenarios, including valid snapshots, null inputs, and expected output formats.
 
 Here's a realistic usage example based on its real public members:
 
 ```csharp
-using DotNetResiliencePipeline.Services;
+using DotNetResiliencePipeline.Formatters;
 using DotNetResiliencePipeline.Tests;
+using DotNetResiliencePipeline.Domain;
 
 class Program
 {
     static void Main()
     {
-        var tests = new BulkheadServiceTests();
+        var exporter = new MetricsExporter();
+        var snapshot = MetricsExporterTests.BuildSnapshot();
 
-        // Slot acquisition tests
-        tests.TryAcquireSlot_WithNullPolicy_ThrowsArgumentNullException();
-        tests.TryAcquireSlot_WithDisabledPolicy_ReturnsTrue();
-        tests.TryAcquireSlot_WithEnabledPolicy_DelegatesToPolicy();
+        // JSON export
+        var json = exporter.ExportJson(snapshot);
+        Console.WriteLine(json);
 
-        // Slot release tests
-        tests.ReleaseSlot_WithNullPolicy_ThrowsArgumentNullException();
-        tests.ReleaseSlot_CallsPolicyReleaseSlot();
+        // CSV export
+        var csv = exporter.ExportCsv(snapshot);
+        Console.WriteLine(csv);
 
-        // Queue operations tests
-        tests.DequeueRequest_WithNullPolicy_ThrowsArgumentNullException();
-        tests.DequeueRequest_CallsPolicyDequeueRequest();
+        // Prometheus export
+        var prom = exporter.ExportPrometheus(snapshot);
+        Console.WriteLine(prom);
 
-        // Queue wait time tests
-        tests.RecordQueueWaitTime_WithNullPolicy_ThrowsArgumentNullException();
-        tests.RecordQueueWaitTime_CallsPolicyRecordQueueWaitTime();
-
-        // Utilization and counts tests
-        tests.GetUtilizationPercentage_WithNullPolicy_ReturnsZero();
-        tests.GetUtilizationPercentage_DelegatesToPolicy();
-        tests.GetActiveExecutionCount_WithNullPolicy_ReturnsZero();
-        tests.GetActiveExecutionCount_ReturnsActiveExecutions();
-        tests.GetQueuedRequestCount_WithNullPolicy_ReturnsZero();
-        tests.GetQueuedRequestCount_ReturnsQueuedRequests();
-
-        // Configuration validation tests
-        tests.IsValidConfiguration_WithNullPolicy_ReturnsFalse();
-        tests.IsValidConfiguration_DelegatesToPolicy();
-        tests.IsValidConfiguration_WithValidPolicy_ReturnsTrue();
+        // Error handling
+        try
+        {
+            exporter.ExportJson(null);
+        }
+        catch (ArgumentNullException ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
     }
 }
 ```
 
-This example demonstrates how to invoke the public test methods of the `BulkheadServiceTests` class programmatically, showcasing the expected usage patterns of the underlying `BulkheadService` behavior.
+This example demonstrates how to create an instance of the `MetricsExporter` class and use it to export a `PipelineMetricsSnapshot` to different formats. It also showcases error handling for null input scenarios.
 
-```csharp
 // ... rest of existing content
