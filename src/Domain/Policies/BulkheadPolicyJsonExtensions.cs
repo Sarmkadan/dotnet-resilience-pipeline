@@ -11,8 +11,11 @@ using System.Text.Json.Serialization.Metadata;
 namespace DotNetResiliencePipeline.Domain.Policies;
 
 /// <summary>
-/// Provides System.Text.Json serialization extensions for <see cref="BulkheadPolicy"/>.
+/// Provides System.Text.Json serialization extensions for <see cref="BulkheadPolicy"/> instances.
 /// </summary>
+/// <remarks>
+/// All serialization uses camelCase property naming policy and ignores cycles to prevent circular reference issues.
+/// </remarks>
 public static class BulkheadPolicyJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
@@ -28,7 +31,7 @@ public static class BulkheadPolicyJsonExtensions
     /// </summary>
     /// <param name="value">The bulkhead policy to serialize.</param>
     /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
-    /// <returns>A JSON string representation of the bulkhead policy.</returns>
+    /// <returns>A JSON string representation of the bulkhead policy using camelCase property naming.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
     public static string ToJson(this BulkheadPolicy value, bool indented = false)
     {
@@ -48,8 +51,9 @@ public static class BulkheadPolicyJsonExtensions
     /// Deserializes a JSON string to a <see cref="BulkheadPolicy"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized bulkhead policy, or null if the JSON is empty.</returns>
-    /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
+    /// <returns>The deserialized bulkhead policy, or null if the JSON is empty or whitespace.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+/// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static BulkheadPolicy? FromJson(string json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -64,8 +68,9 @@ public static class BulkheadPolicyJsonExtensions
     /// Attempts to deserialize a JSON string to a <see cref="BulkheadPolicy"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <param name="value">Receives the deserialized bulkhead policy if successful.</param>
+    /// <param name="value">Receives the deserialized bulkhead policy if successful; otherwise, null.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+/// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     public static bool TryFromJson(string json, out BulkheadPolicy? value)
     {
         value = null;
