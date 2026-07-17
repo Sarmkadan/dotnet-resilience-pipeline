@@ -1,3 +1,4 @@
+// README.md
 # DotNet Resilience Pipeline
 
 A .NET library and demo application implementing classic resilience patterns - retry, circuit breaker, timeout, bulkhead and fallback - behind a single orchestrator (`ResiliencyPipelineService`) with a fluent builder and `Microsoft.Extensions.DependencyInjection` integration.
@@ -66,39 +67,50 @@ See [docs/architecture.md](docs/architecture.md) for the component breakdown, ac
 
 Provides fluent test helpers for `PolicyNameGenerator`, allowing creation, generation, validation, and registration of policy names in unit tests.
 
+## BulkheadServiceTestsExtensions
+
+`BulkheadServiceTestsExtensions` offers a set of fluent extension methods that make it easy to create bulkhead policies for tests and assert on their configuration, state, utilization, and validation results. These helpers reduce boilerplate when verifying bulkhead behavior in unit tests.
+
 **Example usage**
 
 ```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Services;
 using DotNetResiliencePipeline.Tests;
-using DotNetResiliencePipeline.Utilities;
+using Xunit;
 
-public void Example()
+public class BulkheadExtensionsDemo
 {
-    var test = new PolicyNameGeneratorTests();
+    [Fact]
+    public void DemonstrateBulkheadExtensions()
+    {
+        var service = new BulkheadService();
 
-    // Create a clean generator
-    var generator = test.CreateCleanGenerator();
+        // Create a test bulkhead policy
+        var policy = service.CreateTestPolicy(
+            name: "demo-bulkhead",
+            maxParallelization: 2,
+            maxQueueLength: 4,
+            isEnabled: true);
 
-    // Generate several names
-    var names = test.GenerateMultipleNames("payment", "cb", 3);
+        // Verify the policy's configuration
+        service.ShouldHaveConfiguration(policy, 2, 4, true);
 
-    // Verify uniqueness and pattern
-    test.AllNamesShouldBeUnique(names);
-    test.NamesShouldMatchPattern(names, "payment-cb-");
+        // Validate the configuration is considered valid
+        service.ShouldValidateConfiguration(policy, expectedIsValid: true);
 
-    // Generate a descriptive name and verify its parts
-    var descriptive = test.GenerateAndVerifyDescriptiveName(
-        "order", "retry", "highload",
-        new[] { "order", "retry", "highload", "0" });
+        // Check utilization and execution state (initially zero)
+        service.ShouldHaveUtilizationPercentage(policy, expectedUtilization: 0);
+        service.ShouldHaveExecutionState(policy, expectedActiveExecutions: 0, expectedQueuedRequests: 0);
 
-    // Validate a name
-    test.NameShouldBeValid(descriptive, true);
+        // Retrieve metrics dictionary for further assertions
+        var metrics = service.GetMetrics(policy);
+        metrics["MaxParallelization"].Should().Be(2);
+        metrics["IsEnabled"].Should().BeTrue();
 
-    // Register names and ensure they are tracked
-    test.RegisterMultipleNames(names);
-
-    // Generate a name with a custom prefix
-    var prefixed = test.GenerateNameWithPrefixAndVerify("custom", "inventory", "bulkhead");
+        // Verify all metrics together
+        service.ShouldHaveMetrics(policy, expectedActiveExecutions: 0, expectedQueuedRequests: 0, expectedUtilizationPercentage: 0);
+    }
 }
 ```
 
