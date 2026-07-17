@@ -11,6 +11,11 @@ namespace DotNetResiliencePipeline.Tests;
 /// Extension methods for <see cref="PolicyNameGeneratorTests"/> that provide additional testing utilities
 /// for the <see cref="PolicyNameGenerator"/> class.
 /// </summary>
+/// <remarks>
+/// This class is sealed to prevent inheritance and ensure consistent behavior across all test extensions.
+/// All methods validate arguments using ArgumentNullException.ThrowIfNull and ArgumentException.ThrowIfNullOrEmpty
+/// where appropriate, and follow idiomatic C# patterns.
+/// </remarks>
 public static class PolicyNameGeneratorTestsExtensions
 {
     /// <summary>
@@ -19,6 +24,8 @@ public static class PolicyNameGeneratorTestsExtensions
     /// <param name="test">The test instance.</param>
     /// <returns>A new <see cref="PolicyNameGenerator"/> instance.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="test"/> is null.</exception>
+/// <exception cref="ArgumentNullException">Thrown if <paramref name="names"/> is null.</exception>
+/// <exception cref="ArgumentNullException">Thrown if <paramref name="name"/> is null.</exception>
     public static PolicyNameGenerator CreateCleanGenerator(this PolicyNameGeneratorTests test)
     {
         ArgumentNullException.ThrowIfNull(test);
@@ -26,7 +33,7 @@ public static class PolicyNameGeneratorTestsExtensions
         var generator = new PolicyNameGenerator();
 
         // Verify clean state
-        generator.GetAllRegisteredNames().Should().BeEmpty();
+        generator.GetAllRegisteredNames().Should().BeEmpty("Generator should start with no registered names");
 
         return generator;
     }
@@ -40,7 +47,9 @@ public static class PolicyNameGeneratorTestsExtensions
     /// <param name="count">The number of names to generate.</param>
     /// <returns>A collection of generated names.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="test"/> is null.</exception>
-    /// <exception cref="ArgumentException">Thrown if <paramref name="count"/> is less than 1.</exception>
+/// <exception cref="ArgumentNullException">Thrown if <paramref name="names"/> is null.</exception>
+/// <exception cref="ArgumentNullException">Thrown if <paramref name="name"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="serviceName"/>, <paramref name="policyType"/>, or <paramref name="count"/> is invalid.</exception>
     public static IReadOnlyList<string> GenerateMultipleNames(
         this PolicyNameGeneratorTests test,
         string serviceName,
@@ -48,6 +57,8 @@ public static class PolicyNameGeneratorTestsExtensions
         int count)
     {
         ArgumentNullException.ThrowIfNull(test);
+    ArgumentException.ThrowIfNullOrEmpty(serviceName);
+    ArgumentException.ThrowIfNullOrEmpty(policyType);
         ArgumentOutOfRangeException.ThrowIfLessThan(count, 1);
 
         var generator = new PolicyNameGenerator();
@@ -66,7 +77,7 @@ public static class PolicyNameGeneratorTestsExtensions
     /// </summary>
     /// <param name="test">The test instance.</param>
     /// <param name="names">The collection of generated names.</param>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="test"/> or <paramref name="names"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="test"/>, <paramref name="names"/>, or <paramref name="expectedPrefix"/> is null.</exception>
     public static void AllNamesShouldBeUnique(
         this PolicyNameGeneratorTests test,
         IReadOnlyList<string> names)
@@ -83,7 +94,7 @@ public static class PolicyNameGeneratorTestsExtensions
     /// <param name="test">The test instance.</param>
     /// <param name="names">The collection of generated names.</param>
     /// <param name="expectedPrefix">The expected prefix before the counter (e.g., "payment-cb-").</param>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="test"/> or <paramref name="names"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="test"/>, <paramref name="names"/>, or <paramref name="expectedPrefix"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="expectedPrefix"/> is null or empty.</exception>
     public static void NamesShouldMatchPattern(
         this PolicyNameGeneratorTests test,
@@ -113,6 +124,8 @@ public static class PolicyNameGeneratorTestsExtensions
     /// <param name="expectedParts">The expected parts in order.</param>
     /// <returns>The generated descriptive name.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="test"/> is null.</exception>
+/// <exception cref="ArgumentNullException">Thrown if <paramref name="names"/> is null.</exception>
+/// <exception cref="ArgumentNullException">Thrown if <paramref name="name"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="expectedParts"/> is null or empty.</exception>
     public static string GenerateAndVerifyDescriptiveName(
         this PolicyNameGeneratorTests test,
@@ -148,12 +161,15 @@ public static class PolicyNameGeneratorTestsExtensions
     /// <param name="name">The policy name to validate.</param>
     /// <param name="expectedIsValid">Whether the name is expected to be valid.</param>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="test"/> is null.</exception>
+/// <exception cref="ArgumentNullException">Thrown if <paramref name="names"/> is null.</exception>
+/// <exception cref="ArgumentNullException">Thrown if <paramref name="name"/> is null.</exception>
     public static void NameShouldBeValid(
         this PolicyNameGeneratorTests test,
         string name,
         bool expectedIsValid)
     {
         ArgumentNullException.ThrowIfNull(test);
+        ArgumentNullException.ThrowIfNull(name);
 
         var generator = new PolicyNameGenerator();
         var isValid = generator.IsValidPolicyName(name);
@@ -173,7 +189,7 @@ public static class PolicyNameGeneratorTestsExtensions
     /// </summary>
     /// <param name="test">The test instance.</param>
     /// <param name="names">The names to register.</param>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="test"/> or <paramref name="names"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="test"/>, <paramref name="names"/>, or <paramref name="expectedPrefix"/> is null.</exception>
     public static void RegisterMultipleNames(
         this PolicyNameGeneratorTests test,
         IEnumerable<string> names)
@@ -191,7 +207,7 @@ public static class PolicyNameGeneratorTestsExtensions
         var registeredNames = generator.GetAllRegisteredNames();
         foreach (var name in names)
         {
-            registeredNames.Should().Contain(name);
+            registeredNames.Should().Contain(name, $"Registered names should contain '{name}'");
         }
     }
 
@@ -204,6 +220,8 @@ public static class PolicyNameGeneratorTestsExtensions
     /// <param name="policyType">The policy type.</param>
     /// <returns>The generated name with prefix.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="test"/> is null.</exception>
+/// <exception cref="ArgumentNullException">Thrown if <paramref name="names"/> is null.</exception>
+/// <exception cref="ArgumentNullException">Thrown if <paramref name="name"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="prefix"/>, <paramref name="serviceName"/>, or <paramref name="policyType"/> is null or empty.</exception>
     public static string GenerateNameWithPrefixAndVerify(
         this PolicyNameGeneratorTests test,
