@@ -31,15 +31,13 @@ public static class TimeoutBenchmarksJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized <see cref="TimeoutBenchmarks"/> instance, or <see langword="null"/> if the JSON is empty.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is <see langword="null"/> or empty.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static TimeoutBenchmarks? FromJson(string json)
     {
-        ArgumentNullException.ThrowIfNull(json);
+        ArgumentException.ThrowIfNullOrEmpty(json);
 
-        return json.Length == 0
-            ? null
-            : JsonSerializer.Deserialize<TimeoutBenchmarks>(json, _jsonOptions);
+        return JsonSerializer.Deserialize<TimeoutBenchmarks>(json, _jsonOptions);
     }
 
     /// <summary>
@@ -48,7 +46,7 @@ public static class TimeoutBenchmarksJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized value if successful.</param>
     /// <returns><see langword="true"/> if deserialization succeeded; otherwise, <see langword="false"/>.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is <see langword="null"/> or empty.</exception>
     public static bool TryFromJson(string json, out TimeoutBenchmarks? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
