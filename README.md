@@ -1,94 +1,55 @@
 // ... existing content ...
 
+## BulkheadServiceTests
 
-## ResiliencyPolicyBaseTests
-
-The `ResiliencyPolicyBaseTests` class provides comprehensive unit tests for the base functionality of resiliency policies, verifying their behavior in various scenarios.
+The `BulkheadServiceTests` class contains comprehensive unit tests for the `BulkheadService` class, verifying its behavior in various scenarios, including slot acquisition, release, queue operations, and configuration validation.
 
 Here's a realistic usage example based on its real public members:
 
 ```csharp
-using DotNetResiliencePipeline.Domain.Policies;
-
-// Create a circuit breaker policy with a failure threshold
-var policy = new CircuitBreakerPolicy("base-test") { FailureThreshold = 99 };
-
-// Record some successes and failures
-policy.RecordSuccess();
-policy.RecordFailure();
-
-// Check the success rate
-var successRate = policy.GetSuccessRate();
-Console.WriteLine($"Success rate: {successRate * 100}%");
-
-// Reset the policy statistics
-policy.ResetStatistics();
-
-// Verify the policy is still enabled
-Console.WriteLine($"Is policy enabled: {policy.IsEnabled}");
-
-// Check the policy tags
-Console.WriteLine($"Policy tags: {string.Join(", ", policy.Tags)}");
-
-// Get a snapshot of the policy
-var snapshot = policy.GetSnapshot();
-Console.WriteLine($"Policy snapshot: {snapshot.PolicyName}");
-```
-
-## BulkheadPolicyTests
-
-The `BulkheadPolicyTests` class contains a thorough suite of unit tests that verify the behavior of the `BulkheadPolicy` implementation, covering construction, slot acquisition, queuing, rejection handling, statistics, configuration validation, and thread‑safety. These tests ensure the bulkhead isolation pattern works correctly under both normal and edge‑case scenarios.
-
-Below is a realistic, compiling C# example that demonstrates how the public test methods can be invoked programmatically. This can be useful for custom test runners or for illustrating the expected usage patterns of the underlying `BulkheadPolicy`.
-
-```csharp
-using System;
-using System.Threading.Tasks;
+using DotNetResiliencePipeline.Services;
 using DotNetResiliencePipeline.Tests;
 
 class Program
 {
-    static async Task Main()
+    static void Main()
     {
-        var tests = new BulkheadPolicyTests();
+        var tests = new BulkheadServiceTests();
 
-        // Construction tests
-        tests.Constructor_WithValidName_Succeeds();
-        tests.Constructor_WithWhitespaceName_ThrowsArgumentException();
+        // Slot acquisition tests
+        tests.TryAcquireSlot_WithNullPolicy_ThrowsArgumentNullException();
+        tests.TryAcquireSlot_WithDisabledPolicy_ReturnsTrue();
+        tests.TryAcquireSlot_WithEnabledPolicy_DelegatesToPolicy();
 
-        // Slot acquisition and queuing tests
-        tests.TryAcquireSlot_WhenBelowMaxParallelization_ReturnsTrue();
-        tests.TryAcquireSlot_WhenAtMaxParallelization_ReturnsfalseAndQueues();
-        tests.TryAcquireSlot_WhenQueueFull_ReturnsFalseAndIncrementsRejectedCount();
+        // Slot release tests
+        tests.ReleaseSlot_WithNullPolicy_ThrowsArgumentNullException();
+        tests.ReleaseSlot_CallsPolicyReleaseSlot();
 
-        // Release and dequeue tests
-        tests.ReleaseSlot_DecreasesActiveExecutions();
-        tests.ReleaseSlot_WhenNoActiveExecutions_DoesNotGoNegative();
-        tests.DequeueRequest_DecreasesQueuedRequests();
+        // Queue operations tests
+        tests.DequeueRequest_WithNullPolicy_ThrowsArgumentNullException();
+        tests.DequeueRequest_CallsPolicyDequeueRequest();
 
         // Queue wait time tests
-        tests.RecordQueueWaitTime_WithNegativeTime_ThrowsArgumentException();
-        tests.RecordQueueWaitTime_UpdatesStatistics();
+        tests.RecordQueueWaitTime_WithNullPolicy_ThrowsArgumentNullException();
+        tests.RecordQueueWaitTime_CallsPolicyRecordQueueWaitTime();
 
-        // Utilization and percentage calculations
-        tests.GetUtilizationPercentage_CalculatesCorrectly();
-        tests.GetQueuedPercentage_CalculatesCorrectly();
-        tests.GetRejectionPercentage_CalculatesCorrectly();
+        // Utilization and counts tests
+        tests.GetUtilizationPercentage_WithNullPolicy_ReturnsZero();
+        tests.GetUtilizationPercentage_DelegatesToPolicy();
+        tests.GetActiveExecutionCount_WithNullPolicy_ReturnsZero();
+        tests.GetActiveExecutionCount_ReturnsActiveExecutions();
+        tests.GetQueuedRequestCount_WithNullPolicy_ReturnsZero();
+        tests.GetQueuedRequestCount_ReturnsQueuedRequests();
 
-        // Configuration validation
-        tests.IsValidConfiguration_WithZeroMaxParallelization_ReturnsFalse();
-        tests.IsValidConfiguration_WithNegativeQueueLength_ReturnsFalse();
-        tests.IsValidConfiguration_WithValidSettings_ReturnsTrue();
-
-        // Statistics reset
-        tests.ResetStatistics_ClearsAllMetrics();
-
-        // Thread‑safety test (async)
-        await tests.ThreadSafety_ConcurrentAcquisitions_AllSucceed();
-
-        Console.WriteLine("All BulkheadPolicyTests executed successfully.");
+        // Configuration validation tests
+        tests.IsValidConfiguration_WithNullPolicy_ReturnsFalse();
+        tests.IsValidConfiguration_DelegatesToPolicy();
+        tests.IsValidConfiguration_WithValidPolicy_ReturnsTrue();
     }
 }
 ```
 
-This example simply creates an instance of the test class and calls each public test method, mirroring how the test suite validates the `BulkheadPolicy` behavior. In a typical development workflow, the tests would be discovered and run automatically by the test runner (e.g., `dotnet test`), but the snippet shows that they can also be invoked directly if needed.
+This example demonstrates how to invoke the public test methods of the `BulkheadServiceTests` class programmatically, showcasing the expected usage patterns of the underlying `BulkheadService` behavior.
+
+```csharp
+// ... rest of existing content
