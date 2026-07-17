@@ -17,12 +17,7 @@ namespace DotNetResiliencePipeline.Integration
         /// <returns>True if the webhook exists and is registered.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="manager"/> or <paramref name="webhookId"/> is null.</exception>
         public static bool HasWebhookRegistered(this WebhookManager manager, string webhookId)
-        {
-            ArgumentNullException.ThrowIfNull(manager);
-            ArgumentNullException.ThrowIfNull(webhookId);
-
-            return manager.GetWebhook(webhookId) is not null;
-        }
+            => manager.GetWebhook(webhookId) is not null;
 
         /// <summary>
         /// Retrieves all webhooks that match the specified event type.
@@ -62,7 +57,7 @@ namespace DotNetResiliencePipeline.Integration
             ArgumentNullException.ThrowIfNull(webhookId);
 
             if (startTime >= endTime)
-                throw new ArgumentException("Start time must be before end time.");
+                throw new ArgumentException("Start time must be before end time.", nameof(startTime));
 
             return manager.GetDeliveryHistory()
                 .Where(delivery => delivery.WebhookId == webhookId &&
