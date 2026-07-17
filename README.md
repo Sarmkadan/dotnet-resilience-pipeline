@@ -1,47 +1,63 @@
-// ... existing content ...
+# DotNet Resilience Pipeline
 
-## PolicyResultTests
+A .NET library and demo application implementing classic resilience patterns - retry, circuit breaker, timeout, bulkhead and fallback - behind a single orchestrator (`ResiliencyPipelineService`) with a fluent builder and `Microsoft.Extensions.DependencyInjection` integration.
 
-The `PolicyResultTests` class provides unit tests for the `PolicyResult` class, verifying its behavior when handling policy execution outcomes, including success, failure, and fallback scenarios. These tests cover various properties and methods of the `PolicyResult` class, ensuring its correctness and reliability.
+## Features
 
-Here's a realistic usage example based on its public members:
+- **Retry** with fixed/linear/exponential backoff and optional jitter (`RetryPolicy` + `RetryService`)
+- **Circuit breaker** with Closed / Open / Half-Open state machine (`CircuitBreakerPolicy` + `CircuitBreakerService`)
+- **Timeout** via linked `CancellationTokenSource` (`TimeoutPolicy` + `TimeoutService`), plus an adaptive variant (`AdaptiveTimeoutPolicy`)
+- **Bulkhead** fail-fast concurrency limiting (`BulkheadPolicy` + `BulkheadService`)
+- **Fallback** execution on failure with metadata in the result (`FallbackPolicy` + `FallbackService`)
+- Per-policy and pipeline-level statistics, snapshots, Prometheus-style export (`MetricsExporter`), event publishing and execution history repositories
+
+## Quick Start
 
 ```csharp
-using DotNetResiliencePipeline.Domain;
-
-public class PolicyResultUsage
+var services = new ServiceCollection();
+services.AddResiliencePipeline(builder =>
 {
-    public void RunExamples()
-    {
-        // Verifies: Success_SetsIsSuccessTrueWithData
-        var result = PolicyResult<string>.Success("hello", "my-policy", 42, attempts: 1);
-        result.IsSuccess.Should().BeTrue();
-        result.Data.Should().Be("hello");
-        result.PolicyName.Should().Be("my-policy");
-        result.ExecutionTimeMs.Should().Be(42);
-        result.AttemptCount.Should().Be(1);
-        result.Exception.Should().BeNull();
+    builder
+        .WithCircuitBreaker("payment-circuit", p => { p.FailureThreshold = 5; p.OpenDuration = TimeSpan.FromSeconds(30); })
+        .WithRetry("api-retry", p => { p.MaxRetries = 3; p.InitialDelay = TimeSpan.FromMilliseconds(100); })
+        .WithTimeout("operation-timeout", TimeSpan.FromSeconds(10))
+        .WithBulkhead("resource-bulkhead", maxParallelization: 10)
+        .WithFallback("graceful-fallback", p => p.FallbackOnAnyException = true);
+});
 
-        // Verifies: Failure_SetsIsSuccessFalseWithException
-        var ex = new InvalidOperationException("boom");
-        var failureResult = PolicyResult<string>.Failure(ex, "fail-policy", 100, attempts: 2);
-        failureResult.IsSuccess.Should().BeFalse();
-        failureResult.Data.Should().BeNull();
-        failureResult.Exception.Should().BeSameAs(ex);
-        failureResult.PolicyName.Should().Be("fail-policy");
-        failureResult.AttemptCount.Should().Be(2);
+var provider = services.BuildServiceProvider();
+var pipeline = provider.GetRequiredService<ResiliencyPipelineService>();
 
-        // Verifies: Fallback_SetsIsSuccessTrueAndFallbackMetadata
-        var primaryEx = new TimeoutException("primary");
-        var fallbackResult = PolicyResult<string>.Fallback("fallback-value", primaryEx, "fallback-policy", 200);
-        fallbackResult.IsSuccess.Should().BeTrue();
-        fallbackResult.Data.Should().Be("fallback-value");
-        fallbackResult.Exception.Should().BeSameAs(primaryEx);
-        fallbackResult.Metadata.Should().ContainKey("FallbackUsed");
-        fallbackResult.Metadata["FallbackUsed"].Should().Be(true);
-    }
-}
+var retry = pipeline.GetPolicyByName("api-retry") as RetryPolicy;
+var result = await pipeline.ExecuteAsync(
+    async ct => await CallExternalServiceAsync(ct),
+    CancellationToken.None,
+    retry: retry);
+
+if (result.IsSuccess)
+    Console.WriteLine(result.Data);
 ```
 
-// ... rest of existing content
+Note: registered policies are not applied implicitly - you pass the ones you want to each `ExecuteAsync` call.
+
+Run the demo:
+
+```bash
+dotnet run --project DotNetResiliencePipeline.csproj
 ```
+
+## Architecture
+
+See [docs/architecture.md](docs/architecture.md) for the component breakdown, actual policy composition order (circuit breaker → bulkhead → timeout → retry → operation, fallback on failure), extension points and known limitations. Per-type reference docs live in [docs/](docs/), and [QUICK_REFERENCE.md](QUICK_REFERENCE.md) has a condensed API cheat sheet.
+
+## Project Layout
+
+- `src/Domain/Policies/` - policy configuration types (data + counters)
+- `src/Services/` - execution logic per policy and the `ResiliencyPipelineService` orchestrator
+- `src/Configuration/` - fluent builder, options, DI extensions
+- `src/Data/`, `src/Events/`, `src/Formatters/` - execution history, event publishing, metrics export
+- `tests/` - xUnit test suite; `benchmarks/` - BenchmarkDotNet project
+
+## License
+
+See [LICENSE](LICENSE).
