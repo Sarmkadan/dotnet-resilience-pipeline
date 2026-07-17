@@ -6,7 +6,7 @@ namespace DotNetResiliencePipeline.Benchmarks;
 /// <summary>
 /// Validation helpers for <see cref="BulkheadBenchmarks"/> benchmark class
 /// </summary>
-public static class BulkheadBenchmarksValidation
+internal static class BulkheadBenchmarksValidation
 {
     /// <summary>
     /// Validates that a <see cref="BulkheadBenchmarks"/> instance is properly configured for benchmarking.
@@ -47,8 +47,10 @@ public static class BulkheadBenchmarksValidation
     /// </summary>
     /// <param name="value">The benchmark instance to check</param>
     /// <returns>True if valid; otherwise, false</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null</exception>
     public static bool IsValid(this BulkheadBenchmarks value)
     {
+        ArgumentNullException.ThrowIfNull(value);
         return value.Validate().Count == 0;
     }
 
