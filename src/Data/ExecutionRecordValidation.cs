@@ -14,7 +14,7 @@ public static class ExecutionRecordValidation
     /// </summary>
     /// <param name="value">The execution record to validate.</param>
     /// <returns>A list of validation problems, or an empty list if valid.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when value is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
     public static IReadOnlyList<string> Validate(this ExecutionRecord value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -82,17 +82,15 @@ public static class ExecutionRecordValidation
     /// </summary>
     /// <param name="value">The execution record to check.</param>
     /// <returns>True if the record is valid; otherwise, false.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when value is null.</exception>
-    public static bool IsValid(this ExecutionRecord value)
-    {
-        return value.Validate().Count == 0;
-    }
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
+    public static bool IsValid(this ExecutionRecord? value)
+        => value?.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that an execution record is valid, throwing an <see cref="ArgumentException"/> if not.
     /// </summary>
     /// <param name="value">The execution record to validate.</param>
-    /// <exception cref="ArgumentNullException">Thrown when value is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown when the record contains validation errors.</exception>
     public static void EnsureValid(this ExecutionRecord value)
     {
