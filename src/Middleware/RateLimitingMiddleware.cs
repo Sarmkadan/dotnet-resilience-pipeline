@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System.Collections.Concurrent;
+using System.Text.Json.Serialization;
 
 namespace DotNetResiliencePipeline.Middleware;
 
@@ -12,11 +13,24 @@ namespace DotNetResiliencePipeline.Middleware;
 /// Middleware for rate limiting API requests and policy executions.
 /// Implements token bucket algorithm with configurable limits per client/policy.
 /// </summary>
+[JsonSerializable(typeof(RateLimitingMiddleware))]
+[JsonSerializable(typeof(RateLimiter))]
+[JsonSerializable(typeof(RateLimitStatus))]
 public sealed class RateLimitingMiddleware
 {
+    [JsonInclude]
     private readonly ConcurrentDictionary<string, RateLimiter> _limiters = new();
+
+    [JsonInclude]
     private int _defaultRequestsPerSecond = 100;
+
+    [JsonInclude]
     private int _defaultRequestsPerMinute = 5000;
+
+    [JsonConstructor]
+    public RateLimitingMiddleware()
+    {
+    }
 
     /// <summary>
     /// Configures default rate limits for the middleware.
@@ -89,15 +103,41 @@ public sealed class RateLimitingMiddleware
 /// <summary>
 /// Individual rate limiter using token bucket algorithm.
 /// </summary>
+[JsonSerializable(typeof(RateLimiter))]
 public sealed class RateLimiter
 {
+    [JsonInclude]
     private readonly int _tokensPerSecond;
+
+    [JsonInclude]
     private readonly int _tokensPerMinute;
+
+    [JsonInclude]
     private long _tokensSecond;
+
+    [JsonInclude]
     private long _tokensMinute;
-    private DateTime _lastRefillSecond = DateTime.UtcNow;
-    private DateTime _lastRefillMinute = DateTime.UtcNow;
-    private readonly object _lockObj = new object();
+
+    [JsonInclude]
+    private DateTime _lastRefillSecond;
+
+    [JsonInclude]
+    private DateTime _lastRefillMinute;
+
+    [JsonIgnore]
+    private object _lockObj = new object();
+
+    [JsonConstructor]
+    public RateLimiter(int tokensPerSecond, int tokensPerMinute, long tokensSecond, long tokensMinute, DateTime lastRefillSecond, DateTime lastRefillMinute)
+    {
+        _tokensPerSecond = tokensPerSecond;
+        _tokensPerMinute = tokensPerMinute;
+        _tokensSecond = tokensSecond;
+        _tokensMinute = tokensMinute;
+        _lastRefillSecond = lastRefillSecond;
+        _lastRefillMinute = lastRefillMinute;
+        _lockObj = new object();
+    }
 
     public RateLimiter(int tokensPerSecond, int tokensPerMinute)
     {
@@ -105,6 +145,8 @@ public sealed class RateLimiter
         _tokensPerMinute = tokensPerMinute;
         _tokensSecond = tokensPerSecond;
         _tokensMinute = tokensPerMinute;
+        _lastRefillSecond = DateTime.UtcNow;
+        _lastRefillMinute = DateTime.UtcNow;
     }
 
     /// <summary>
@@ -174,6 +216,7 @@ public sealed class RateLimiter
 /// <summary>
 /// Rate limit status for a client.
 /// </summary>
+[JsonSerializable(typeof(RateLimitStatus))]
 public sealed class RateLimitStatus
 {
     public string? ClientId { get; set; }
@@ -183,5 +226,11 @@ public sealed class RateLimitStatus
     public int RemainingTokensPerMinute { get; set; }
     public DateTime NextResetSecond { get; set; }
     public DateTime NextResetMinute { get; set; }
+    [JsonIgnore]
     public bool IsLimited => RemainingTokensPerSecond <= 0 || RemainingTokensPerMinute <= 0;
+
+    [JsonConstructor]
+    public RateLimitStatus()
+    {
+    }
 }

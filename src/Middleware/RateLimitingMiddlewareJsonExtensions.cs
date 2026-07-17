@@ -3,7 +3,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -44,19 +44,16 @@ public static class RateLimitingMiddlewareJsonExtensions
     /// Deserializes a JSON string to a <see cref="RateLimitingMiddleware"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>A deserialized <see cref="RateLimitingMiddleware"/> instance, or null if the JSON is empty.</returns>
+    /// <returns>A deserialized <see cref="RateLimitingMiddleware"/> instance, or null if the JSON is empty or whitespace.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static RateLimitingMiddleware? FromJson(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
 
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return null;
-        }
-
-        return JsonSerializer.Deserialize<RateLimitingMiddleware>(json, _jsonOptions);
+        return string.IsNullOrWhiteSpace(json)
+            ? null
+            : JsonSerializer.Deserialize<RateLimitingMiddleware>(json, _jsonOptions);
     }
 
     /// <summary>
