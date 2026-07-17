@@ -202,6 +202,137 @@ var freshName = generator.GenerateName("svc", "retry");
 Console.WriteLine(freshName); // svc-retry-1
 ```
 
+## RetryServiceTests
+
+The `RetryServiceTests` class provides comprehensive unit tests for the `RetryService` class, verifying its retry functionality for operations that may fail transiently. These tests cover various scenarios including successful operations without retries, transient failures that eventually succeed, exhausted retry attempts, non-retryable exceptions, null policy validation, invalid policy configuration, cancellation handling, and disabled policy behavior.
+
+Here's an example usage based on its real public members:
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Services;
+
+// Create a retry service
+var retryService = new RetryService();
+
+// Create a retry policy with 3 maximum attempts and fixed backoff
+var retryPolicy = new RetryPolicy("order-processing-retry")
+{
+    MaxRetries = 3,
+    InitialDelay = TimeSpan.FromSeconds(1),
+    Strategy = RetryPolicy.BackoffStrategy.Fixed,
+    UseJitter = false,
+    RetryableExceptions = new List<Type> { typeof(TimeoutException), typeof(InvalidOperationException) }
+};
+
+// Execute an operation that succeeds on first attempt
+var successResult = await retryService.ExecuteAsync<string>(
+    retryPolicy,
+    _ => Task.FromResult("order-123"),
+    CancellationToken.None
+);
+
+Console.WriteLine($"Success without retry: {successResult}");
+Console.WriteLine($"Retry policy stats - Successful: {retryPolicy.SuccessfulExecutions}, Failed: {retryPolicy.FailedExecutions}, Retries: {retryPolicy.TotalRetryAttempts}");
+
+// Execute an operation that fails transiently then succeeds
+int attemptCount = 0;
+var transientResult = await retryService.ExecuteAsync<string>(
+    retryPolicy,
+    async _ =>
+    {
+        attemptCount++;
+        if (attemptCount < 3)
+            throw new TimeoutException("Payment service timeout");
+        return "order-processed-after-retries";
+    },
+    CancellationToken.None
+);
+
+Console.WriteLine($"Transient failure recovered after {attemptCount} attempts: {transientResult}");
+
+// Execute an operation that exhausts all retry attempts
+var exhaustedPolicy = new RetryPolicy("exhausted-retry")
+{
+    MaxRetries = 2,
+    InitialDelay = TimeSpan.FromMilliseconds(1),
+    Strategy = RetryPolicy.BackoffStrategy.Fixed,
+    UseJitter = false
+};
+
+try
+{
+    await retryService.ExecuteAsync<string>(
+        exhaustedPolicy,
+        _ => throw new TimeoutException("Always fails"),
+        CancellationToken.None
+    );
+}
+catch (MaxRetriesExceededException ex)
+{
+    Console.WriteLine($"Max retries exceeded after {ex.AttemptCount} attempts");
+    Console.WriteLine($"Exception details: {string.Join(", ", ex.AttemptExceptions.Select(e => e.GetType().Name))}");
+}
+
+// Execute an operation with a non-retryable exception
+var nonRetryablePolicy = new RetryPolicy("non-retryable")
+{
+    MaxRetries = 5,
+    RetryableExceptions = new List<Type> { typeof(TimeoutException) }
+};
+
+try
+{
+    await retryService.ExecuteAsync<string>(
+        nonRetryablePolicy,
+        _ => throw new InvalidOperationException("Not retryable"),
+        CancellationToken.None
+    );
+}
+catch (MaxRetriesExceededException)
+{
+    Console.WriteLine("Non-retryable exception thrown immediately without retries");
+}
+
+// Check if an exception is retryable
+bool isTimeoutRetryable = retryService.IsRetryable(new RetryPolicy("test") { RetryableExceptions = new List<Type> { typeof(TimeoutException) } }, new TimeoutException());
+bool isArgumentRetryable = retryService.IsRetryable(new RetryPolicy("test") { RetryableExceptions = new List<Type> { typeof(TimeoutException) } }, new ArgumentException());
+
+Console.WriteLine($"TimeoutException is retryable: {isTimeoutRetryable}");
+Console.WriteLine($"ArgumentException is retryable: {isArgumentRetryable}");
+
+// Calculate retry delay based on policy configuration
+var delay = retryService.CalculateRetryDelay(retryPolicy, 0);
+Console.WriteLine($"Initial retry delay: {delay.TotalMilliseconds}ms");
+
+// Handle cancellation during retry attempts
+using var cts = new CancellationTokenSource();
+cts.CancelAfter(TimeSpan.FromMilliseconds(50));
+
+try
+{
+    await retryService.ExecuteAsync<string>(
+        retryPolicy,
+        _ => throw new TimeoutException("Will be cancelled"),
+        cts.Token
+    );
+}
+catch (OperationCanceledException)
+{
+    Console.WriteLine("Retry operation was cancelled");
+}
+
+// Execute with a disabled policy (executes once without retry)
+var disabledPolicy = new RetryPolicy("disabled-retry") { IsEnabled = false };
+var disabledResult = await retryService.ExecuteAsync<string>(
+    disabledPolicy,
+    _ => Task.FromResult("executed-once"),
+    CancellationToken.None
+);
+
+Console.WriteLine($"Disabled policy result: {disabledResult}");
+```
+
 ## EndToEndWorkflowTests
 
 The `EndToEndWorkflowTests` class provides comprehensive end-to-end integration tests that validate realistic multi-policy workflows and realistic usage patterns for the resiliency pipeline system. These tests cover realistic scenarios including retry policies that eventually succeed, circuit breakers that trip and recover, fallback mechanisms that provide alternative values, bulkhead concurrency limits, timeout policies, and complete pipeline configurations with statistics tracking.
