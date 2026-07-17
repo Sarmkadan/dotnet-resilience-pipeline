@@ -202,274 +202,176 @@ var freshName = generator.GenerateName("svc", "retry");
 Console.WriteLine(freshName); // svc-retry-1
 ```
 
-## ResiliencyPipelineIntegrationTests
+## EndToEndWorkflowTests
 
-The `ResiliencyPipelineIntegrationTests` class provides integration tests for the resiliency pipeline system, verifying the composition and interaction of multiple resilience policies within a complete pipeline. These tests validate that policies work together correctly, track execution statistics across the entire pipeline, and ensure proper error handling and fallback behavior.
+The `EndToEndWorkflowTests` class provides comprehensive end-to-end integration tests that validate realistic multi-policy workflows and realistic usage patterns for the resiliency pipeline system. These tests cover realistic scenarios including retry policies that eventually succeed, circuit breakers that trip and recover, fallback mechanisms that provide alternative values, bulkhead concurrency limits, timeout policies, and complete pipeline configurations with statistics tracking.
 
 Here's an example usage based on its real public members:
 
 ```csharp
+using DotNetResiliencePipeline.Configuration;
 using DotNetResiliencePipeline.Domain.Policies;
 using DotNetResiliencePipeline.Services;
 
-// Create a resiliency pipeline service
-var pipelineService = new ResiliencyPipelineService();
-
-// FullPipeline_WithMultiplePolicies_RegistersAllPolicies
-// Register multiple policies to build a complete resilience pipeline
-var circuitBreakerPolicy = new CircuitBreakerPolicy("payment-circuit-breaker")
-{
-    IsEnabled = true,
-    FailureThreshold = 5,
-    SamplingDuration = TimeSpan.FromSeconds(30),
-    MinimumThroughput = 10,
-    TimeToReset = TimeSpan.FromSeconds(60)
-};
-pipelineService.RegisterPolicy(circuitBreakerPolicy);
-
-var retryPolicy = new RetryPolicy("payment-retry")
-{
-    IsEnabled = true,
-    MaxRetryCount = 3,
-    DelayBetweenRetries = TimeSpan.FromSeconds(1),
-    BackoffType = RetryBackoffType.Exponential
-};
-pipelineService.RegisterPolicy(retryPolicy);
-
-var timeoutPolicy = new TimeoutPolicy("payment-timeout")
-{
-    IsEnabled = true,
-    TimeoutDuration = TimeSpan.FromSeconds(30)
-};
-pipelineService.RegisterPolicy(timeoutPolicy);
-
-var bulkheadPolicy = new BulkheadPolicy("payment-bulkhead")
-{
-    IsEnabled = true,
-    MaxParallelization = 10,
-    MaxQueuedRequests = 50
-};
-pipelineService.RegisterPolicy(bulkheadPolicy);
-
-var fallbackPolicy = new FallbackPolicy("payment-fallback")
-{
-    IsEnabled = true
-};
-pipelineService.RegisterPolicy(fallbackPolicy);
-
-// FullPipeline_WithFallback_ConfiguresFallbackPolicy
-// Configure fallback behavior with exception triggers
-fallbackPolicy.SetFallbackAction(async _ => await Task.FromResult("fallback-payment-id"));
-fallbackPolicy.AddFallbackTrigger(typeof(InvalidOperationException));
-fallbackPolicy.AddFallbackTrigger(typeof(TimeoutException));
-
-// BulkheadPolicy_WithMultipleSlots_LimitsParallelization
-// Execute operations through the bulkhead to verify parallelization limits
-var tasks = new List<Task>();
-for (int i = 0; i < 15; i++)
-{
-    int taskId = i;
-    tasks.Add(Task.Run(async () =>
+// Build a complete resilience pipeline with retry, circuit breaker, and fallback
+var pipeline = new ResiliencyPipelineBuilder()
+    .WithCircuitBreaker("order-cb", p =>
     {
-        try
-        {
-            var result = await pipelineService.ExecuteAsync(async _ =>
-            {
-                Console.WriteLine($"Executing task {taskId}...");
-                await Task.Delay(100);
-                return $"success-{taskId}";
-            }, bulkhead: bulkheadPolicy);
-            
-            Console.WriteLine($"Task {taskId} completed: {result.Data}");
-        }
-        catch (BulkheadRejectedException ex)
-        {
-            Console.WriteLine($"Task {taskId} rejected: {ex.Message}");
-        }
-    }));
+        p.FailureThreshold = 3;
+        p.OpenDuration = TimeSpan.FromSeconds(30);
+    })
+    .WithRetry("order-retry", p =>
+    {
+        p.MaxRetries = 2;
+        p.InitialDelay = TimeSpan.FromMilliseconds(1);
+        p.Strategy = RetryPolicy.BackoffStrategy.Fixed;
+        p.UseJitter = false;
+    })
+    .WithFallback("order-fallback", p =>
+    {
+        p.FallbackOnAnyException = true;
+        p.SetFallbackAction<string>(async ct => "fallback-order-data");
+    })
+    .Build();
+
+// Verify the pipeline was configured correctly
+var allPolicies = pipeline.GetAllPolicies();
+Console.WriteLine($"Pipeline has {allPolicies.Count} policies configured");
+
+var cbPolicy = pipeline.GetPolicyByName("order-cb") as CircuitBreakerPolicy;
+var retryPolicy = pipeline.GetPolicyByName("order-retry") as RetryPolicy;
+var fallbackPolicy = pipeline.GetPolicyByName("order-fallback") as FallbackPolicy;
+
+Console.WriteLine($"Circuit breaker threshold: {cbPolicy?.FailureThreshold}");
+Console.WriteLine($"Retry max attempts: {retryPolicy?.MaxRetries}");
+Console.WriteLine($"Fallback enabled: {fallbackPolicy?.FallbackOnAnyException}");
+
+// Execute a failing operation that will trigger retry, then circuit breaker, then fallback
+var result = await pipeline.ExecuteAsync(async _ =>
+{
+    // Simulate a transient failure
+    throw new TimeoutException("Payment service timeout");
+});
+
+if (result.IsSuccess)
+{
+    Console.WriteLine($"Operation succeeded with result: {result.Data}");
+}
+else if (result.Metadata.TryGetValue("FallbackUsed", out var fallbackUsed) && fallbackUsed is true)
+{
+    Console.WriteLine($"Fallback was used: {result.Data}");
 }
 
-await Task.WhenAll(tasks);
+// Test individual services with realistic scenarios
 
-// CircuitBreakerService_WithFailures_TracksFailureCount
-// Execute operations that will trigger circuit breaker
-for (int i = 0; i < 6; i++)
+// 1. Retry service: transient failures that eventually succeed
+var retryService = new RetryService();
+var retryPolicy = new RetryPolicy("e2e-retry")
+{
+    MaxRetries = 4,
+    InitialDelay = TimeSpan.FromMilliseconds(1),
+    Strategy = RetryPolicy.BackoffStrategy.Fixed,
+    UseJitter = false
+};
+
+int attempts = 0;
+var retryResult = await retryService.ExecuteAsync<string>(
+    retryPolicy,
+    async _ =>
+    {
+        attempts++;
+        if (attempts < 4)
+            throw new TimeoutException("transient-failure");
+        return "success-after-retries";
+    },
+    CancellationToken.None
+);
+
+Console.WriteLine($"Retry service: {attempts} attempts, result: {retryResult}");
+
+// 2. Circuit breaker: failures that trip the circuit
+var cbService = new CircuitBreakerService();
+var cbPolicy = new CircuitBreakerPolicy("e2e-cb") { FailureThreshold = 3 };
+
+for (int i = 0; i < 3; i++)
 {
     try
     {
-        await pipelineService.ExecuteAsync(async _ =>
-        {
-            if (i < 5)
-                throw new InvalidOperationException("Payment processing failed");
-            return "success";
-        }, circuitBreaker: circuitBreakerPolicy);
+        await cbService.ExecuteAsync<string>(cbPolicy, _ => throw new InvalidOperationException("fail"));
     }
-    catch (Exception ex)
+    catch (InvalidOperationException) { }
+}
+
+Console.WriteLine($"Circuit breaker state: {cbPolicy.CurrentState}");
+Console.WriteLine($"Circuit breaker trips: {cbPolicy.CircuitBreakerTrips}");
+
+// 3. Fallback service: alternative value when primary fails
+var fallbackService = new FallbackService();
+var fallbackPolicy = new FallbackPolicy("e2e-fallback") { FallbackOnAnyException = true };
+fallbackPolicy.SetFallbackAction<string>(async ct => "default-response");
+
+var primaryEx = new HttpRequestException("service unavailable");
+var fallbackResult = await fallbackService.ExecuteAsync<string>(
+    fallbackPolicy,
+    primaryEx,
+    200,
+    CancellationToken.None
+);
+
+Console.WriteLine($"Fallback service: success={fallbackResult.IsSuccess}, data={fallbackResult.Data}");
+
+// 4. Bulkhead: concurrency limiting
+var bulkheadPolicy = new BulkheadPolicy("e2e-bulkhead")
+{
+    MaxParallelization = 3,
+    MaxQueueLength = 10
+};
+
+var bulkheadService = new BulkheadService();
+var acquired = new List<bool>();
+for (int i = 0; i < 6; i++)
+{
+    acquired.Add(bulkheadService.TryAcquireSlot(bulkheadPolicy));
+}
+
+Console.WriteLine($"Bulkhead: {acquired.Count(x => x)} active slots, {bulkheadService.GetQueuedRequestCount(bulkheadPolicy)} queued");
+
+// 5. Timeout: operations that complete within deadline
+var timeoutService = new TimeoutService();
+var timeoutPolicy = new TimeoutPolicy("e2e-timeout") { Timeout = TimeSpan.FromSeconds(5) };
+
+var timeoutResult = await timeoutService.ExecuteAsync<string>(
+    timeoutPolicy,
+    async ct =>
     {
-        Console.WriteLine($"Execution {i} failed: {ex.Message}");
+        await Task.Delay(10, ct);
+        return "completed-in-time";
     }
-}
+);
 
-Console.WriteLine($"Circuit breaker trips: {circuitBreakerPolicy.CircuitBreakerTrips}");
-Console.WriteLine($"Circuit state: {circuitBreakerPolicy.CurrentState}");
+Console.WriteLine($"Timeout service: {timeoutResult}");
 
-// PipelineService_TracksTotalExecutions
-// Verify pipeline statistics tracking
-var stats = pipelineService.GetStatistics();
-Console.WriteLine($"Total executions: {stats.TotalExecutions}");
-Console.WriteLine($"Successful executions: {stats.SuccessfulExecutions}");
-Console.WriteLine($"Failed executions: {stats.FailedExecutions}");
-Console.WriteLine($"Success rate: {stats.SuccessRate:P}");
+// 6. Complete workflow: execute multiple policies and track statistics
+var fullPipeline = new ResiliencyPipelineService();
 
-// PipelineBuilder_FluentConfiguration_CreatesValidPipeline
-// Build a pipeline with fluent configuration
-var fluentPipeline = new ResiliencyPipelineService();
-fluentPipeline.RegisterPolicy(new CircuitBreakerPolicy("fluent-circuit")
+var workflowCbPolicy = new CircuitBreakerPolicy("workflow-cb") { FailureThreshold = 10 };
+var workflowRetryPolicy = new RetryPolicy("workflow-retry")
 {
-    IsEnabled = true,
-    FailureThreshold = 3,
-    SamplingDuration = TimeSpan.FromSeconds(10),
-    MinimumThroughput = 5,
-    TimeToReset = TimeSpan.FromSeconds(30)
-});
-
-fluentPipeline.RegisterPolicy(new RetryPolicy("fluent-retry")
-{
-    IsEnabled = true,
-    MaxRetryCount = 2,
-    DelayBetweenRetries = TimeSpan.FromMilliseconds(500)
-});
-
-// Execute through the fluent pipeline
-var fluentResult = await fluentPipeline.ExecuteAsync(async _ =>
-{
-    Console.WriteLine("Executing fluent pipeline operation...");
-    return "fluent-success";
-});
-
-if (fluentResult.IsSuccess)
-{
-    Console.WriteLine($"Fluent pipeline result: {fluentResult.Data}");
-}
-
-// CircuitBreakerOpenState_PreventsFurtherExecutions
-// Verify circuit breaker prevents execution when open
-circuitBreakerPolicy.RecordFailure(); // Force circuit to open
-circuitBreakerPolicy.RecordFailure();
-circuitBreakerPolicy.RecordFailure();
-circuitBreakerPolicy.RecordFailure();
-circuitBreakerPolicy.RecordFailure(); // Should trip the circuit
-
-try
-{
-    await pipelineService.ExecuteAsync(async _ => "should-not-execute", 
-        circuitBreaker: circuitBreakerPolicy);
-}
-catch (CircuitBreakerOpenException ex)
-{
-    Console.WriteLine($"Circuit breaker prevented execution: {ex.Message}");
-}
-
-// RetryWithBackoff_CalculatesExponentialDelay
-// Execute with retry policy to verify exponential backoff
-var exponentialRetry = new RetryPolicy("exponential-retry")
-{
-    IsEnabled = true,
-    MaxRetryCount = 5,
-    DelayBetweenRetries = TimeSpan.FromSeconds(1),
-    BackoffType = RetryBackoffType.Exponential
+    MaxRetries = 2,
+    InitialDelay = TimeSpan.FromMilliseconds(1),
+    Strategy = RetryPolicy.BackoffStrategy.Fixed,
+    UseJitter = false
 };
+var workflowTimeoutPolicy = new TimeoutPolicy("workflow-timeout") { Timeout = TimeSpan.FromSeconds(5) };
 
-pipelineService.RegisterPolicy(exponentialRetry);
+var timeoutStats = await timeoutService.ExecuteAsync<string>(workflowTimeoutPolicy, ct => Task.FromResult("step1"));
+var cbStats = await cbService.ExecuteAsync<string>(workflowCbPolicy, _ => Task.FromResult("step2"));
+var retryStats = await retryService.ExecuteAsync<string>(workflowRetryPolicy, _ => Task.FromResult("step3"), CancellationToken.None);
 
-var retryAttempts = 0;
-var sw = Stopwatch.StartNew();
-
-try
-{
-    await pipelineService.ExecuteAsync(async _ =>
-    {
-        retryAttempts++;
-        throw new InvalidOperationException("Operation failed");
-    }, retry: exponentialRetry);
-}
-catch { }
-
-sw.Stop();
-Console.WriteLine($"Retry attempts: {retryAttempts}");
-Console.WriteLine($"Total retry time: {sw.ElapsedMilliseconds}ms");
-
-// BulkheadWithQueueing_ManagesQueuedRequests
-// Test bulkhead queue management
-var queuedBulkhead = new BulkheadPolicy("queued-bulkhead")
-{
-    IsEnabled = true,
-    MaxParallelization = 2,
-    MaxQueuedRequests = 3
-};
-
-pipelineService.RegisterPolicy(queuedBulkhead);
-
-var queueTasks = new List<Task>();
-for (int i = 0; i < 7; i++)
-{
-    int taskId = i;
-    queueTasks.Add(pipelineService.ExecuteAsync(async _ =>
-    {
-        Console.WriteLine($"Queued task {taskId} executing...");
-        await Task.Delay(50);
-        return $"queued-success-{taskId}";
-    }, bulkhead: queuedBulkhead));
-}
-
-await Task.WhenAll(queueTasks);
-Console.WriteLine($"Bulkhead active executions: {queuedBulkhead.ActiveExecutions}");
-Console.WriteLine($"Bulkhead queued requests: {queuedBulkhead.QueuedRequests}");
-
-// TimeoutPolicy_ConfiguresTimeout
-// Test timeout policy configuration
-var timeoutPolicy = new TimeoutPolicy("strict-timeout")
-{
-    IsEnabled = true,
-    TimeoutDuration = TimeSpan.FromMilliseconds(100)
-};
-
-pipelineService.RegisterPolicy(timeoutPolicy);
-
-try
-{
-    await pipelineService.ExecuteAsync(async _ =>
-    {
-        await Task.Delay(200); // Exceeds timeout
-        return "should-timeout";
-    }, timeout: timeoutPolicy);
-}
-catch (TimeoutException)
-{
-    Console.WriteLine("Operation timed out as expected");
-}
-
-// PolicyValidation_CatchesInvalidConfiguration
-// Validate policy configurations
-var invalidPolicy = new CircuitBreakerPolicy("invalid")
-{
-    IsEnabled = true,
-    FailureThreshold = 0, // Invalid: must be > 0
-    SamplingDuration = TimeSpan.Zero, // Invalid: must be > TimeSpan.Zero
-    MinimumThroughput = 0 // Invalid: must be > 0
-};
-
-bool isValid = invalidPolicy.IsValidConfiguration(out var validationError);
-Console.WriteLine($"Policy validation - valid: {isValid}, error: {validationError}");
-
-// PipelineSnapshot_IncludesPolicies
-// Get pipeline snapshot with all registered policies
-var pipelineSnapshot = pipelineService.GetStatistics();
-Console.WriteLine($"Registered policies: {pipelineSnapshot.PolicyCount}");
-foreach (var policy in pipelineSnapshot.RegisteredPolicies)
-{
-    Console.WriteLine($"  - {policy.PolicyName} ({policy.PolicyType}): " +
-                     $"Success rate: {policy.SuccessRate:P}, " +
-                     $"Total executions: {policy.TotalExecutions}");
-}
+Console.WriteLine($"Workflow completed: timeout={timeoutStats}, cb={cbStats}, retry={retryStats}");
+Console.WriteLine($"Timeout stats: {workflowTimeoutPolicy.SuccessfulExecutions} successes");
+Console.WriteLine($"Circuit breaker stats: {workflowCbPolicy.SuccessfulExecutions} successes");
+Console.WriteLine($"Retry stats: {workflowRetryPolicy.SuccessfulExecutions} successes");
 ```
+
+
