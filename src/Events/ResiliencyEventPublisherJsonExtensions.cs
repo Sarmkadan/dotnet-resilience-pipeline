@@ -45,16 +45,17 @@ public static class ResiliencyEventPublisherJsonExtensions
     /// Deserializes a JSON string to a <see cref="ResiliencyEventPublisher"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized publisher instance, or null if the JSON is null or empty.</returns>
+    /// <returns>The deserialized publisher instance.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is empty or whitespace.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
-    public static ResiliencyEventPublisher? FromJson(string json)
+    public static ResiliencyEventPublisher FromJson(string json)
     {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return null;
-        }
+        ArgumentNullException.ThrowIfNull(json);
+        ArgumentException.ThrowIfNullOrWhiteSpace(json);
 
-        return JsonSerializer.Deserialize<ResiliencyEventPublisher>(json, _jsonSerializerOptions);
+        return JsonSerializer.Deserialize<ResiliencyEventPublisher>(json, _jsonSerializerOptions)
+            ?? throw new JsonException("Deserialization returned null for non-null input.");
     }
 
     /// <summary>
@@ -63,23 +64,15 @@ public static class ResiliencyEventPublisherJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized publisher instance if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     public static bool TryFromJson(string json, out ResiliencyEventPublisher? value)
     {
-        value = null;
+        ArgumentNullException.ThrowIfNull(json);
 
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return false;
-        }
+        value = string.IsNullOrWhiteSpace(json)
+            ? null
+            : JsonSerializer.Deserialize<ResiliencyEventPublisher>(json, _jsonSerializerOptions);
 
-        try
-        {
-            value = JsonSerializer.Deserialize<ResiliencyEventPublisher>(json, _jsonSerializerOptions);
-            return true;
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
+        return value is not null;
     }
 }
