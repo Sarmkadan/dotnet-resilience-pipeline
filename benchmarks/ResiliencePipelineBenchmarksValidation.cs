@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Reflection;
 
 namespace DotNetResiliencePipeline.Benchmarks;
 
@@ -76,15 +76,18 @@ public static class ResiliencePipelineBenchmarksValidation
         {
             throw new ArgumentException(
                 $"The ResiliencePipelineBenchmarks instance is not valid. Validation errors:{Environment.NewLine}-
-{string.Join($"{Environment.NewLine}- ", errors)}");
+                {string.Join($"{Environment.NewLine}-", errors)}");
         }
     }
 
     private static void ValidateBenchmarkMethod<TDelegate>(List<string> errors, string methodName, TDelegate method) where TDelegate : Delegate
     {
-        if (method is null)
+        ArgumentNullException.ThrowIfNull(method);
+
+        var methodInfo = method.GetMethodInfo();
+        if (methodInfo is null)
         {
-            errors.Add($"The benchmark method '{methodName}' is null or not accessible.");
+            errors.Add($"The benchmark method '{methodName}' is not accessible or does not exist.");
         }
     }
 }
