@@ -36,7 +36,7 @@ public static class FailureInjectionServiceValidation
         // Validate total injections count
         if (value.TotalInjections < 0)
         {
-            problems.Add($"TotalInjections must be non-negative, but was {value.TotalInjections}.");
+            problems.Add(string.Create(CultureInfo.InvariantCulture, $"TotalInjections must be non-negative, but was {value.TotalInjections}."));
         }
 
         return problems.AsReadOnly();
@@ -50,7 +50,7 @@ public static class FailureInjectionServiceValidation
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this FailureInjectionService? value)
     {
-        return value?.Validate().Count == 0;
+        return value is not null && value.Validate().Count == 0;
     }
 
     /// <summary>
@@ -67,7 +67,7 @@ public static class FailureInjectionServiceValidation
         if (problems.Count > 0)
         {
             throw new ArgumentException(
-                $"FailureInjectionService is not valid. Problems:\n{string.Join("\n", problems)}");
+                string.Create(CultureInfo.InvariantCulture, $"FailureInjectionService is not valid. Problems:\n{string.Join("\n", problems)}"));
         }
     }
 
@@ -79,17 +79,17 @@ public static class FailureInjectionServiceValidation
         // Validate Key
         if (string.IsNullOrWhiteSpace(rule.Key))
         {
-            problems.Add($"Rule.Key cannot be null or whitespace.");
+            problems.Add("Rule.Key cannot be null or whitespace.");
         }
         else if (rule.Key.Length > 100)
         {
-            problems.Add($"Rule.Key '{rule.Key}' exceeds maximum length of 100 characters.");
+            problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule.Key '{rule.Key}' exceeds maximum length of 100 characters."));
         }
 
         // Validate Type
         if (!Enum.IsDefined(typeof(InjectionType), rule.Type))
         {
-            problems.Add($"Rule.Type has invalid value {(int)rule.Type}.");
+            problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule.Type has invalid value {(int)rule.Type}."));
         }
 
         // Validate IsEnabled
@@ -98,21 +98,21 @@ public static class FailureInjectionServiceValidation
         // Validate InjectionRate
         if (double.IsNaN(rule.InjectionRate))
         {
-            problems.Add($"Rule.InjectionRate cannot be NaN.");
+            problems.Add("Rule.InjectionRate cannot be NaN.");
         }
         else if (double.IsInfinity(rule.InjectionRate))
         {
-            problems.Add($"Rule.InjectionRate cannot be infinite.");
+            problems.Add("Rule.InjectionRate cannot be infinite.");
         }
         else if (rule.InjectionRate < 0.0 || rule.InjectionRate > 1.0)
         {
-            problems.Add($"Rule.InjectionRate must be between 0.0 and 1.0 (inclusive), but was {rule.InjectionRate.ToString(CultureInfo.InvariantCulture)}.");
+            problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule.InjectionRate must be between 0.0 and 1.0 (inclusive), but was {rule.InjectionRate.ToString(CultureInfo.InvariantCulture)}."));
         }
 
         // Validate ExceptionMessage
         if (rule.ExceptionMessage is not null && rule.ExceptionMessage.Length > 500)
         {
-            problems.Add($"Rule.ExceptionMessage for rule '{rule.Key}' exceeds maximum length of 500 characters.");
+            problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule.ExceptionMessage for rule '{rule.Key}' exceeds maximum length of 500 characters."));
         }
 
         // Validate ExceptionFactory
@@ -123,11 +123,11 @@ public static class FailureInjectionServiceValidation
         {
             if (rule.LatencyDelay.Value < TimeSpan.Zero)
             {
-                problems.Add($"Rule.LatencyDelay for rule '{rule.Key}' cannot be negative, but was {rule.LatencyDelay}.");
+                problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule.LatencyDelay for rule '{rule.Key}' cannot be negative, but was {rule.LatencyDelay}."));
             }
             else if (rule.LatencyDelay.Value.TotalMilliseconds > 3600000) // 1 hour
             {
-                problems.Add($"Rule.LatencyDelay for rule '{rule.Key}' exceeds reasonable maximum of 1 hour, but was {rule.LatencyDelay}.");
+                problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule.LatencyDelay for rule '{rule.Key}' exceeds reasonable maximum of 1 hour, but was {rule.LatencyDelay}."));
             }
         }
 
@@ -136,18 +136,18 @@ public static class FailureInjectionServiceValidation
         {
             if (rule.TimeoutDuration.Value < TimeSpan.Zero)
             {
-                problems.Add($"Rule.TimeoutDuration for rule '{rule.Key}' cannot be negative, but was {rule.TimeoutDuration}.");
+                problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule.TimeoutDuration for rule '{rule.Key}' cannot be negative, but was {rule.TimeoutDuration}."));
             }
             else if (rule.TimeoutDuration.Value.TotalMilliseconds > 86400000) // 24 hours
             {
-                problems.Add($"Rule.TimeoutDuration for rule '{rule.Key}' exceeds reasonable maximum of 24 hours, but was {rule.TimeoutDuration}.");
+                problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule.TimeoutDuration for rule '{rule.Key}' exceeds reasonable maximum of 24 hours, but was {rule.TimeoutDuration}."));
             }
         }
 
         // Validate InjectionsPerformed
         if (rule.InjectionsPerformed < 0)
         {
-            problems.Add($"Rule.InjectionsPerformed for rule '{rule.Key}' must be non-negative, but was {rule.InjectionsPerformed}.");
+            problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule.InjectionsPerformed for rule '{rule.Key}' must be non-negative, but was {rule.InjectionsPerformed}."));
         }
 
         // Validate consistency between InjectionType and related properties
@@ -156,21 +156,21 @@ public static class FailureInjectionServiceValidation
             case InjectionType.Exception:
                 if (rule.ExceptionMessage is null && rule.ExceptionFactory is null)
                 {
-                    problems.Add($"Rule '{rule.Key}' has InjectionType.Exception but neither ExceptionMessage nor ExceptionFactory is set.");
+                    problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule '{rule.Key}' has InjectionType.Exception but neither ExceptionMessage nor ExceptionFactory is set."));
                 }
                 break;
 
             case InjectionType.Latency:
                 if (!rule.LatencyDelay.HasValue)
                 {
-                    problems.Add($"Rule '{rule.Key}' has InjectionType.Latency but LatencyDelay is not set.");
+                    problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule '{rule.Key}' has InjectionType.Latency but LatencyDelay is not set."));
                 }
                 break;
 
             case InjectionType.Timeout:
                 if (!rule.TimeoutDuration.HasValue)
                 {
-                    problems.Add($"Rule '{rule.Key}' has InjectionType.Timeout but TimeoutDuration is not set.");
+                    problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule '{rule.Key}' has InjectionType.Timeout but TimeoutDuration is not set."));
                 }
                 break;
         }
