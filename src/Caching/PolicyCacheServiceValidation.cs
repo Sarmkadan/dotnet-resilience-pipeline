@@ -40,20 +40,10 @@ public static class PolicyCacheServiceValidation
                 $"MaxCacheSize must be positive, but was {value.MaxCacheSize}.");
         }
 
-        // Validate PolicyName (if there are any cached entries)
-        if (value.GetStatistics().TotalEntries > 0)
-        {
-            // Note: We can't easily validate individual policy names without iterating cache
-            // The Get/Set methods already validate policy names on access
-        }
-
-        // Note: CreatedAt, ExpiresAt, LastAccessTime, and AccessCount are properties
-        // of individual CachedPolicy entries, not the PolicyCacheService itself.
-        // These are validated through GetStatistics() which aggregates them.
-        // The service doesn't expose these properties directly.
+        // Validate statistics consistency
+        var stats = value.GetStatistics();
 
         // Validate TotalEntries (should match actual cache state)
-        var stats = value.GetStatistics();
         if (stats.TotalEntries < 0)
         {
             problems.Add(
@@ -95,10 +85,7 @@ public static class PolicyCacheServiceValidation
     /// </summary>
     /// <param name="value">The service instance to check.</param>
     /// <returns>True if valid; otherwise, false.</returns>
-    public static bool IsValid(this PolicyCacheService? value)
-    {
-        return value is not null && Validate(value).Count == 0;
-    }
+    public static bool IsValid(this PolicyCacheService? value) => value is not null && Validate(value).Count == 0;
 
     /// <summary>
     /// Ensures that a <see cref="PolicyCacheService"/> instance is valid, throwing an <see cref="ArgumentException"/> if not.
@@ -117,8 +104,8 @@ public static class PolicyCacheServiceValidation
         }
 
         throw new ArgumentException(
-            $"PolicyCacheService is invalid. Problems:{Environment.NewLine}  - {
-            string.Join($"{Environment.NewLine}  - ", problems)
+            $"PolicyCacheService is invalid. Problems:{Environment.NewLine} - {
+            string.Join($"{Environment.NewLine} - ", problems)
             }");
     }
 }
