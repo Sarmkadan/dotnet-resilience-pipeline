@@ -38,10 +38,7 @@ public static class BulkheadPolicyJsonExtensions
         ArgumentNullException.ThrowIfNull(value);
 
         var options = indented
-            ? new JsonSerializerOptions(_jsonOptions)
-            {
-                WriteIndented = true
-            }
+            ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true }
             : _jsonOptions;
 
         return JsonSerializer.Serialize(value, options);
@@ -53,7 +50,7 @@ public static class BulkheadPolicyJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized bulkhead policy, or null if the JSON is empty or whitespace.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
-/// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
+    /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static BulkheadPolicy? FromJson(string json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -70,7 +67,8 @@ public static class BulkheadPolicyJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized bulkhead policy if successful; otherwise, null.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
-/// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="JsonException">Thrown when the JSON is invalid.</exception>
     public static bool TryFromJson(string json, out BulkheadPolicy? value)
     {
         value = null;
