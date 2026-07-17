@@ -201,3 +201,275 @@ generator.Clear();
 var freshName = generator.GenerateName("svc", "retry");
 Console.WriteLine(freshName); // svc-retry-1
 ```
+
+## ResiliencyPipelineIntegrationTests
+
+The `ResiliencyPipelineIntegrationTests` class provides integration tests for the resiliency pipeline system, verifying the composition and interaction of multiple resilience policies within a complete pipeline. These tests validate that policies work together correctly, track execution statistics across the entire pipeline, and ensure proper error handling and fallback behavior.
+
+Here's an example usage based on its real public members:
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Services;
+
+// Create a resiliency pipeline service
+var pipelineService = new ResiliencyPipelineService();
+
+// FullPipeline_WithMultiplePolicies_RegistersAllPolicies
+// Register multiple policies to build a complete resilience pipeline
+var circuitBreakerPolicy = new CircuitBreakerPolicy("payment-circuit-breaker")
+{
+    IsEnabled = true,
+    FailureThreshold = 5,
+    SamplingDuration = TimeSpan.FromSeconds(30),
+    MinimumThroughput = 10,
+    TimeToReset = TimeSpan.FromSeconds(60)
+};
+pipelineService.RegisterPolicy(circuitBreakerPolicy);
+
+var retryPolicy = new RetryPolicy("payment-retry")
+{
+    IsEnabled = true,
+    MaxRetryCount = 3,
+    DelayBetweenRetries = TimeSpan.FromSeconds(1),
+    BackoffType = RetryBackoffType.Exponential
+};
+pipelineService.RegisterPolicy(retryPolicy);
+
+var timeoutPolicy = new TimeoutPolicy("payment-timeout")
+{
+    IsEnabled = true,
+    TimeoutDuration = TimeSpan.FromSeconds(30)
+};
+pipelineService.RegisterPolicy(timeoutPolicy);
+
+var bulkheadPolicy = new BulkheadPolicy("payment-bulkhead")
+{
+    IsEnabled = true,
+    MaxParallelization = 10,
+    MaxQueuedRequests = 50
+};
+pipelineService.RegisterPolicy(bulkheadPolicy);
+
+var fallbackPolicy = new FallbackPolicy("payment-fallback")
+{
+    IsEnabled = true
+};
+pipelineService.RegisterPolicy(fallbackPolicy);
+
+// FullPipeline_WithFallback_ConfiguresFallbackPolicy
+// Configure fallback behavior with exception triggers
+fallbackPolicy.SetFallbackAction(async _ => await Task.FromResult("fallback-payment-id"));
+fallbackPolicy.AddFallbackTrigger(typeof(InvalidOperationException));
+fallbackPolicy.AddFallbackTrigger(typeof(TimeoutException));
+
+// BulkheadPolicy_WithMultipleSlots_LimitsParallelization
+// Execute operations through the bulkhead to verify parallelization limits
+var tasks = new List<Task>();
+for (int i = 0; i < 15; i++)
+{
+    int taskId = i;
+    tasks.Add(Task.Run(async () =>
+    {
+        try
+        {
+            var result = await pipelineService.ExecuteAsync(async _ =>
+            {
+                Console.WriteLine($"Executing task {taskId}...");
+                await Task.Delay(100);
+                return $"success-{taskId}";
+            }, bulkhead: bulkheadPolicy);
+            
+            Console.WriteLine($"Task {taskId} completed: {result.Data}");
+        }
+        catch (BulkheadRejectedException ex)
+        {
+            Console.WriteLine($"Task {taskId} rejected: {ex.Message}");
+        }
+    }));
+}
+
+await Task.WhenAll(tasks);
+
+// CircuitBreakerService_WithFailures_TracksFailureCount
+// Execute operations that will trigger circuit breaker
+for (int i = 0; i < 6; i++)
+{
+    try
+    {
+        await pipelineService.ExecuteAsync(async _ =>
+        {
+            if (i < 5)
+                throw new InvalidOperationException("Payment processing failed");
+            return "success";
+        }, circuitBreaker: circuitBreakerPolicy);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Execution {i} failed: {ex.Message}");
+    }
+}
+
+Console.WriteLine($"Circuit breaker trips: {circuitBreakerPolicy.CircuitBreakerTrips}");
+Console.WriteLine($"Circuit state: {circuitBreakerPolicy.CurrentState}");
+
+// PipelineService_TracksTotalExecutions
+// Verify pipeline statistics tracking
+var stats = pipelineService.GetStatistics();
+Console.WriteLine($"Total executions: {stats.TotalExecutions}");
+Console.WriteLine($"Successful executions: {stats.SuccessfulExecutions}");
+Console.WriteLine($"Failed executions: {stats.FailedExecutions}");
+Console.WriteLine($"Success rate: {stats.SuccessRate:P}");
+
+// PipelineBuilder_FluentConfiguration_CreatesValidPipeline
+// Build a pipeline with fluent configuration
+var fluentPipeline = new ResiliencyPipelineService();
+fluentPipeline.RegisterPolicy(new CircuitBreakerPolicy("fluent-circuit")
+{
+    IsEnabled = true,
+    FailureThreshold = 3,
+    SamplingDuration = TimeSpan.FromSeconds(10),
+    MinimumThroughput = 5,
+    TimeToReset = TimeSpan.FromSeconds(30)
+});
+
+fluentPipeline.RegisterPolicy(new RetryPolicy("fluent-retry")
+{
+    IsEnabled = true,
+    MaxRetryCount = 2,
+    DelayBetweenRetries = TimeSpan.FromMilliseconds(500)
+});
+
+// Execute through the fluent pipeline
+var fluentResult = await fluentPipeline.ExecuteAsync(async _ =>
+{
+    Console.WriteLine("Executing fluent pipeline operation...");
+    return "fluent-success";
+});
+
+if (fluentResult.IsSuccess)
+{
+    Console.WriteLine($"Fluent pipeline result: {fluentResult.Data}");
+}
+
+// CircuitBreakerOpenState_PreventsFurtherExecutions
+// Verify circuit breaker prevents execution when open
+circuitBreakerPolicy.RecordFailure(); // Force circuit to open
+circuitBreakerPolicy.RecordFailure();
+circuitBreakerPolicy.RecordFailure();
+circuitBreakerPolicy.RecordFailure();
+circuitBreakerPolicy.RecordFailure(); // Should trip the circuit
+
+try
+{
+    await pipelineService.ExecuteAsync(async _ => "should-not-execute", 
+        circuitBreaker: circuitBreakerPolicy);
+}
+catch (CircuitBreakerOpenException ex)
+{
+    Console.WriteLine($"Circuit breaker prevented execution: {ex.Message}");
+}
+
+// RetryWithBackoff_CalculatesExponentialDelay
+// Execute with retry policy to verify exponential backoff
+var exponentialRetry = new RetryPolicy("exponential-retry")
+{
+    IsEnabled = true,
+    MaxRetryCount = 5,
+    DelayBetweenRetries = TimeSpan.FromSeconds(1),
+    BackoffType = RetryBackoffType.Exponential
+};
+
+pipelineService.RegisterPolicy(exponentialRetry);
+
+var retryAttempts = 0;
+var sw = Stopwatch.StartNew();
+
+try
+{
+    await pipelineService.ExecuteAsync(async _ =>
+    {
+        retryAttempts++;
+        throw new InvalidOperationException("Operation failed");
+    }, retry: exponentialRetry);
+}
+catch { }
+
+sw.Stop();
+Console.WriteLine($"Retry attempts: {retryAttempts}");
+Console.WriteLine($"Total retry time: {sw.ElapsedMilliseconds}ms");
+
+// BulkheadWithQueueing_ManagesQueuedRequests
+// Test bulkhead queue management
+var queuedBulkhead = new BulkheadPolicy("queued-bulkhead")
+{
+    IsEnabled = true,
+    MaxParallelization = 2,
+    MaxQueuedRequests = 3
+};
+
+pipelineService.RegisterPolicy(queuedBulkhead);
+
+var queueTasks = new List<Task>();
+for (int i = 0; i < 7; i++)
+{
+    int taskId = i;
+    queueTasks.Add(pipelineService.ExecuteAsync(async _ =>
+    {
+        Console.WriteLine($"Queued task {taskId} executing...");
+        await Task.Delay(50);
+        return $"queued-success-{taskId}";
+    }, bulkhead: queuedBulkhead));
+}
+
+await Task.WhenAll(queueTasks);
+Console.WriteLine($"Bulkhead active executions: {queuedBulkhead.ActiveExecutions}");
+Console.WriteLine($"Bulkhead queued requests: {queuedBulkhead.QueuedRequests}");
+
+// TimeoutPolicy_ConfiguresTimeout
+// Test timeout policy configuration
+var timeoutPolicy = new TimeoutPolicy("strict-timeout")
+{
+    IsEnabled = true,
+    TimeoutDuration = TimeSpan.FromMilliseconds(100)
+};
+
+pipelineService.RegisterPolicy(timeoutPolicy);
+
+try
+{
+    await pipelineService.ExecuteAsync(async _ =>
+    {
+        await Task.Delay(200); // Exceeds timeout
+        return "should-timeout";
+    }, timeout: timeoutPolicy);
+}
+catch (TimeoutException)
+{
+    Console.WriteLine("Operation timed out as expected");
+}
+
+// PolicyValidation_CatchesInvalidConfiguration
+// Validate policy configurations
+var invalidPolicy = new CircuitBreakerPolicy("invalid")
+{
+    IsEnabled = true,
+    FailureThreshold = 0, // Invalid: must be > 0
+    SamplingDuration = TimeSpan.Zero, // Invalid: must be > TimeSpan.Zero
+    MinimumThroughput = 0 // Invalid: must be > 0
+};
+
+bool isValid = invalidPolicy.IsValidConfiguration(out var validationError);
+Console.WriteLine($"Policy validation - valid: {isValid}, error: {validationError}");
+
+// PipelineSnapshot_IncludesPolicies
+// Get pipeline snapshot with all registered policies
+var pipelineSnapshot = pipelineService.GetStatistics();
+Console.WriteLine($"Registered policies: {pipelineSnapshot.PolicyCount}");
+foreach (var policy in pipelineSnapshot.RegisteredPolicies)
+{
+    Console.WriteLine($"  - {policy.PolicyName} ({policy.PolicyType}): " +
+                     $"Success rate: {policy.SuccessRate:P}, " +
+                     $"Total executions: {policy.TotalExecutions}");
+}
+```
