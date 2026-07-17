@@ -37,9 +37,7 @@ public static class MetricsAggregatorJsonExtensions
 
         var options = indented
             ? new JsonSerializerOptions(_jsonSerializerOptions)
-            {
-                WriteIndented = true
-            }
+            { WriteIndented = true }
             : _jsonSerializerOptions;
 
         return JsonSerializer.Serialize(value, options);
@@ -56,14 +54,7 @@ public static class MetricsAggregatorJsonExtensions
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
 
-        try
-        {
-            return JsonSerializer.Deserialize<MetricsAggregator>(json, _jsonSerializerOptions);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
+        return JsonSerializer.Deserialize<MetricsAggregator>(json, _jsonSerializerOptions);
     }
 
     /// <summary>
@@ -77,16 +68,7 @@ public static class MetricsAggregatorJsonExtensions
     public static bool TryFromJson(string json, out MetricsAggregator? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
-
-        try
-        {
-            value = JsonSerializer.Deserialize<MetricsAggregator>(json, _jsonSerializerOptions);
-            return true;
-        }
-        catch (JsonException)
-        {
-            value = null;
-            return false;
-        }
+        value = JsonSerializer.Deserialize<MetricsAggregator>(json, _jsonSerializerOptions);
+        return value is not null;
     }
 }
