@@ -8,73 +8,79 @@ namespace DotNetResiliencePipeline.Benchmarks;
 /// </summary>
 public static class ConcurrencyBenchmarksJsonExtensions
 {
-    private static readonly JsonSerializerOptions _jsonSerializerOptions = new(JsonSerializerDefaults.Web)
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false,
-        TypeInfoResolver = new DefaultJsonTypeInfoResolver()
-        {
-            Modifiers = { } // No custom modifiers needed for this type
-        }
-    };
+	private static readonly JsonSerializerOptions _jsonSerializerOptions = new(JsonSerializerDefaults.Web)
+	{
+		PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+		WriteIndented = false,
+		TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+		{
+			Modifiers = { } // No custom modifiers needed for this type
+		}
+	};
 
-    /// <summary>
-    /// Serializes the <see cref="ConcurrencyBenchmarks"/> instance to a JSON string.
-    /// </summary>
-    /// <param name="value">The instance to serialize.</param>
-    /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
-    /// <returns>A JSON string representation of the instance.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
-    public static string ToJson(this ConcurrencyBenchmarks value, bool indented = false)
-    {
-        ArgumentNullException.ThrowIfNull(value);
+	/// <summary>
+	/// Serializes the <see cref="ConcurrencyBenchmarks"/> instance to a JSON string.
+	/// </summary>
+	/// <param name="value">The instance to serialize.</param>
+	/// <param name="indented">Whether to format the JSON with indentation for readability.</param>
+	/// <returns>A JSON string representation of the instance.</returns>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
+	public static string ToJson(this ConcurrencyBenchmarks value, bool indented = false)
+	{
+		ArgumentNullException.ThrowIfNull(value);
 
-        var options = indented
-            ? new JsonSerializerOptions(_jsonSerializerOptions) { WriteIndented = true }
-            : _jsonSerializerOptions;
+		var options = indented
+			? new JsonSerializerOptions(_jsonSerializerOptions) { WriteIndented = true }
+			: _jsonSerializerOptions;
 
-        return JsonSerializer.Serialize(value, options);
-    }
+		return JsonSerializer.Serialize(value, options);
+	}
 
-    /// <summary>
-    /// Deserializes a JSON string to a <see cref="ConcurrencyBenchmarks"/> instance.
-    /// </summary>
-    /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized instance, or null if the JSON is null or empty.</returns>
-    /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
-    public static ConcurrencyBenchmarks? FromJson(string json)
-    {
-        if (string.IsNullOrEmpty(json))
-        {
-            return null;
-        }
+	/// <summary>
+	/// Deserializes a JSON string to a <see cref="ConcurrencyBenchmarks"/> instance.
+	/// </summary>
+	/// <param name="json">The JSON string to deserialize.</param>
+	/// <returns>The deserialized instance, or null if the JSON is null or empty.</returns>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+	/// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
+	public static ConcurrencyBenchmarks? FromJson(string json)
+	{
+		ArgumentNullException.ThrowIfNull(json);
 
-        return JsonSerializer.Deserialize<ConcurrencyBenchmarks>(json, _jsonSerializerOptions);
-    }
+		if (string.IsNullOrEmpty(json))
+		{
+			return null;
+		}
 
-    /// <summary>
-    /// Attempts to deserialize a JSON string to a <see cref="ConcurrencyBenchmarks"/> instance.
-    /// </summary>
-    /// <param name="json">The JSON string to deserialize.</param>
-    /// <param name="value">The deserialized instance, or null if deserialization fails.</param>
-    /// <returns>True if deserialization succeeds; otherwise, false.</returns>
-    public static bool TryFromJson(string json, out ConcurrencyBenchmarks? value)
-    {
-        value = null;
+		return JsonSerializer.Deserialize<ConcurrencyBenchmarks>(json, _jsonSerializerOptions);
+	}
 
-        if (string.IsNullOrEmpty(json))
-        {
-            return false;
-        }
+	/// <summary>
+	/// Attempts to deserialize a JSON string to a <see cref="ConcurrencyBenchmarks"/> instance.
+	/// </summary>
+	/// <param name="json">The JSON string to deserialize.</param>
+	/// <param name="value">When this method returns, contains the deserialized instance if successful, or null if deserialization fails.</param>
+	/// <returns>True if deserialization succeeds; otherwise, false.</returns>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+	public static bool TryFromJson(string json, out ConcurrencyBenchmarks? value)
+	{
+		ArgumentNullException.ThrowIfNull(json);
 
-        try
-        {
-            value = JsonSerializer.Deserialize<ConcurrencyBenchmarks>(json, _jsonSerializerOptions);
-            return true;
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-    }
+		if (string.IsNullOrEmpty(json))
+		{
+			value = null;
+			return false;
+		}
+
+		try
+		{
+			value = JsonSerializer.Deserialize<ConcurrencyBenchmarks>(json, _jsonSerializerOptions);
+			return value is not null;
+		}
+		catch (JsonException)
+		{
+			value = null;
+			return false;
+		}
+	}
 }
