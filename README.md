@@ -393,6 +393,94 @@ else if (result.Metadata.TryGetValue("FallbackUsed", out var fallbackUsed) && fa
     Console.WriteLine($"Fallback was used: {result.Data}");
 }
 
+## FallbackPolicyTests
+
+The `FallbackPolicyTests` class provides comprehensive unit tests for the `FallbackPolicy` class, verifying its functionality for providing fallback values when operations fail. These tests cover various scenarios including fallback action configuration, exception triggering, fallback statistics tracking, and configuration validation.
+
+Here's an example usage based on its real public members:
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+
+// Create a fallback policy with a descriptive name
+var fallbackPolicy = new FallbackPolicy("order-processing-fallback")
+{
+    IsEnabled = true,
+    FallbackOnAnyException = true
+};
+
+// Set a fallback action that returns a default value
+fallbackPolicy.SetFallbackAction(async _ => await Task.FromResult("fallback-order-id"));
+
+// Add exception types that should trigger fallback
+fallbackPolicy.AddFallbackTrigger(typeof(InvalidOperationException));
+fallbackPolicy.AddFallbackTrigger(typeof(TimeoutException));
+
+// Create a fallback policy with specific exception matching
+var specificExceptionPolicy = new FallbackPolicy("payment-fallback")
+{
+    IsEnabled = true,
+    FallbackOnAnyException = false
+};
+specificExceptionPolicy.SetFallbackAction(async _ => await Task.FromResult(0));
+
+// Add specific exception types that should trigger fallback
+specificExceptionPolicy.AddFallbackTrigger(typeof(PaymentFailedException));
+specificExceptionPolicy.AddFallbackTrigger(typeof(TransactionTimeoutException));
+
+// Check if fallback should be triggered for different exceptions
+bool shouldTriggerAny = fallbackPolicy.ShouldTriggerFallback(new InvalidOperationException());
+bool shouldTriggerSpecific = specificExceptionPolicy.ShouldTriggerFallback(new PaymentFailedException());
+bool shouldNotTrigger = specificExceptionPolicy.ShouldTriggerFallback(new TimeoutException());
+
+Console.WriteLine($"Fallback triggered for any exception: {shouldTriggerAny}");
+Console.WriteLine($"Fallback triggered for specific exception: {shouldTriggerSpecific}");
+Console.WriteLine($"Fallback not triggered for non-matching exception: {shouldNotTrigger}");
+
+// Record successful fallback invocations
+fallbackPolicy.RecordSuccessfulFallback(TimeSpan.FromMilliseconds(100));
+fallbackPolicy.RecordSuccessfulFallback(TimeSpan.FromMilliseconds(150));
+
+// Record failed fallback invocations
+fallbackPolicy.RecordFailedFallback(TimeSpan.FromMilliseconds(200));
+
+// Get fallback statistics
+var successRate = fallbackPolicy.GetFallbackSuccessRate();
+var invocationPercentage = fallbackPolicy.GetFallbackInvocationPercentage();
+
+Console.WriteLine($"Fallback success rate: {successRate:P}");
+Console.WriteLine($"Fallback invocation percentage: {invocationPercentage:P}");
+
+// Check if a configuration is valid
+bool isValidConfig = fallbackPolicy.IsValidConfiguration();
+Console.WriteLine($"Policy configuration is valid: {isValidConfig}");
+
+// Remove fallback triggers
+fallbackPolicy.RemoveFallbackTrigger(typeof(TimeoutException));
+
+// Check if exception types are registered
+bool hasInvalidOpException = fallbackPolicy.GetFallbackTriggers().Contains(typeof(InvalidOperationException));
+Console.WriteLine($"Has InvalidOperationException trigger: {hasInvalidOpException}");
+
+// Get all registered fallback triggers
+var triggers = fallbackPolicy.GetFallbackTriggers();
+Console.WriteLine($"Registered fallback triggers: {string.Join(", ", triggers.Select(t => t.Name))}");
+
+// Create a fallback policy with whitespace name (should throw)
+try
+{
+    var invalidNamePolicy = new FallbackPolicy("  ");
+}
+catch (ArgumentException ex)
+{
+    Console.WriteLine($"Expected exception for whitespace name: {ex.Message}");
+}
+
+// Check fallback action is set
+bool hasFallbackAction = fallbackPolicy.HasFallbackAction();
+Console.WriteLine($"Fallback policy has action set: {hasFallbackAction}");
+```
+
 // Test individual services with realistic scenarios
 
 // 1. Retry service: transient failures that eventually succeed
