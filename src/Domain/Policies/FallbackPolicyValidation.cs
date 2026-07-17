@@ -45,18 +45,25 @@ public static class FallbackPolicyValidation
         }
 
         // Validate fallback trigger exceptions collection
-        foreach (var exceptionType in value.FallbackTriggerExceptions)
+        if (value.FallbackTriggerExceptions is not null)
         {
-            if (exceptionType is null)
+            foreach (var exceptionType in value.FallbackTriggerExceptions)
             {
-                problems.Add("FallbackTriggerExceptions collection contains a null element.");
-                continue;
-            }
+                if (exceptionType is null)
+                {
+                    problems.Add("FallbackTriggerExceptions collection contains a null element.");
+                    continue;
+                }
 
-            if (!typeof(Exception).IsAssignableFrom(exceptionType))
-            {
-                problems.Add($"FallbackTriggerExceptions contains invalid type '{exceptionType.Name}' which is not an Exception.");
+                if (!typeof(Exception).IsAssignableFrom(exceptionType))
+                {
+                    problems.Add($"FallbackTriggerExceptions contains invalid type '{exceptionType.Name}' which is not an Exception.");
+                }
             }
+        }
+        else
+        {
+            problems.Add("FallbackTriggerExceptions collection is null.");
         }
 
         // Validate statistics counters (should not be negative)
@@ -90,10 +97,7 @@ public static class FallbackPolicyValidation
     /// <param name="value">The fallback policy to check.</param>
     /// <returns>True if the policy is valid; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-    public static bool IsValid(this FallbackPolicy? value)
-    {
-        return value.Validate().Count == 0;
-    }
+    public static bool IsValid(this FallbackPolicy? value) => value?.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that the specified fallback policy is valid.
