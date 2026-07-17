@@ -120,9 +120,7 @@ public static class ResiliencyLoggingMiddlewareValidation
     /// <returns>True if valid; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this ResiliencyLoggingMiddleware value)
-    {
-        return value.Validate().Count == 0;
-    }
+        => value is not null && value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that the given middleware instance is valid, throwing an <see cref="ArgumentException"/>
