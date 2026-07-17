@@ -50,6 +50,20 @@ dotnet run --project DotNetResiliencePipeline.csproj
 
 See [docs/architecture.md](docs/architecture.md) for the component breakdown, actual policy composition order (circuit breaker → bulkhead → timeout → retry → operation, fallback on failure), extension points and known limitations. Per-type reference docs live in [docs/](docs/), and [QUICK_REFERENCE.md](QUICK_REFERENCE.md) has a condensed API cheat sheet.
 
+## MicroserviceIntegrationExample
+
+The `MicroserviceIntegrationExample` class demonstrates how to integrate multiple resilience policies into a microservice architecture. It provides a `Main` method to execute a sample workflow, and properties to access the circuit breaker, retry, timeout, bulkhead, and fallback policies. Here's an example of how to use it:
+
+```csharp
+var example = new MicroserviceIntegrationExample();
+await example.Main();
+Console.WriteLine(example.CircuitBreaker?.State);
+Console.WriteLine(example.Retry?.MaxRetries);
+Console.WriteLine(example.Timeout?.TimeoutDuration);
+Console.WriteLine(example.Bulkhead?.MaxParallelization);
+Console.WriteLine(example.Fallback?.FallbackOnAnyException);
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
