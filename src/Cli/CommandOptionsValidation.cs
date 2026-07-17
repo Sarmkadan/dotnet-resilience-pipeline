@@ -23,6 +23,8 @@ public static class CommandOptionsValidation
     public static IReadOnlyList<string> Validate(this CommandOptions value)
     {
         ArgumentNullException.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(value.Arguments);
+        ArgumentNullException.ThrowIfNull(value.Flags);
 
         var errors = new List<string>();
 
@@ -36,18 +38,6 @@ public static class CommandOptionsValidation
         if (value.Subcommand is not null && string.IsNullOrWhiteSpace(value.Subcommand))
         {
             errors.Add("Subcommand cannot be empty or whitespace.");
-        }
-
-        // Validate Arguments dictionary
-        if (value.Arguments is null)
-        {
-            errors.Add("Arguments dictionary cannot be null.");
-        }
-
-        // Validate Flags list
-        if (value.Flags is null)
-        {
-            errors.Add("Flags list cannot be null.");
         }
 
         // Validate PolicyName
@@ -116,34 +106,31 @@ public static class CommandOptionsValidation
     /// </summary>
     /// <param name="value">The command options to check.</param>
     /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
-    public static bool IsValid(this CommandOptions value)
-    {
-        return value.Validate().Count == 0;
-    }
+    public static bool IsValid(this CommandOptions value) => value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that the specified <see cref="CommandOptions"/> instance is valid.
     /// </summary>
     /// <param name="value">The command options to validate.</param>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><inheritdoc cref="Validate" path="//exception[@cref='ArgumentNullException']"/></exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="value"/> is invalid. The exception message contains all validation errors.</exception>
     public static void EnsureValid(this CommandOptions value)
     {
         ArgumentNullException.ThrowIfNull(value);
 
         var errors = value.Validate();
-        if (errors.Count == 0)
-        {
-            return;
-        }
+        if (errors.Count == 0) return;
 
         throw new ArgumentException(
             "CommandOptions validation failed:\n" + string.Join("\n", errors),
             nameof(value));
     }
 
-    private static bool IsValidPolicyType(string type)
-    {
-        return type is "circuitbreaker" or "retry" or "timeout" or "bulkhead" or "fallback";
-    }
+    /// <summary>
+    /// Determines whether the specified policy type string is valid.
+    /// </summary>
+    /// <param name="type">The policy type to validate.</param>
+    /// <returns><see langword="true"/> if the policy type is valid; otherwise, <see langword="false"/>.</returns>
+    private static bool IsValidPolicyType(string type) =>
+        type is "circuitbreaker" or "retry" or "timeout" or "bulkhead" or "fallback";
 }
