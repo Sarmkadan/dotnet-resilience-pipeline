@@ -15,6 +15,8 @@ namespace DotNetResiliencePipeline.Exceptions;
 /// </summary>
 public static class ResiliencyExceptionJsonExtensions
 {
+    private const string WhitespaceOnlyMessage = "Input string contains only whitespace.";
+
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -31,16 +33,8 @@ public static class ResiliencyExceptionJsonExtensions
     /// <param name="indented">Whether to format the JSON with indentation.</param>
     /// <returns>A JSON string representation of the exception.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
-    public static string ToJson(this ResiliencyException value, bool indented = false)
-    {
-        ArgumentNullException.ThrowIfNull(value);
-
-        var options = indented
-            ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true }
-            : _jsonOptions;
-
-        return JsonSerializer.Serialize(value, options);
-    }
+    public static string ToJson(this ResiliencyException value, bool indented = false) =>
+        JsonSerializer.Serialize(value, indented ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true } : _jsonOptions);
 
     /// <summary>
     /// Deserializes a <see cref="ResiliencyException"/> from a JSON string.
@@ -48,17 +42,24 @@ public static class ResiliencyExceptionJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized exception, or null if the JSON is invalid.</returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> contains only whitespace.</exception>
+    /// <exception cref="JsonException">Thrown when the JSON is malformed.</exception>
     public static ResiliencyException? FromJson(string json)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
+
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            throw new ArgumentException(WhitespaceOnlyMessage, nameof(json));
+        }
 
         try
         {
             return JsonSerializer.Deserialize<ResiliencyException>(json, _jsonOptions);
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
-            return null;
+            throw new JsonException("Failed to deserialize ResiliencyException from JSON.", ex);
         }
     }
 
