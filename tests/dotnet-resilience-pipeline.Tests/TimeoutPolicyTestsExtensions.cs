@@ -4,21 +4,27 @@ using DotNetResiliencePipeline.Domain.Policies;
 using FluentAssertions;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace DotNetResiliencePipeline.Tests;
 
 /// <summary>
 /// Provides extension methods for <see cref="TimeoutPolicyTests"/> to facilitate testing scenarios.
 /// </summary>
+/// <remarks>
+/// This static class contains utility methods for creating and validating timeout policy test scenarios,
+/// including policy creation, execution time recording, statistical assertions, and distribution generation.
+/// </remarks>
 public static class TimeoutPolicyTestsExtensions
 {
     /// <summary>
     /// Creates a timeout policy with default configuration for testing purposes.
     /// </summary>
-    /// <param name="timeoutMs">The timeout duration in milliseconds.</param>
-    /// <returns>A configured <see cref="TimeoutPolicy"/> instance.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when timeoutMs is not positive.</exception>
+    /// <param name="timeoutMs">The timeout duration in milliseconds. Must be a positive value.</param>
+    /// <returns>A configured <see cref="TimeoutPolicy"/> instance with the specified timeout.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="timeoutMs"/> is not positive.</exception>
+    /// <remarks>
+    /// The created policy has a default name of "test-policy".
+    /// </remarks>
     public static TimeoutPolicy CreateTestPolicy(this TimeoutPolicyTests _, int timeoutMs = 1000)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(timeoutMs);
@@ -35,10 +41,10 @@ public static class TimeoutPolicyTestsExtensions
     /// Creates a timeout policy with the specified name and timeout.
     /// </summary>
     /// <param name="name">The policy name.</param>
-    /// <param name="timeoutMs">The timeout duration in milliseconds.</param>
+    /// <param name="timeoutMs">The timeout duration in milliseconds. Must be a positive value.</param>
     /// <returns>A configured <see cref="TimeoutPolicy"/> instance.</returns>
-    /// <exception cref="ArgumentException">Thrown when name is null or whitespace.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when timeoutMs is not positive.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is null or whitespace.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="timeoutMs"/> is not positive.</exception>
     public static TimeoutPolicy CreateTestPolicy(this TimeoutPolicyTests _, string name, int timeoutMs)
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
@@ -57,7 +63,8 @@ public static class TimeoutPolicyTestsExtensions
     /// </summary>
     /// <param name="policy">The policy instance.</param>
     /// <param name="executionTimesMs">Collection of execution times in milliseconds.</param>
-    /// <exception cref="ArgumentNullException">Thrown when policy is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="executionTimesMs"/> is null.</exception>
     public static void RecordExecutionTimes(this TimeoutPolicyTests _, TimeoutPolicy policy, IEnumerable<int> executionTimesMs)
     {
         ArgumentNullException.ThrowIfNull(policy);
@@ -74,8 +81,8 @@ public static class TimeoutPolicyTestsExtensions
     /// </summary>
     /// <param name="policy">The policy instance.</param>
     /// <param name="timeoutDurationsMs">Collection of timeout durations in milliseconds.</param>
-    /// <exception cref="ArgumentNullException">Thrown when policy is null.</exception>
-    /// <exception cref="ArgumentNullException">Thrown when timeoutDurationsMs is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="timeoutDurationsMs"/> is null.</exception>
     public static void RecordTimeouts(this TimeoutPolicyTests _, TimeoutPolicy policy, IEnumerable<int> timeoutDurationsMs)
     {
         ArgumentNullException.ThrowIfNull(policy);
@@ -91,11 +98,11 @@ public static class TimeoutPolicyTestsExtensions
     /// Creates a sequence of execution times for testing percentile calculations.
     /// </summary>
     /// <param name="policy">The policy instance.</param>
-    /// <param name="count">Number of execution times to record.</param>
+    /// <param name="count">Number of execution times to record. Must be positive.</param>
     /// <param name="baseTimeMs">Base time value for the sequence.</param>
     /// <returns>Collection of execution times in milliseconds.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when policy is null.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when count is not positive.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="count"/> is not positive.</exception>
     public static IEnumerable<int> CreateExecutionTimeSequence(this TimeoutPolicyTests _, TimeoutPolicy policy, int count, int baseTimeMs = 100)
     {
         ArgumentNullException.ThrowIfNull(policy);
@@ -112,12 +119,12 @@ public static class TimeoutPolicyTestsExtensions
     /// </summary>
     /// <param name="policy">The policy instance.</param>
     /// <param name="expectedTimeoutCount">Expected timeout count.</param>
-    /// <exception cref="ArgumentNullException">Thrown when policy is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is null.</exception>
     public static void ShouldHaveTimeoutCount(this TimeoutPolicyTests _, TimeoutPolicy policy, int expectedTimeoutCount)
     {
         ArgumentNullException.ThrowIfNull(policy);
 
-        policy.TimeoutCount.Should().Be(expectedTimeoutCount,
+        policy.TimeoutCount.Should().Be(expectedTimeoutCount, 
             $"Expected timeout count to be {expectedTimeoutCount}, but was {policy.TimeoutCount}");
     }
 
@@ -127,7 +134,7 @@ public static class TimeoutPolicyTestsExtensions
     /// <param name="policy">The policy instance.</param>
     /// <param name="expectedPercentage">Expected timeout percentage (0-100).</param>
     /// <param name="precision">Allowed precision for floating point comparison.</param>
-    /// <exception cref="ArgumentNullException">Thrown when policy is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is null.</exception>
     public static void ShouldHaveTimeoutPercentage(this TimeoutPolicyTests _, TimeoutPolicy policy, double expectedPercentage, double precision = 0.1)
     {
         ArgumentNullException.ThrowIfNull(policy);
@@ -144,9 +151,8 @@ public static class TimeoutPolicyTestsExtensions
     /// <param name="expectedAverage">Expected average execution time in milliseconds.</param>
     /// <param name="expectedMin">Expected minimum execution time in milliseconds.</param>
     /// <param name="expectedMax">Expected maximum execution time in milliseconds.</param>
-    /// <exception cref="ArgumentNullException">Thrown when policy is null.</exception>
-    public static void ShouldHaveExecutionStats(this TimeoutPolicyTests _, TimeoutPolicy policy,
-        long expectedAverage, long expectedMin, long expectedMax)
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is null.</exception>
+    public static void ShouldHaveExecutionStats(this TimeoutPolicyTests _, TimeoutPolicy policy, long expectedAverage, long expectedMin, long expectedMax)
     {
         ArgumentNullException.ThrowIfNull(policy);
 
@@ -164,9 +170,8 @@ public static class TimeoutPolicyTestsExtensions
     /// <param name="policy">The policy instance.</param>
     /// <param name="expectedP95">Expected 95th percentile execution time in milliseconds.</param>
     /// <param name="expectedP99">Expected 99th percentile execution time in milliseconds.</param>
-    /// <exception cref="ArgumentNullException">Thrown when policy is null.</exception>
-    public static void ShouldHavePercentileTimes(this TimeoutPolicyTests _, TimeoutPolicy policy,
-        long expectedP95, long expectedP99)
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is null.</exception>
+    public static void ShouldHavePercentileTimes(this TimeoutPolicyTests _, TimeoutPolicy policy, long expectedP95, long expectedP99)
     {
         ArgumentNullException.ThrowIfNull(policy);
 
@@ -184,7 +189,7 @@ public static class TimeoutPolicyTestsExtensions
     /// </summary>
     /// <param name="policy">The policy instance.</param>
     /// <param name="shouldBeValid">Whether the configuration should be valid.</param>
-    /// <exception cref="ArgumentNullException">Thrown when policy is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is null.</exception>
     public static void ShouldHaveValidConfiguration(this TimeoutPolicyTests _, TimeoutPolicy policy, bool shouldBeValid)
     {
         ArgumentNullException.ThrowIfNull(policy);
@@ -204,20 +209,28 @@ public static class TimeoutPolicyTestsExtensions
     }
 
     /// <summary>
-    /// Creates a policy with a sequence of execution times that follow a normal distribution.
+    /// Creates a sequence of execution times that follow a normal distribution around a specified mean.
     /// </summary>
     /// <param name="policy">The policy instance.</param>
     /// <param name="mean">Mean execution time in milliseconds.</param>
-    /// <param name="stdDev">Standard deviation for the distribution.</param>
+    /// <param name="stdDev">Standard deviation for the normal distribution.</param>
     /// <param name="count">Number of samples to generate.</param>
     /// <returns>Collection of normally distributed execution times in milliseconds.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when policy is null.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when count is not positive.</exception>
-    public static IEnumerable<int> CreateNormalDistributionExecutionTimes(this TimeoutPolicyTests _, TimeoutPolicy policy,
-        int mean, int stdDev, int count)
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="count"/> is not positive.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="stdDev"/> is negative.</exception>
+    /// <remarks>
+    /// Uses the Box-Muller transform to generate normally distributed random values.
+    /// Generated values are clamped to non-negative values to ensure valid execution times.
+    /// </remarks>
+    public static IEnumerable<int> CreateNormalDistributionExecutionTimes(this TimeoutPolicyTests _, TimeoutPolicy policy, int mean, int stdDev, int count)
     {
         ArgumentNullException.ThrowIfNull(policy);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
+        if (stdDev < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(stdDev), "Standard deviation cannot be negative.");
+        }
 
         var random = new Random();
         for (int i = 0; i < count; i++)
@@ -228,7 +241,7 @@ public static class TimeoutPolicyTestsExtensions
             double randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
             double randNormal = mean + stdDev * randStdNormal;
 
-            yield return (int)Math.Round(randNormal);
+            yield return Math.Max(0, (int)Math.Round(randNormal)); // Ensure non-negative execution times
         }
     }
 }
