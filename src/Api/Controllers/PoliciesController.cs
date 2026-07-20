@@ -7,6 +7,8 @@
 using DotNetResiliencePipeline.Services;
 using DotNetResiliencePipeline.Domain.Policies;
 using DotNetResiliencePipeline.Data;
+using DotNetResiliencePipeline.Formatters;
+using System.Text;
 
 namespace DotNetResiliencePipeline.Api.Controllers;
 
@@ -191,6 +193,23 @@ public sealed class PoliciesController
         catch (Exception ex)
         {
             return new ApiResponse<ValidationResultDto> { Success = false, Message = ex.Message };
+        }
+    }
+
+    /// <summary>
+    /// GET /api/policies/export/csv - Exports all policies as CSV.
+    /// </summary>
+    public async Task<string> ExportPoliciesAsCsvAsync()
+    {
+        try
+        {
+            var policies = _pipelineService.GetAllPolicies();
+            var csvFormatter = new CsvReportFormatter();
+            return csvFormatter.FormatPolicies(policies.ToList());
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
         }
     }
 
