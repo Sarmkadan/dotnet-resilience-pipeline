@@ -11,13 +11,14 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// </summary>
 public sealed class RetryPolicy : ResiliencyPolicy
 {
-    public enum BackoffStrategy
-    {
-        Fixed,
-        Linear,
-        Exponential, // Multiplies BaseDelay by BackoffMultiplier
-        ExponentialWithJitter // AWS 'full jitter' algorithm
-    }
+public enum BackoffStrategy
+{
+    Fixed,
+    Linear,
+    Exponential, // Multiplies BaseDelay by BackoffMultiplier
+    ExponentialWithJitter, // AWS 'full jitter' algorithm
+    DecorrelatedJitter // Decorrelated jitter algorithm: delay = min(maxDelay, random(baseDelay, previousDelay*3))
+}
 
     /// <summary>
     /// Maximum number of retry attempts.
@@ -56,6 +57,13 @@ public sealed class RetryPolicy : ResiliencyPolicy
     /// Random jitter factor applied to exponential backoff (0.0 = no jitter, 1.0 = full jitter).
     /// </summary>
     public double JitterFactor { get; set; } = 1.0;
+
+/// <summary>
+/// Whether to use decorrelated jitter backoff strategy instead of exponential backoff.
+/// When true, uses decorrelated jitter algorithm: delay = min(maxDelay, random(baseDelay, previousDelay*3)).
+/// </summary>
+public bool UseDecorrelatedJitter { get; set; }
+
 
     private static readonly Random _random = new();
     public List<Type> RetryableExceptions { get; set; } = new();
