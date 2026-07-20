@@ -6,6 +6,7 @@
 
 using DotNetResiliencePipeline.Services;
 using DotNetResiliencePipeline.Data;
+using DotNetResiliencePipeline.Workers;
 
 namespace DotNetResiliencePipeline.Api.Controllers;
 
@@ -120,6 +121,80 @@ public sealed class MetricsController
     }
 
     /// <summary>
+    /// GET /api/metrics/health/report - Retrieves comprehensive JSON health report.
+    /// Aggregates health status for all policies in the pipeline.
+    /// </summary>
+    public async Task<ApiResponse<HealthReport>> GetHealthReportAsync()
+    {
+        try
+        {
+            var stats = _pipelineService.GetStatistics();
+            var allPolicies = _pipelineService.GetAllPolicies();
+
+            var report = new HealthReport
+            {
+                IsRunning = true, // Health check worker is always running in background
+                GeneratedAt = DateTime.UtcNow,
+                PipelineSuccessRate = stats.SuccessRate,
+                OverallStatus = DetermineHealthStatus(stats.SuccessRate),
+                TotalExecutions = stats.TotalExecutions,
+                SuccessfulExecutions = stats.SuccessfulExecutions,
+                FailedExecutions = stats.FailedExecutions,
+                TotalPolicies = allPolicies.Count
+            };
+
+            // Count policy health statuses
+            int healthyCount = 0;
+            int degradedCount = 0;
+            int unhealthyCount = 0;
+
+            foreach (var policy in allPolicies)
+            {
+                var policySnapshot = policy.GetSnapshot();
+                var healthStatus = DetermineHealthStatus(policySnapshot.SuccessRate);
+
+                var policyHealth = new PolicyHealthStatus
+                {
+                    PolicyId = policy.Id,
+                    PolicyName = policy.Name,
+                    PolicyType = policy.GetType().Name,
+                    IsEnabled = policy.IsEnabled,
+                    HealthStatus = healthStatus,
+                    SuccessRate = policySnapshot.SuccessRate,
+                    TotalExecutions = policySnapshot.TotalExecutions,
+                    SuccessfulExecutions = policySnapshot.SuccessfulExecutions,
+                    FailedExecutions = policySnapshot.FailedExecutions,
+                    LastCheckTime = policySnapshot.SnapshotTime
+                };
+
+                report.PolicyStatuses.Add(policyHealth);
+
+                // Categorize policy health
+                if (healthStatus == "Healthy")
+                    healthyCount++;
+                else if (healthStatus == "Degraded")
+                    degradedCount++;
+                else
+                    unhealthyCount++;
+            }
+
+            report.HealthyPolicies = healthyCount;
+            report.DegradedPolicies = degradedCount;
+            report.UnhealthyPolicies = unhealthyCount;
+
+            // Add additional metrics
+            report.AdditionalMetrics["PipelineId"] = stats.PipelineId;
+            report.AdditionalMetrics["CreatedAt"] = stats.CreatedAt;
+
+            return new ApiResponse<HealthReport> { Success = true, Data = report };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponse<HealthReport> { Success = false, Message = ex.Message };
+        }
+    }
+
+    /// <summary>
     /// GET /api/metrics/history - Retrieves execution history.
     /// </summary>
     public async Task<ApiResponse<List<ExecutionRecordDto>>> GetExecutionHistoryAsync(int limit = 100)
@@ -185,6 +260,15 @@ public sealed class MetricsController
         {
             return new ApiResponse<LatencyPercentilesDto> { Success = false, Message = ex.Message };
         }
+    }
+
+    private string DetermineHealthStatus(double successRate)
+    {
+        if (successRate >= 95)
+            return "Healthy";
+        if (successRate >= 80)
+            return "Degraded";
+        return "Unhealthy";
     }
 }
 
