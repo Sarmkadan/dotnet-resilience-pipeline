@@ -4,7 +4,11 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 using DotNetResiliencePipeline.Domain.Policies;
 using DotNetResiliencePipeline.Exceptions;
 using Microsoft.Extensions.Logging;
@@ -18,13 +22,32 @@ namespace DotNetResiliencePipeline.Services;
 public sealed class CircuitBreakerService
 {
     private readonly ILogger<CircuitBreakerService> _logger;
+    private readonly int _halfOpenMaxProbes;
+    private readonly ConcurrentDictionary<CircuitBreakerPolicy, ProbeState> _probeStates = new();
 
     /// <summary>
-    /// Initializes the service with an optional logger.
+    /// Holds the current number of concurrent probe executions for a given policy.
     /// </summary>
-    public CircuitBreakerService(ILogger<CircuitBreakerService>? logger = null)
+    private sealed class ProbeState
+    {
+        public int Current;
+    }
+
+    /// <summary>
+    /// Initializes the service with an optional logger and an optional limit for concurrent
+    /// half‑open probes (default is 1).
+    /// </summary>
+    /// <param name="logger">Optional logger instance.</param>
+    /// <param name="halfOpenMaxProbes">
+    /// Maximum number of concurrent probe calls allowed while the circuit is half‑open.
+    /// Must be greater than zero.
+    /// </param>
+    public CircuitBreakerService(ILogger<CircuitBreakerService>? logger = null, int halfOpenMaxProbes = 1)
     {
         _logger = logger ?? NullLogger<CircuitBreakerService>.Instance;
+        if (halfOpenMaxProbes < 1)
+            throw new ArgumentOutOfRangeException(nameof(halfOpenMaxProbes), "HalfOpenMaxProbes must be at least 1.");
+        _halfOpenMaxProbes = halfOpenMaxProbes;
     }
 
     /// <summary>
@@ -54,6 +77,32 @@ public sealed class CircuitBreakerService
                 policy.Name,
                 policy.TimeUntilHalfOpen ?? TimeSpan.Zero,
                 policy.ConsecutiveFailures);
+        }
+
+        // --------------------------------------------------------------------
+        // Half‑open probe concurrency limiting
+        // --------------------------------------------------------------------
+        bool isHalfOpen = currentState == CircuitBreakerPolicy.CircuitState.HalfOpen;
+        ProbeState? probeState = null;
+
+        if (isHalfOpen)
+        {
+            probeState = _probeStates.GetOrAdd(policy, _ => new ProbeState());
+
+            // Increment the concurrent probe counter atomically
+            int currentProbes = Interlocked.Increment(ref probeState.Current);
+
+            // If we exceed the allowed limit, fail fast with the same exception
+            if (currentProbes > _halfOpenMaxProbes)
+            {
+                // Roll back the increment
+                Interlocked.Decrement(ref probeState.Current);
+
+                throw new CircuitBreakerOpenException(
+                    policy.Name,
+                    policy.TimeUntilHalfOpen ?? TimeSpan.Zero,
+                    policy.ConsecutiveFailures);
+            }
         }
 
         var stateBefore = policy.CurrentState;
@@ -89,6 +138,14 @@ public sealed class CircuitBreakerService
             }
 
             throw;
+        }
+        finally
+        {
+            // Decrement the probe counter if we entered half‑open mode
+            if (isHalfOpen && probeState != null)
+            {
+                Interlocked.Decrement(ref probeState.Current);
+            }
         }
     }
 
