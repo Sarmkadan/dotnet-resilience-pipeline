@@ -65,7 +65,8 @@ public enum BackoffStrategy
 public bool UseDecorrelatedJitter { get; set; }
 
 
-    private static readonly Random _random = new();
+    // Use Random.Shared for thread-safe random number generation across threads
+private static readonly Random _random = Random.Shared;
     public List<Type> RetryableExceptions { get; set; } = new();
 
     /// <summary>
@@ -120,13 +121,20 @@ public bool UseDecorrelatedJitter { get; set; }
                 double exponentialBackoff = baseDelayMs * Math.Pow(2, attemptNumber);
                 double maxJitteredDelay = Math.Min(cap, exponentialBackoff);
 
-                // Apply JitterFactor: scale the random range
-                // If JitterFactor is 0, no jitter (random range is 0 to 0).
-                // If JitterFactor is 1 (full jitter), random range is 0 to maxJitteredDelay.
-                delay = TimeSpan.FromMilliseconds(
-                    UseJitter
-                        ? _random.NextDouble() * maxJitteredDelay * JitterFactor
-                        : maxJitteredDelay);
+        // Apply jitter based on UseJitter flag
+        // If UseJitter is false, use deterministic exponential backoff (maxJitteredDelay)
+        // If UseJitter is true, apply random jitter within the range
+        if (UseJitter)
+        {
+            // Apply JitterFactor: scale the random range
+            // If JitterFactor is 0, no jitter (random range is 0 to 0).
+            // If JitterFactor is 1 (full jitter), random range is 0 to maxJitteredDelay.
+            delay = TimeSpan.FromMilliseconds(_random.NextDouble() * maxJitteredDelay * JitterFactor);
+        }
+        else
+        {
+            delay = TimeSpan.FromMilliseconds(maxJitteredDelay);
+        }
                 break;
             default:
                 delay = InitialDelay;

@@ -15,7 +15,8 @@ namespace DotNetResiliencePipeline.Services;
 /// </summary>
 public sealed class RetryService
 {
-    private static readonly Random _random = new();
+    // Use Random.Shared for thread-safe random number generation across threads
+private static readonly Random _random = Random.Shared;
 
     /// <summary>
     /// Executes an operation with retry logic.
@@ -156,7 +157,7 @@ public sealed class RetryService
             upperBound = baseDelay;
 
         // Random value between baseDelay and upperBound.
-        var randomMs = baseDelay.TotalMilliseconds + (_random.NextDouble() * (upperBound.TotalMilliseconds - baseDelay.TotalMilliseconds));
+        var randomMs = baseDelay.TotalMilliseconds + (Random.Shared.NextDouble() * (upperBound.TotalMilliseconds - baseDelay.TotalMilliseconds));
         var delay = TimeSpan.FromMilliseconds(randomMs);
 
         // Clamp to maxDelay just in case.
