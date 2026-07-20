@@ -168,6 +168,91 @@ public sealed class PoliciesController
     }
 
     /// <summary>
+    /// POST /api/policies/{name}/clone - Duplicates an existing policy under a new name.
+    /// </summary>
+    public async Task<ApiResponse<PolicyDto>> ClonePolicyAsync(string name, string newName)
+    {
+        try
+        {
+            // Validate newName parameter
+            if (string.IsNullOrWhiteSpace(newName))
+                return new ApiResponse<PolicyDto> { Success = false, Message = "newName query parameter is required" };
+
+            // Get source policy by name
+            var sourcePolicy = _policyRepository.GetByName(name);
+            if (sourcePolicy is null)
+                return new ApiResponse<PolicyDto> { Success = false, Message = "Source policy not found", StatusCode = 404 };
+
+            // Check if target policy already exists
+            var existingTarget = _policyRepository.GetByName(newName);
+            if (existingTarget is not null)
+                return new ApiResponse<PolicyDto> { Success = false, Message = "Policy with target name already exists", StatusCode = 409 };
+
+            // Clone the policy based on its type
+            ResiliencyPolicy clonedPolicy = sourcePolicy switch
+            {
+                CircuitBreakerPolicy cb => new CircuitBreakerPolicy(newName)
+                {
+                    FailureThreshold = cb.FailureThreshold,
+                    OpenDuration = cb.OpenDuration,
+                    IsEnabled = cb.IsEnabled,
+                    Tags = new List<string>(cb.Tags),
+                    Metadata = new Dictionary<string, object>(cb.Metadata)
+                },
+                RetryPolicy retry => new RetryPolicy(newName)
+                {
+                    MaxRetries = retry.MaxRetries,
+                    InitialDelay = retry.InitialDelay,
+                    Strategy = retry.Strategy,
+                    MaxDelay = retry.MaxDelay,
+                    BackoffMultiplier = retry.BackoffMultiplier,
+                    UseJitter = retry.UseJitter,
+                    JitterFactor = retry.JitterFactor,
+                    UseDecorrelatedJitter = retry.UseDecorrelatedJitter,
+                    IsEnabled = retry.IsEnabled,
+                    Tags = new List<string>(retry.Tags),
+                    Metadata = new Dictionary<string, object>(retry.Metadata)
+                },
+                TimeoutPolicy timeout => new TimeoutPolicy(newName)
+                {
+                    Timeout = timeout.Timeout,
+                    IsEnabled = timeout.IsEnabled,
+                    Tags = new List<string>(timeout.Tags),
+                    Metadata = new Dictionary<string, object>(timeout.Metadata)
+                },
+                BulkheadPolicy bulkhead => new BulkheadPolicy(newName)
+                {
+                    MaxParallelization = bulkhead.MaxParallelization,
+                    MaxQueueLength = bulkhead.MaxQueueLength,
+                    IsEnabled = bulkhead.IsEnabled,
+                    Tags = new List<string>(bulkhead.Tags),
+                    Metadata = new Dictionary<string, object>(bulkhead.Metadata)
+                },
+                FallbackPolicy fallback => new FallbackPolicy(newName)
+                {
+                    IsEnabled = fallback.IsEnabled,
+                    Tags = new List<string>(fallback.Tags),
+                    Metadata = new Dictionary<string, object>(fallback.Metadata)
+                },
+                _ => throw new InvalidOperationException("Unknown policy type")
+            };
+
+            // Reset statistics for the cloned policy
+            clonedPolicy.ResetStatistics();
+
+            // Register and save the cloned policy
+            _pipelineService.RegisterPolicy(clonedPolicy);
+            await _policyRepository.SaveAsync(clonedPolicy);
+
+            return new ApiResponse<PolicyDto> { Success = true, Data = MapToPolicyDto(clonedPolicy) };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponse<PolicyDto> { Success = false, Message = ex.Message };
+        }
+    }
+
+    /// <summary>
     /// POST /api/policies/validate - Validates a policy configuration.
     /// </summary>
     public async Task<ApiResponse<ValidationResultDto>> ValidatePolicyAsync(ValidatePolicyRequest request)
@@ -335,5 +420,6 @@ public sealed class ApiResponse<T>
     public bool Success { get; set; }
     public T? Data { get; set; }
     public string? Message { get; set; }
+    public int StatusCode { get; set; } = 200;
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }
