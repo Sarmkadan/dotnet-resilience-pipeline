@@ -15,9 +15,14 @@ namespace DotNetResiliencePipeline.Services;
 /// </summary>
 public sealed class RetryService
 {
+    private static readonly Random _random = new();
+
     /// <summary>
     /// Executes an operation with retry logic.
     /// </summary>
+    /// <param name="policy">The retry policy to apply.</param>
+    /// <param name="operation">The operation to execute.</param>
+    /// <param name="cancellationToken">Cancellation token for the operation.</param>
     public async Task<T> ExecuteAsync<T>(
         RetryPolicy policy,
         Func<CancellationToken, Task<T>> operation,
@@ -34,6 +39,7 @@ public sealed class RetryService
 
         var stopwatch = Stopwatch.StartNew();
         var exceptions = new List<Exception>();
+        TimeSpan previousDelay = TimeSpan.Zero; // Used for decorrelated jitter
 
         for (int attempt = 0; attempt <= policy.MaxRetries; attempt++)
         {
@@ -63,8 +69,18 @@ public sealed class RetryService
                 policy.RecordRetryAttempt();
 
                 // Calculate backoff delay
-                var delayMs = policy.CalculateDelay(attempt);
-                await Task.Delay((int)delayMs.TotalMilliseconds, cancellationToken); // Pass token to Task.Delay
+                TimeSpan delay;
+                if (policy.UseDecorrelatedJitter)
+                {
+                    delay = ComputeDecorrelatedJitterDelay(policy, previousDelay);
+                    previousDelay = delay;
+                }
+                else
+                {
+                    delay = policy.CalculateDelay(attempt);
+                }
+
+                await Task.Delay((int)delay.TotalMilliseconds, cancellationToken); // Pass token to Task.Delay
             }
         }
 
@@ -96,8 +112,57 @@ public sealed class RetryService
     public async Task<T> ExecuteAsync<T>(
         RetryPolicy policy,
         Func<Task<T>> operation,
-        CancellationToken cancellationToken) // Added CancellationToken
+        CancellationToken cancellationToken)
     {
         return await ExecuteAsync(policy, _ => operation(), cancellationToken);
+    }
+
+    /// <summary>
+    /// Computes the next delay using the decorrelated jitter algorithm:
+    /// delay = min(maxDelay, random(baseDelay, previousDelay * 3))
+    /// </summary>
+    /// <param name="policy">The retry policy containing base and max delay settings.</param>
+    /// <param name="previousDelay">The delay used in the previous retry attempt.</param>
+    /// <returns>The calculated delay for the next retry attempt.</returns>
+    public TimeSpan ComputeDecorrelatedJitterDelay(RetryPolicy policy, TimeSpan previousDelay)
+    {
+        if (policy is null)
+            throw new ArgumentNullException(nameof(policy));
+
+        // Base delay is the policy's InitialDelay; max delay is MaxDelay.
+        var baseDelay = policy.InitialDelay;
+        var maxDelay = policy.MaxDelay;
+
+        // Guard against non‑positive values.
+        if (baseDelay <= TimeSpan.Zero)
+            baseDelay = TimeSpan.FromMilliseconds(100);
+        if (maxDelay <= TimeSpan.Zero)
+            maxDelay = TimeSpan.FromSeconds(30);
+
+        // Determine the upper bound for the random range.
+        TimeSpan upperBound;
+        if (previousDelay == TimeSpan.Zero)
+        {
+            upperBound = baseDelay;
+        }
+        else
+        {
+            var calculated = TimeSpan.FromMilliseconds(previousDelay.TotalMilliseconds * 3);
+            upperBound = calculated < maxDelay ? calculated : maxDelay;
+        }
+
+        // Ensure the upper bound is not less than the base delay.
+        if (upperBound < baseDelay)
+            upperBound = baseDelay;
+
+        // Random value between baseDelay and upperBound.
+        var randomMs = baseDelay.TotalMilliseconds + (_random.NextDouble() * (upperBound.TotalMilliseconds - baseDelay.TotalMilliseconds));
+        var delay = TimeSpan.FromMilliseconds(randomMs);
+
+        // Clamp to maxDelay just in case.
+        if (delay > maxDelay)
+            delay = maxDelay;
+
+        return delay;
     }
 }
