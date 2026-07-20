@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 namespace DotNetResiliencePipeline.Utilities;
 
@@ -162,6 +162,74 @@ public sealed class MetricsAggregator
             _snapshots.Clear();
         }
     }
+
+    /// <summary>
+    /// Computes latency percentiles (P50, P95, P99) over recorded samples.
+    /// Returns zeros if no samples are available.
+    /// </summary>
+    /// <returns>A struct containing the computed percentiles.</returns>
+    public LatencyPercentiles GetLatencyPercentiles()
+    {
+        lock (_lockObj)
+        {
+            if (_snapshots.Count == 0)
+            {
+                return new LatencyPercentiles();
+            }
+
+            // Extract all average execution times from snapshots
+            var executionTimes = _snapshots
+                .Select(s => s.AverageExecutionTimeMs)
+                .OrderBy(time => time)
+                .ToList();
+
+            var count = executionTimes.Count;
+
+            return new LatencyPercentiles
+            {
+                P50 = GetPercentile(executionTimes, 50, count),
+                P95 = GetPercentile(executionTimes, 95, count),
+                P99 = GetPercentile(executionTimes, 99, count)
+            };
+        }
+    }
+
+    /// <summary>
+    /// Helper method to compute a percentile from an ordered list.
+    /// </summary>
+    private static double GetPercentile(List<double> sortedValues, int percentile, int count)
+    {
+        if (count == 0)
+        {
+            return 0;
+        }
+
+        // Calculate index using nearest-rank method
+        var rank = (percentile / 100.0) * count;
+        var index = (int)Math.Ceiling(rank) - 1;
+
+        if (index < 0)
+        {
+            index = 0;
+        }
+
+        if (index >= count)
+        {
+            index = count - 1;
+        }
+
+        return sortedValues[index];
+    }
+}
+
+/// <summary>
+/// Contains computed latency percentiles (P50, P95, P99).
+/// </summary>
+public readonly struct LatencyPercentiles
+{
+    public double P50 { get; init; }
+    public double P95 { get; init; }
+    public double P99 { get; init; }
 }
 
 /// <summary>
