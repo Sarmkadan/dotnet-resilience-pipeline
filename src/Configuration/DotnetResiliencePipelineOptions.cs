@@ -1,9 +1,8 @@
 #nullable enable
-
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using System.ComponentModel.DataAnnotations;
 using DotNetResiliencePipeline.Domain.Policies;
@@ -39,6 +38,11 @@ public sealed class DotnetResiliencePipelineOptions
     /// Gets or sets fallback configuration.
     /// </summary>
     public FallbackOptions Fallback { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets failure injection time window configuration.
+    /// </summary>
+    public FailureInjectionTimeWindowOptions TimeWindow { get; set; } = new();
 
     /// <summary>
     /// Validates the configuration options.
@@ -245,6 +249,47 @@ public sealed class DotnetResiliencePipelineOptions
                 FallbackOnAnyException = FallbackOnAnyException,
                 FallbackTimeout = TimeSpan.FromSeconds(FallbackTimeoutSeconds)
             };
+        }
+    }
+
+    /// <summary>
+    /// Configuration options for failure injection time windows.
+    /// </summary>
+    public sealed class FailureInjectionTimeWindowOptions
+    {
+        /// <summary>
+        /// Start time of the active window (inclusive).
+        /// Format: HH:mm (24-hour format). Default: "00:00" (midnight).
+        /// </summary>
+        [RegularExpression("^([01]?[0-9]|2[0-3]):([0-5][0-9])$",
+            ErrorMessage = "StartTime must be in HH:mm format (24-hour clock)")]
+        public string StartTime { get; set; } = "00:00";
+
+        /// <summary>
+        /// End time of the active window (inclusive).
+        /// Format: HH:mm (24-hour format). Default: "23:59" (one minute before midnight).
+        /// </summary>
+        [RegularExpression("^([01]?[0-9]|2[0-3]):([0-5][0-9])$",
+            ErrorMessage = "EndTime must be in HH:mm format (24-hour clock)")]
+        public string EndTime { get; set; } = "23:59";
+
+        /// <summary>
+        /// Converts the time window to TimeOnly values.
+        /// </summary>
+        public (TimeOnly Start, TimeOnly End) ToTimeOnly()
+        {
+            var startParts = StartTime.Split(':');
+            var endParts = EndTime.Split(':');
+
+            var startHour = int.Parse(startParts[0]);
+            var startMinute = int.Parse(startParts[1]);
+            var endHour = int.Parse(endParts[0]);
+            var endMinute = int.Parse(endParts[1]);
+
+            var start = new TimeOnly(startHour, startMinute);
+            var end = new TimeOnly(endHour, endMinute);
+
+            return (start, end);
         }
     }
 }

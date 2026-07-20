@@ -2,10 +2,11 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// ====================================================================
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.ComponentModel.DataAnnotations;
 
 namespace DotNetResiliencePipeline.Services;
 
@@ -114,8 +115,8 @@ public sealed class FailureInjectionService
         return rule.Type switch
         {
             InjectionType.Exception => InjectException<T>(rule),
-            InjectionType.Latency   => await InjectLatencyAsync(rule, operation, cancellationToken),
-            InjectionType.Timeout   => await InjectTimeoutAsync<T>(rule, cancellationToken),
+            InjectionType.Latency => await InjectLatencyAsync(rule, operation, cancellationToken),
+            InjectionType.Timeout => await InjectTimeoutAsync<T>(rule, cancellationToken),
             _ => await operation(cancellationToken)
         };
     }
@@ -133,10 +134,62 @@ public sealed class FailureInjectionService
             cancellationToken);
     }
 
+    // ─── time window methods ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Pure method to check if a rule is active at a specific time.
+    /// </summary>
+    /// <param name="rule">The injection rule to check.</param>
+    /// <param name="at">The DateTimeOffset to check against.</param>
+    /// <returns>True if the rule is active at the specified time, false otherwise.</returns>
+    public static bool IsActiveAt(InjectionRule rule, DateTimeOffset at)
+    {
+        // If no time window is configured, always active
+        if (string.IsNullOrEmpty(rule.StartTime) && string.IsNullOrEmpty(rule.EndTime))
+            return true;
+
+        var time = TimeOnly.FromDateTime(at.DateTime);
+
+        // Parse start time if configured
+        TimeOnly? start = null;
+        if (!string.IsNullOrEmpty(rule.StartTime))
+        {
+            var startParts = rule.StartTime.Split(':');
+            var startHour = int.Parse(startParts[0]);
+            var startMinute = int.Parse(startParts[1]);
+            start = new TimeOnly(startHour, startMinute);
+        }
+
+        // Parse end time if configured
+        TimeOnly? end = null;
+        if (!string.IsNullOrEmpty(rule.EndTime))
+        {
+            var endParts = rule.EndTime.Split(':');
+            var endHour = int.Parse(endParts[0]);
+            var endMinute = int.Parse(endParts[1]);
+            end = new TimeOnly(endHour, endMinute);
+        }
+
+        // If only start time configured, active from start time onwards
+        if (start.HasValue && !end.HasValue)
+            return time >= start.Value;
+
+        // If only end time configured, active until end time
+        if (!start.HasValue && end.HasValue)
+            return time <= end.Value;
+
+        // Both start and end configured - active between them (inclusive)
+        return time >= start!.Value && time <= end!.Value;
+    }
+
     // ─── injection strategies ─────────────────────────────────────────────────
 
     private static bool ShouldInject(InjectionRule rule)
     {
+        // Check time window first
+        if (!IsActiveAt(rule, DateTimeOffset.Now))
+            return false;
+
         if (rule.InjectionRate >= 1.0) return true;
         if (rule.InjectionRate <= 0.0) return false;
         return Random.Shared.NextDouble() < rule.InjectionRate;
@@ -145,7 +198,7 @@ public sealed class FailureInjectionService
     private static T InjectException<T>(InjectionRule rule)
     {
         var exceptionType = rule.ExceptionFactory?.Invoke()
-            ?? new InjectedFaultException(rule.Key, rule.ExceptionMessage ?? "Injected fault");
+        ?? new InjectedFaultException(rule.Key, rule.ExceptionMessage ?? "Injected fault");
         throw exceptionType;
     }
 
@@ -216,6 +269,22 @@ public sealed class InjectionRule
 
     /// <summary>Running count of how many times this rule has triggered an injection.</summary>
     public long InjectionsPerformed { get; internal set; }
+
+    /// <summary>
+    /// Start time of the active window (inclusive).
+    /// Format: HH:mm (24-hour format). Default: null (always active).
+    /// </summary>
+    [RegularExpression("^([01]?[0-9]|2[0-3]):([0-5][0-9])$",
+        ErrorMessage = "StartTime must be in HH:mm format (24-hour clock)")]
+    public string? StartTime { get; set; }
+
+    /// <summary>
+    /// End time of the active window (inclusive).
+    /// Format: HH:mm (24-hour format). Default: null (always active).
+    /// </summary>
+    [RegularExpression("^([01]?[0-9]|2[0-3]):([0-5][0-9])$",
+        ErrorMessage = "EndTime must be in HH:mm format (24-hour clock)")]
+    public string? EndTime { get; set; }
 }
 
 /// <summary>
