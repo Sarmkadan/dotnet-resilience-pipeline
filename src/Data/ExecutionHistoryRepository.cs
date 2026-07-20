@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// ===========================================================================
+// ====================================================================
 
 using DotNetResiliencePipeline.Exceptions;
 
@@ -100,9 +100,7 @@ public sealed class ExecutionHistoryRepository
     public List<ExecutionRecord> GetByTimeRange(DateTime startTime, DateTime endTime)
     {
         if (startTime > endTime)
-            throw new ValidationException("Start time must be before end time", new Dictionary<string, string> {
-                { nameof(startTime), "Start time must be before end time" }
-            });
+            throw new ValidationException("Start time must be before end time", new Dictionary<string, string> { { nameof(startTime), "Start time must be before end time" } });
 
         lock (_lockObj)
         {
@@ -236,6 +234,63 @@ public sealed class ExecutionHistoryRepository
         }
     }
 
+    /// <summary>
+    /// Calculates P50, P90, and P99 latency percentiles across all execution records.
+    /// </summary>
+    /// <returns>A struct containing the computed percentiles.</returns>
+    public LatencyPercentiles GetLatencyPercentiles()
+    {
+        lock (_lockObj)
+        {
+            if (_history.Count == 0)
+            {
+                return new LatencyPercentiles();
+            }
+
+            // Extract all execution times and sort them
+            var executionTimes = _history
+                .Select(r => (double)r.ExecutionTimeMs)
+                .OrderBy(time => time)
+                .ToList();
+
+            var count = executionTimes.Count;
+
+            return new LatencyPercentiles
+            {
+                P50 = GetPercentile(executionTimes, 50, count),
+                P90 = GetPercentile(executionTimes, 90, count),
+                P99 = GetPercentile(executionTimes, 99, count)
+            };
+        }
+    }
+
+    /// <summary>
+    /// Helper method to compute a percentile from an ordered list.
+    /// </summary>
+    private static double GetPercentile(List<double> sortedValues, int percentile, int count)
+    {
+        if (count == 0)
+        {
+            return 0;
+        }
+
+        // Calculate index using nearest-rank method
+        var rank = (percentile / 100.0) * count;
+        var index = (int)Math.Ceiling(rank) - 1;
+
+        if (index < 0)
+        {
+            index = 0;
+        }
+
+        if (index >= count)
+        {
+            index = count - 1;
+        }
+
+        return sortedValues[index];
+    }
+
     private void _performCleanupIfNeeded()
     {
         // Cleanup every 5 minutes to avoid locking on every record
@@ -245,4 +300,14 @@ public sealed class ExecutionHistoryRepository
             _lastCleanup = DateTime.UtcNow;
         }
     }
+}
+
+/// <summary>
+/// Contains computed latency percentiles (P50, P90, P99).
+/// </summary>
+public readonly struct LatencyPercentiles
+{
+    public double P50 { get; init; }
+    public double P90 { get; init; }
+    public double P99 { get; init; }
 }

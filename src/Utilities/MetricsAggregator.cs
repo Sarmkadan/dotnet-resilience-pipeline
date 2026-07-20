@@ -164,7 +164,7 @@ public sealed class MetricsAggregator
     }
 
     /// <summary>
-    /// Computes latency percentiles (P50, P95, P99) over recorded samples.
+    /// Computes latency percentiles (P50, P90, P99) over recorded samples.
     /// Returns zeros if no samples are available.
     /// </summary>
     /// <returns>A struct containing the computed percentiles.</returns>
@@ -188,7 +188,7 @@ public sealed class MetricsAggregator
             return new LatencyPercentiles
             {
                 P50 = GetPercentile(executionTimes, 50, count),
-                P95 = GetPercentile(executionTimes, 95, count),
+                P90 = GetPercentile(executionTimes, 90, count),
                 P99 = GetPercentile(executionTimes, 99, count)
             };
         }
@@ -223,12 +223,12 @@ public sealed class MetricsAggregator
 }
 
 /// <summary>
-/// Contains computed latency percentiles (P50, P95, P99).
+/// Contains computed latency percentiles (P50, P90, P99).
 /// </summary>
 public readonly struct LatencyPercentiles
 {
     public double P50 { get; init; }
-    public double P95 { get; init; }
+    public double P90 { get; init; }
     public double P99 { get; init; }
 }
 

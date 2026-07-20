@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using DotNetResiliencePipeline.Services;
 using DotNetResiliencePipeline.Data;
@@ -162,6 +162,30 @@ public sealed class MetricsController
             return new ApiResponse<bool> { Success = false, Message = ex.Message };
         }
     }
+
+    /// <summary>
+    /// GET /api/metrics/percentiles - Retrieves latency percentiles (P50, P90, P99).
+    /// </summary>
+    public async Task<ApiResponse<LatencyPercentilesDto>> GetLatencyPercentilesAsync()
+    {
+        try
+        {
+            var percentiles = _historyRepository.GetLatencyPercentiles();
+
+            var dto = new LatencyPercentilesDto
+            {
+                P50 = percentiles.P50,
+                P90 = percentiles.P90,
+                P99 = percentiles.P99
+            };
+
+            return new ApiResponse<LatencyPercentilesDto> { Success = true, Data = dto };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponse<LatencyPercentilesDto> { Success = false, Message = ex.Message };
+        }
+    }
 }
 
 /// <summary>
@@ -218,4 +242,14 @@ public sealed class ExecutionRecordDto
     public long ExecutionTimeMs { get; set; }
     public DateTime ExecutedAt { get; set; }
     public string? ErrorMessage { get; set; }
+}
+
+/// <summary>
+/// Latency percentiles data transfer object.
+/// </summary>
+public sealed class LatencyPercentilesDto
+{
+    public double P50 { get; set; }
+    public double P90 { get; set; }
+    public double P99 { get; set; }
 }
