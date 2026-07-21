@@ -1,6 +1,7 @@
 #nullable enable
 using DotNetResiliencePipeline.Utilities;
 using FluentAssertions;
+using System.Threading.Tasks;
 using Xunit;
 
 /// <summary>
@@ -213,5 +214,160 @@ public sealed class MetricsAggregatorTests
 
         var metrics = aggregator.GetAggregatedMetrics(TimeSpan.FromMinutes(1));
         metrics.SnapshotCount.Should().Be(0);
+    }
+
+    /// <summary>
+    /// Verifies that recording a single snapshot works correctly.
+    /// </summary>
+    [Fact]
+    public void RecordSnapshot_SingleSnapshot_WorksCorrectly()
+    {
+        var aggregator = new MetricsAggregator();
+        var snapshot = MakeSnapshot(95, avgExecutionMs: 100, total: 200);
+
+        aggregator.RecordSnapshot(snapshot);
+
+        var metrics = aggregator.GetAggregatedMetrics(TimeSpan.FromMinutes(1));
+        metrics.SnapshotCount.Should().Be(1);
+        metrics.AverageSuccessRate.Should().BeApproximately(95, 0.01);
+        metrics.AverageExecutionTimeMs.Should().BeApproximately(100, 0.01);
+        metrics.TotalExecutions.Should().Be(200);
+        metrics.PeakExecutions.Should().Be(200);
+        metrics.MinSuccessRate.Should().BeApproximately(95, 0.01);
+        metrics.MaxSuccessRate.Should().BeApproximately(95, 0.01);
+    }
+
+    /// <summary>
+    /// Verifies that concurrent recording from multiple threads doesn't corrupt the snapshots.
+    /// </summary>
+    [Fact]
+    public void RecordSnapshot_ConcurrentRecording_DoesNotCorruptData()
+    {
+        var aggregator = new MetricsAggregator();
+        var tasks = new Task[10];
+
+        // Record snapshots concurrently from 10 threads
+        for (int i = 0; i < 10; i++)
+        {
+            int threadId = i;
+            tasks[i] = Task.Run(() =>
+            {
+                for (int j = 0; j < 100; j++)
+                {
+                    var snapshot = MakeSnapshot(80 + threadId, avgExecutionMs: 50 + threadId, total: 1000);
+                    aggregator.RecordSnapshot(snapshot);
+                }
+            });
+        }
+
+        Task.WaitAll(tasks);
+
+        // Verify all snapshots were recorded
+        var metrics = aggregator.GetAggregatedMetrics(TimeSpan.FromHours(1));
+        metrics.SnapshotCount.Should().Be(1000);
+        metrics.AverageSuccessRate.Should().BeApproximately(84.5, 0.5); // Average of 80-89
+    }
+
+    /// <summary>
+    /// Verifies that the Clear method properly resets the aggregator.
+    /// </summary>
+    [Fact]
+    public void Clear_ResetsAggregator()
+    {
+        var aggregator = new MetricsAggregator();
+
+        // Add some snapshots
+        aggregator.RecordSnapshot(MakeSnapshot(90));
+        aggregator.RecordSnapshot(MakeSnapshot(85));
+        aggregator.RecordSnapshot(MakeSnapshot(95));
+
+        // Verify snapshots exist
+        var metricsBefore = aggregator.GetAggregatedMetrics(TimeSpan.FromMinutes(1));
+        metricsBefore.SnapshotCount.Should().Be(3);
+
+        // Clear and verify
+        aggregator.Clear();
+        var metricsAfter = aggregator.GetAggregatedMetrics(TimeSpan.FromMinutes(1));
+        metricsAfter.SnapshotCount.Should().Be(0);
+        metricsAfter.AverageSuccessRate.Should().Be(0);
+        metricsAfter.TotalExecutions.Should().Be(0);
+    }
+
+    /// <summary>
+    /// Verifies that GetLatencyPercentiles returns correct values for a single snapshot.
+    /// </summary>
+    [Fact]
+    public void GetLatencyPercentiles_SingleSnapshot_ReturnsCorrectPercentiles()
+    {
+        var aggregator = new MetricsAggregator();
+        aggregator.RecordSnapshot(MakeSnapshot(95, avgExecutionMs: 100, total: 50));
+
+        var percentiles = aggregator.GetLatencyPercentiles();
+        percentiles.P50.Should().Be(100);
+        percentiles.P90.Should().Be(100);
+        percentiles.P99.Should().Be(100);
+    }
+
+    /// <summary>
+    /// Verifies that GetLatencyPercentiles returns correct values for multiple snapshots.
+    /// </summary>
+    [Fact]
+    public void GetLatencyPercentiles_MultipleSnapshots_ReturnsCorrectPercentiles()
+    {
+        var aggregator = new MetricsAggregator();
+        aggregator.RecordSnapshot(MakeSnapshot(95, avgExecutionMs: 50, total: 100));
+        aggregator.RecordSnapshot(MakeSnapshot(95, avgExecutionMs: 100, total: 100));
+        aggregator.RecordSnapshot(MakeSnapshot(95, avgExecutionMs: 150, total: 100));
+        aggregator.RecordSnapshot(MakeSnapshot(95, avgExecutionMs: 200, total: 100));
+        aggregator.RecordSnapshot(MakeSnapshot(95, avgExecutionMs: 250, total: 100));
+
+        var percentiles = aggregator.GetLatencyPercentiles();
+        percentiles.P50.Should().Be(150); // 3rd value in sorted [50, 100, 150, 200, 250]
+        percentiles.P90.Should().Be(250); // 90th percentile = ceil(0.9 * 5) - 1 = 4th index = 250
+        percentiles.P99.Should().Be(250); // 99th percentile = ceil(0.99 * 5) - 1 = 4th index = 250
+    }
+
+    /// <summary>
+    /// Verifies that GetLatencyPercentiles returns zeros when no snapshots are recorded.
+    /// </summary>
+    [Fact]
+    public void GetLatencyPercentiles_EmptyAggregator_ReturnsZeros()
+    {
+        var aggregator = new MetricsAggregator();
+
+        var percentiles = aggregator.GetLatencyPercentiles();
+        percentiles.P50.Should().Be(0);
+        percentiles.P90.Should().Be(0);
+        percentiles.P99.Should().Be(0);
+    }
+
+    /// <summary>
+    /// Verifies that GetLatencyPercentiles handles concurrent calls correctly.
+    /// </summary>
+    [Fact]
+    public void GetLatencyPercentiles_ConcurrentAccess_DoesNotThrow()
+    {
+        var aggregator = new MetricsAggregator();
+
+        // Add some snapshots
+        for (int i = 0; i < 50; i++)
+        {
+            aggregator.RecordSnapshot(MakeSnapshot(95, avgExecutionMs: 100 + i * 10, total: 100));
+        }
+
+        var tasks = new Task[10];
+        for (int i = 0; i < 10; i++)
+        {
+            tasks[i] = Task.Run(() =>
+            {
+                for (int j = 0; j < 10; j++)
+                {
+                    var percentiles = aggregator.GetLatencyPercentiles();
+                    percentiles.P50.Should().BeGreaterThan(0);
+                }
+            });
+        }
+
+        Task.WaitAll(tasks);
     }
 }
