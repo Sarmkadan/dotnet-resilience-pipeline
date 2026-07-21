@@ -16,9 +16,18 @@ namespace DotNetResiliencePipeline.Caching;
 public sealed class PolicyCacheService
 {
     private readonly ConcurrentDictionary<string, CachedPolicy> _cache = new();
-    private readonly object _lockObj = new object();
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
+    private readonly object _globalLockObj = new object();
 
     public TimeSpan DefaultTtl { get; set; } = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    /// Gets or creates a SemaphoreSlim for the given policy name.
+    /// </summary>
+    private SemaphoreSlim GetLockForKey(string policyName)
+    {
+        return _locks.GetOrAdd(policyName, _ => new SemaphoreSlim(1, 1));
+    }
     public int MaxCacheSize { get; set; } = 1000;
 
     /// <summary>
@@ -47,6 +56,53 @@ public sealed class PolicyCacheService
     }
 
     /// <summary>
+    /// Gets a cached policy by name, loading it if not present using per-key locking.
+    /// Ensures that concurrent misses for the same key only load once.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when policyName is null.</exception>
+    public CachedPolicy? GetOrLoad(string policyName, Func<string, CachedPolicy> loadFunc)
+    {
+        if (string.IsNullOrWhiteSpace(policyName))
+            throw new ArgumentNullException(nameof(policyName), "Policy name cannot be null or whitespace");
+
+        if (loadFunc is null)
+            throw new ArgumentNullException(nameof(loadFunc));
+
+        // Try to get from cache first
+        var cached = Get(policyName);
+        if (cached is not null)
+        {
+            return cached;
+        }
+
+        // Use per-key locking to ensure only one thread loads the policy
+        var keyLock = GetLockForKey(policyName);
+        keyLock.Wait();
+        try
+        {
+            // Double-check after acquiring lock
+            cached = Get(policyName);
+            if (cached is not null)
+            {
+                return cached;
+            }
+
+            // Load the policy
+            cached = loadFunc(policyName);
+            if (cached is not null)
+            {
+                Set(cached.PolicyName, cached.Config, cached.RemainingTtl);
+            }
+
+            return cached;
+        }
+        finally
+        {
+            keyLock.Release();
+        }
+    }
+
+    /// <summary>
     /// Caches a policy configuration.
     /// </summary>
     /// <exception cref="ArgumentNullException">Thrown when policyName or policyConfig is null.</exception>
@@ -59,7 +115,7 @@ public sealed class PolicyCacheService
         if (policyConfig is null)
             throw new ArgumentNullException(nameof(policyConfig));
 
-        lock (_lockObj)
+        lock (_globalLockObj)
         {
             // Enforce size limit
             if (_cache.Count >= MaxCacheSize)
@@ -95,7 +151,7 @@ public sealed class PolicyCacheService
     /// </summary>
     public void Clear()
     {
-        lock (_lockObj)
+        lock (_globalLockObj)
         {
             _cache.Clear();
         }
@@ -106,7 +162,7 @@ public sealed class PolicyCacheService
     /// </summary>
     public CacheStatistics GetStatistics()
     {
-        lock (_lockObj)
+        lock (_globalLockObj)
         {
             var validEntries = _cache.Values.Where(c => !c.IsExpired).ToList();
 
