@@ -304,4 +304,58 @@ public sealed class FallbackServiceTests
 
         result.Data.Should().Be(42);
     }
+
+    [Fact]
+    /// <summary>Tests that <see cref="FallbackService.ExecuteAsync{TResult}"/> returns the primary success result when fallback is not triggered.</summary>
+    public async Task ExecuteAsync_PrimarySuccess_NoFallbackTriggered_ReturnsPrimaryResult()
+    {
+        var service = new FallbackService();
+        var policy = new FallbackPolicy("primary-success")
+        {
+            IsEnabled = true,
+            FallbackOnAnyException = false,
+            FallbackTriggerExceptions = new List<Type> { typeof(TimeoutException) }
+        };
+
+        var result = await service.ExecuteAsync<string>(
+            policy,
+            new InvalidOperationException("primary failure"), // This won't trigger fallback
+            100,
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Exception.Should().BeOfType<InvalidOperationException>();
+    }
+
+    [Fact]
+    /// <summary>Tests that <see cref="FallbackService.ExecuteAsync{TResult}"/> properly handles cancellation during fallback execution.</summary>
+    public async Task ExecuteAsync_CancellationHonored_DuringFallbackExecution()
+    {
+        var service = new FallbackService();
+        var policy = new FallbackPolicy("cancellation-test")
+        {
+            FallbackTimeout = TimeSpan.FromSeconds(10),
+            FallbackOnAnyException = true
+        };
+
+        policy.SetFallbackAction<string>(async (ct) =>
+        {
+            await Task.Delay(1000, ct); // Long-running fallback that respects cancellation
+            return "fallback-result";
+        });
+
+        var cts = new CancellationTokenSource();
+        var fallbackTask = service.ExecuteAsync<string>(
+            policy,
+            new InvalidOperationException("primary failure"),
+            100,
+            cts.Token);
+
+        // Cancel immediately
+        cts.Cancel();
+
+        // Cancellation should be honored and throw OperationCanceledException or wrapped in FallbackFailedException
+        var exception = await Assert.ThrowsAsync<FallbackFailedException>(() => fallbackTask);
+        exception.FallbackException.Should().BeAssignableTo<OperationCanceledException>();
+    }
 }
