@@ -69,10 +69,18 @@ public static class ResiliencyEventPublisherJsonExtensions
     {
         ArgumentNullException.ThrowIfNull(json);
 
-        value = string.IsNullOrWhiteSpace(json)
-            ? null
-            : JsonSerializer.Deserialize<ResiliencyEventPublisher>(json, _jsonSerializerOptions);
+        try
+        {
+            value = string.IsNullOrWhiteSpace(json)
+                ? null
+                : JsonSerializer.Deserialize<ResiliencyEventPublisher>(json, _jsonSerializerOptions);
 
-        return value is not null;
+            return value is not null;
+        }
+        catch
+        {
+            value = null;
+            return false;
+        }
     }
 }
