@@ -49,7 +49,69 @@ dotnet run --project DotNetResiliencePipeline.csproj
 
 ## Architecture
 
-See [docs/architecture.md](docs/architecture.md) for the component breakdown, actual policy composition order (circuit breaker → bulkhead → timeout → retry → operation, fallback on failure), extension points and known limitations. Per-type reference docs live in [docs/](docs/), and [QUICK_REFERENCE.md](QUICK_REFERENCE.md) has a condensed API cheat sheet.
+See [docs/architecture.md](docs/architecture.md) for the component breakdown, extension points and known limitations. Per-type reference docs live in [docs/](docs/), and [QUICK_REFERENCE.md](QUICK_REFERENCE.md) has a condensed API cheat sheet.
+
+### Policy Composition Order
+
+The library enforces a **canonical ordering** for policy composition to prevent semantic errors. The recommended order (outermost to innermost) is:
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Fallback     │    │ Circuit Breaker │    │     Retry      │    │    Bulkhead    │    │    Timeout     │
+│ (Graceful     │───▶│ (Prevent        │───▶│ (Retry          │───▶│ (Concurrency    │───▶│ (Per-attempt    │
+│  degradation) │    │  cascading      │    │  transient      │    │  limiting)     │    │  timeout)       │
+└─────────────────┘    └──────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
+       ▲                                                                                     │
+       │                                                                                     ▼
+┌─────────────────┐                                                                   ┌─────────────────┐
+│   Operation   │                                                                   │   Operation   │
+└─────────────────┘                                                                   └─────────────────┘
+```
+
+**Execution Flow:**
+1. **Fallback** catches exceptions from all inner policies
+2. **Circuit Breaker** checks state before allowing execution
+3. **Retry** loop with backoff around the operation
+4. **Timeout** applied per retry attempt
+5. **Bulkhead** limits concurrent executions
+6. **User operation** executes
+
+**Which Exception Each Layer Sees:**
+
+| Policy | Sees Exception | Notes |
+|--------|---------------|-------|
+| **Fallback** | Any exception from inner policies | Handles all failure scenarios |
+| **Circuit Breaker** | `OperationTimeoutException`, `MaxRetriesExceededException`, `BulkheadRejectedException` | Treats as failures |
+| **Retry** | `OperationTimeoutException`, transient exceptions | Retries on transient failures |
+| **Timeout** | Operation timeout | Per-attempt timeout |
+| **Bulkhead** | All exceptions | Limits concurrency |
+| **Operation** | Original exceptions | Innermost layer |
+
+**Example:**
+```csharp
+builder
+    .WithFallback("graceful-fallback", p => p.FallbackOnAnyException = true)
+    .WithCircuitBreaker("api-circuit", p => {
+        p.FailureThreshold = 5;
+        p.OpenDuration = TimeSpan.FromSeconds(30);
+    })
+    .WithRetry("api-retry", p => {
+        p.MaxRetries = 3;
+        p.Strategy = RetryStrategy.Exponential;
+    })
+    .WithBulkhead("resource-bulkhead", maxParallelization: 10)
+    .WithTimeout("operation-timeout", TimeSpan.FromSeconds(10));
+```
+
+**Non-Canonical Ordering:**
+If you need to deviate from the recommended order, call `AllowCustomOrder()`:
+```csharp
+builder.AllowCustomOrder() // Opt-in for non-canonical ordering
+    .WithTimeout("early-timeout", TimeSpan.FromSeconds(5))
+    .WithCircuitBreaker("my-circuit", ...);
+```
+
+⚠️ **Warning:** Non-canonical ordering can lead to unexpected behavior where policies don't work as expected. Use only when you have a specific reason.
 
 ## TimeoutPolicyTestsExtensions
 
