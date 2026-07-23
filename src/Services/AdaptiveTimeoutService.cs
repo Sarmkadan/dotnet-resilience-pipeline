@@ -1,4 +1,5 @@
 #nullable enable
+
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -18,6 +19,7 @@ namespace DotNetResiliencePipeline.Services;
 public sealed class AdaptiveTimeoutService
 {
     private readonly ILogger<AdaptiveTimeoutService> _logger;
+    private readonly TimeoutService _timeoutService;
 
     /// <summary>
     /// Initializes the service with the required logger.
@@ -25,6 +27,7 @@ public sealed class AdaptiveTimeoutService
     public AdaptiveTimeoutService(ILogger<AdaptiveTimeoutService> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _timeoutService = new TimeoutService();
     }
 
     /// <summary>
@@ -47,73 +50,15 @@ public sealed class AdaptiveTimeoutService
         if (operation is null)
             throw new ArgumentNullException(nameof(operation));
 
-        if (!policy.IsValidConfiguration(out var error))
-            throw new InvalidPolicyConfigurationException(policy.Name, error ?? "Invalid adaptive timeout configuration");
+        // Use the common TimeoutService with the adaptive timeout policy
+        var result = await _timeoutService.ExecuteAsync(policy, operation, cancellationToken);
 
-        if (!policy.IsEnabled)
-            return await operation(cancellationToken);
+        // Log additional adaptive-specific information
+        _logger.LogDebug(
+            "AdaptiveTimeout '{PolicyName}' completed in {{ElapsedMs}}ms (limit={{TimeoutMs}}ms)",
+            policy.Name, _timeoutService.GetTimeoutMilliseconds(policy));
 
-        var effectiveTimeout = policy.CurrentTimeout;
-        using var timeoutCts = new CancellationTokenSource(effectiveTimeout);
-        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
-
-        var stopwatch = Stopwatch.StartNew();
-
-        try
-        {
-            var result = await operation(linkedCts.Token);
-            stopwatch.Stop();
-
-            policy.RecordExecutionTime(stopwatch.ElapsedMilliseconds);
-            policy.RecordSuccess();
-
-            _logger.LogDebug(
-                "AdaptiveTimeout '{PolicyName}' completed in {ElapsedMs}ms (limit={TimeoutMs}ms)",
-                policy.Name, stopwatch.ElapsedMilliseconds, effectiveTimeout.TotalMilliseconds);
-
-            return result;
-        }
-        catch (OperationCanceledException ex) when (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
-        {
-            stopwatch.Stop();
-            var elapsed = stopwatch.ElapsedMilliseconds;
-
-            policy.RecordTimeout(elapsed);
-
-            _logger.LogWarning(
-                "AdaptiveTimeout '{PolicyName}' timed out after {ElapsedMs}ms (limit={TimeoutMs}ms)",
-                policy.Name, elapsed, effectiveTimeout.TotalMilliseconds);
-
-            throw new OperationTimeoutException(policy.Name, effectiveTimeout, elapsed);
-        }
-        catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
-        {
-            stopwatch.Stop();
-
-            // External caller cancellation - rethrow without recording as timeout
-            _logger.LogDebug(
-                "AdaptiveTimeout '{PolicyName}' externally cancelled after {ElapsedMs}ms",
-                policy.Name, stopwatch.ElapsedMilliseconds);
-
-            throw;
-        }
-        catch (Exception ex)
-        {
-            stopwatch.Stop();
-
-            policy.RecordExecutionTime(stopwatch.ElapsedMilliseconds);
-            policy.RecordFailure();
-
-            _logger.LogError(ex,
-                "AdaptiveTimeout '{PolicyName}' execution failed after {ElapsedMs}ms",
-                policy.Name, stopwatch.ElapsedMilliseconds);
-
-            throw;
-        }
-        finally
-        {
-            stopwatch.Stop();
-        }
+        return result;
     }
 
     /// <summary>

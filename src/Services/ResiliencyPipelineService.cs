@@ -107,7 +107,7 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
         CancellationToken cancellationToken = default, // ADDED
         CircuitBreakerPolicy? circuitBreaker = null,
         RetryPolicy? retry = null,
-        TimeoutPolicy? timeout = null,
+        ITimeoutStrategy? timeout = null,
         BulkheadPolicy? bulkhead = null,
         FallbackPolicy? fallback = null)
     {
@@ -203,7 +203,7 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
         CancellationToken cancellationToken = default, // ADDED
         CircuitBreakerPolicy? circuitBreaker = null,
         RetryPolicy? retry = null,
-        TimeoutPolicy? timeout = null,
+        ITimeoutStrategy? timeout = null,
         BulkheadPolicy? bulkhead = null,
         FallbackPolicy? fallback = null)
     {
@@ -315,8 +315,8 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
                 .Sum(p => p.CircuitBreakerTrips);
 
             long timeoutCount = _policies.Values
-                .OfType<TimeoutPolicy>()
-                .Sum(p => p.TimeoutCount);
+                .Where(p => p is TimeoutPolicy or AdaptiveTimeoutPolicy)
+                .Sum(p => p is TimeoutPolicy tp ? tp.TimeoutCount : ((AdaptiveTimeoutPolicy)p).TimeoutCount);
 
             var snapshots = _policies.Values.Select(p => p.GetSnapshot()).ToList();
 
@@ -338,7 +338,7 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
         Func<CancellationToken, Task<T>> operation,
         CancellationToken cancellationToken, // Already correct
         RetryPolicy? retry = null,
-        TimeoutPolicy? timeout = null,
+        ITimeoutStrategy? timeout = null,
         BulkheadPolicy? bulkhead = null)
     {
         if (bulkhead?.IsEnabled == true && !_bulkheadService.TryAcquireSlot(bulkhead))

@@ -19,21 +19,22 @@ public sealed class TimeoutService
     /// Executes an operation with a timeout constraint.
     /// </summary>
     public async Task<T> ExecuteAsync<T>(
-        TimeoutPolicy policy,
+        ITimeoutStrategy timeoutStrategy,
         Func<CancellationToken, Task<T>> operation,
         CancellationToken cancellationToken = default)
     {
-        if (policy is null)
-            throw new ArgumentNullException(nameof(policy));
+        if (timeoutStrategy is null)
+            throw new ArgumentNullException(nameof(timeoutStrategy));
 
-        if (!policy.IsValidConfiguration(out var error))
-            throw new InvalidPolicyConfigurationException(policy.Name, error ?? "Invalid timeout configuration");
+        if (!timeoutStrategy.IsValidConfiguration(out var error))
+            throw new InvalidPolicyConfigurationException(timeoutStrategy.Name, error ?? "Invalid timeout configuration");
 
-        if (!policy.IsEnabled)
+        if (!timeoutStrategy.IsEnabled)
             return await operation(cancellationToken);
 
+        var effectiveTimeout = timeoutStrategy.GetTimeout();
         var stopwatch = Stopwatch.StartNew();
-        using var timeoutCts = new CancellationTokenSource(policy.Timeout);
+        using var timeoutCts = new CancellationTokenSource(effectiveTimeout);
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
         try
@@ -41,35 +42,35 @@ public sealed class TimeoutService
             var result = await operation(linkedCts.Token);
             stopwatch.Stop();
 
-            policy.RecordExecutionTime(stopwatch.ElapsedMilliseconds);
-            policy.RecordSuccess();
+            timeoutStrategy.RecordExecutionTime(stopwatch.ElapsedMilliseconds);
+            timeoutStrategy.RecordSuccess();
 
             return result;
         }
-        catch (OperationCanceledException ex) when (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
             stopwatch.Stop();
             var timeoutMs = stopwatch.ElapsedMilliseconds;
 
-            policy.RecordTimeout(timeoutMs);
+            timeoutStrategy.RecordTimeout(timeoutMs);
 
             throw new OperationTimeoutException(
-                policy.Name,
-                policy.Timeout,
+                timeoutStrategy.Name,
+                effectiveTimeout,
                 timeoutMs);
         }
-        catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             stopwatch.Stop();
 
             // External caller cancellation - rethrow without recording as timeout
             throw;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             stopwatch.Stop();
-            policy.RecordExecutionTime(stopwatch.ElapsedMilliseconds);
-            policy.RecordFailure();
+            timeoutStrategy.RecordExecutionTime(stopwatch.ElapsedMilliseconds);
+            timeoutStrategy.RecordFailure();
 
             throw;
         }
@@ -82,9 +83,12 @@ public sealed class TimeoutService
     /// <summary>
     /// Validates if an execution time exceeds the timeout.
     /// </summary>
-    public bool HasExceededTimeout(TimeoutPolicy policy, long executionTimeMs)
+    public bool HasExceededTimeout(ITimeoutStrategy timeoutStrategy, long executionTimeMs)
     {
-        return policy?.IsTimedOutMs(executionTimeMs) ?? false;
+        if (timeoutStrategy is not TimeoutPolicy timeoutPolicy)
+            return false;
+
+        return timeoutPolicy.IsTimedOutMs(executionTimeMs);
     }
 
     /// <summary>
@@ -94,8 +98,8 @@ public sealed class TimeoutService
     /// Uses <see cref="TimeSpan.TotalMilliseconds"/> to return the full duration,
     /// not <see cref="TimeSpan.Milliseconds"/> which only returns the ms component (0-999).
     /// </remarks>
-    public long GetTimeoutMilliseconds(TimeoutPolicy policy)
+    public long GetTimeoutMilliseconds(ITimeoutStrategy timeoutStrategy)
     {
-        return (long)(policy?.Timeout.TotalMilliseconds ?? 0);
+        return (long)(timeoutStrategy?.GetTimeout().TotalMilliseconds ?? 0);
     }
 }

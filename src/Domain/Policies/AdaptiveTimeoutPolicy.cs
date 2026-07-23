@@ -10,7 +10,7 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// Timeout policy that automatically adjusts its timeout ceiling based on observed
 /// response-time percentiles within a sliding window of recent executions.
 /// </summary>
-public sealed class AdaptiveTimeoutPolicy : ResiliencyPolicy
+public sealed class AdaptiveTimeoutPolicy : ResiliencyPolicy, ITimeoutStrategy
 {
     private readonly Queue<long> _responseWindow = new();
     private readonly object _lock = new();
@@ -196,6 +196,40 @@ public sealed class AdaptiveTimeoutPolicy : ResiliencyPolicy
 
         error = null;
         return true;
+    }
+
+    /// <summary>
+    /// Gets the timeout value that should be applied to the next execution.
+    /// </summary>
+    TimeSpan ITimeoutStrategy.GetTimeout()
+    {
+        return CurrentTimeout;
+    }
+
+    /// <summary>
+    /// Records an execution time for statistical tracking and potential adaptation.
+    /// </summary>
+    /// <param name="executionTimeMs">Execution time in milliseconds.</param>
+    void ITimeoutStrategy.RecordExecutionTime(long executionTimeMs)
+    {
+        RecordExecutionTime(executionTimeMs);
+    }
+
+    /// <summary>
+    /// Records a timeout event that occurred during execution.
+    /// </summary>
+    /// <param name="executionTimeMs">Execution time in milliseconds before timeout.</param>
+    void ITimeoutStrategy.RecordTimeout(long executionTimeMs)
+    {
+        RecordTimeout(executionTimeMs);
+    }
+
+    /// <summary>
+    /// Gets the percentage of operations that timed out.
+    /// </summary>
+    double ITimeoutStrategy.GetTimeoutPercentage()
+    {
+        return GetTimeoutPercentage();
     }
 
     /// <summary>

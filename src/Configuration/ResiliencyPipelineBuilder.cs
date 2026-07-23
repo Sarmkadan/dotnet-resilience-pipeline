@@ -17,7 +17,7 @@ public sealed class ResiliencyPipelineBuilder
     private readonly ResiliencyPipelineService _pipelineService;
     private CircuitBreakerPolicy? _circuitBreakerPolicy;
     private RetryPolicy? _retryPolicy;
-    private TimeoutPolicy? _timeoutPolicy;
+    private ITimeoutStrategy? _timeoutPolicy;
     private BulkheadPolicy? _bulkheadPolicy;
     private FallbackPolicy? _fallbackPolicy;
 
@@ -59,12 +59,28 @@ public sealed class ResiliencyPipelineBuilder
     /// </summary>
     public ResiliencyPipelineBuilder WithTimeout(string name, TimeSpan timeout, Action<TimeoutPolicy>? configure = null)
     {
-        _timeoutPolicy = new TimeoutPolicy(name) { Timeout = timeout };
+        var policy = new TimeoutPolicy(name) { Timeout = timeout };
 
         if (configure is not null)
-            configure(_timeoutPolicy);
+            configure(policy);
 
-        _pipelineService.RegisterPolicy(_timeoutPolicy);
+        _timeoutPolicy = policy;
+        _pipelineService.RegisterPolicy(policy);
+        return this;
+    }
+
+    /// <summary>
+    /// Adds an adaptive timeout policy to the pipeline that automatically adjusts based on observed latencies.
+    /// </summary>
+    public ResiliencyPipelineBuilder WithAdaptiveTimeout(string name, Action<AdaptiveTimeoutPolicy>? configure = null)
+    {
+        var policy = new AdaptiveTimeoutPolicy(name);
+
+        if (configure is not null)
+            configure(policy);
+
+        _timeoutPolicy = policy;
+        _pipelineService.RegisterPolicy(policy);
         return this;
     }
 
@@ -139,7 +155,7 @@ public sealed class ResiliencyPipelineBuilder
     /// <summary>
     /// Gets the configured timeout policy.
     /// </summary>
-    public TimeoutPolicy? GetTimeoutPolicy() => _timeoutPolicy;
+    public ITimeoutStrategy? GetTimeoutPolicy() => _timeoutPolicy;
 
     /// <summary>
     /// Gets the configured bulkhead policy.

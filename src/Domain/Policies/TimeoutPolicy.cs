@@ -9,7 +9,7 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// <summary>
 /// Timeout policy that enforces maximum execution time for operations.
 /// </summary>
-public sealed class TimeoutPolicy : ResiliencyPolicy
+public sealed class TimeoutPolicy : ResiliencyPolicy, ITimeoutStrategy
 {
     /// <summary>
     /// Maximum allowed execution duration.
@@ -56,6 +56,40 @@ public sealed class TimeoutPolicy : ResiliencyPolicy
     public bool IsTimedOutMs(long executionTimeMs)
     {
         return executionTimeMs > Timeout.TotalMilliseconds;
+    }
+
+    /// <summary>
+    /// Gets the timeout value that should be applied to the next execution.
+    /// </summary>
+    TimeSpan ITimeoutStrategy.GetTimeout()
+    {
+        return Timeout;
+    }
+
+    /// <summary>
+    /// Records an execution time for statistical tracking and potential adaptation.
+    /// </summary>
+    /// <param name="executionTimeMs">Execution time in milliseconds.</param>
+    void ITimeoutStrategy.RecordExecutionTime(long executionTimeMs)
+    {
+        RecordExecutionTime(executionTimeMs);
+    }
+
+    /// <summary>
+    /// Records a timeout event that occurred during execution.
+    /// </summary>
+    /// <param name="executionTimeMs">Execution time in milliseconds before timeout.</param>
+    void ITimeoutStrategy.RecordTimeout(long executionTimeMs)
+    {
+        RecordTimeout(executionTimeMs);
+    }
+
+    /// <summary>
+    /// Gets the percentage of operations that timed out.
+    /// </summary>
+    double ITimeoutStrategy.GetTimeoutPercentage()
+    {
+        return GetTimeoutPercentage();
     }
 
     /// <summary>
@@ -132,6 +166,14 @@ public sealed class TimeoutPolicy : ResiliencyPolicy
 
         error = null;
         return true;
+    }
+
+    /// <summary>
+    /// Gets the timeout value that should be applied to the next execution.
+    /// </summary>
+    public TimeSpan GetTimeout()
+    {
+        return Timeout;
     }
 
     /// <summary>
