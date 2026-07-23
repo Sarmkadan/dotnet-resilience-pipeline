@@ -143,7 +143,21 @@ public sealed class PipelineExecutionException : ResiliencyException
     public List<string>? AppliedPolicies { get; set; } = new();
 
     public PipelineExecutionException(string message, string executionId, List<string>? appliedPolicies)
-        : base(message, "", "Pipeline")
+        : base(message, appliedPolicies?.Any() == true ? appliedPolicies.First() : null, "Pipeline")
+    {
+        ExecutionId = executionId;
+        AppliedPolicies = appliedPolicies;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PipelineExecutionException"/> class with the specified message, inner exception, execution ID, and applied policies.
+    /// </summary>
+    /// <param name="message">The message that describes the error.</param>
+    /// <param name="innerException">The exception that is the cause of the current exception.</param>
+    /// <param name="executionId">The unique identifier for this pipeline execution.</param>
+    /// <param name="appliedPolicies">The list of policies that were applied during execution.</param>
+    public PipelineExecutionException(string message, Exception innerException, string executionId, List<string>? appliedPolicies)
+        : base(message, innerException, appliedPolicies?.Any() == true ? appliedPolicies.First() : null, "Pipeline")
     {
         ExecutionId = executionId;
         AppliedPolicies = appliedPolicies;

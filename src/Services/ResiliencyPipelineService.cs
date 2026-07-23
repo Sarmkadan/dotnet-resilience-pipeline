@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using DotNetResiliencePipeline.Domain;
 using DotNetResiliencePipeline.Domain.Policies;
 using DotNetResiliencePipeline.Exceptions;
@@ -140,7 +141,7 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
             }
 
             // Direct execution with retry, timeout, bulkhead
-            var result = await _executeWithRetryTimeoutBulkhead(operation, cancellationToken, retry, timeout, bulkhead); // UPDATED
+            var result = await _executeWithRetryTimeoutBulkhead(operation, cancellationToken, retry, timeout, bulkhead);
             stopwatch.Stop();
 
             lock (_lockObj)
@@ -151,6 +152,28 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
 
             return PolicyResult<T>.Success(result, "Pipeline", stopwatch.ElapsedMilliseconds);
         }
+        catch (ResiliencyException ex)
+        {
+            stopwatch.Stop();
+
+            // Try fallback
+            if (fallback?.IsEnabled == true)
+            {
+                // Fallback service needs the CancellationToken too
+                return await _fallbackService.ExecuteAsync<T>(fallback, ex, stopwatch.ElapsedMilliseconds, cancellationToken);
+            }
+
+            lock (_lockObj)
+            {
+                TotalExecutions++;
+                FailedExecutions++;
+            }
+
+            // Specific resiliency exceptions should bubble up unchanged to preserve their type and inner exception chain
+            ExceptionDispatchInfo.Capture(ex).Throw();
+            // This line is unreachable, but required by compiler
+            return PolicyResult<T>.Failure(ex, "Pipeline", stopwatch.ElapsedMilliseconds);
+        }
         catch (Exception ex)
         {
             stopwatch.Stop();
@@ -159,7 +182,7 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
             if (fallback?.IsEnabled == true)
             {
                 // Fallback service needs the CancellationToken too
-                return await _fallbackService.ExecuteAsync<T>(fallback, ex, stopwatch.ElapsedMilliseconds, cancellationToken); // UPDATED - REMOVED operation
+                return await _fallbackService.ExecuteAsync<T>(fallback, ex, stopwatch.ElapsedMilliseconds, cancellationToken);
             }
 
             lock (_lockObj)
@@ -211,6 +234,20 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
             }
 
             return PolicyResult.Success("Pipeline", stopwatch.ElapsedMilliseconds);
+        }
+        catch (ResiliencyException ex)
+        {
+            stopwatch.Stop();
+            lock (_lockObj)
+            {
+                TotalExecutions++;
+                FailedExecutions++;
+            }
+
+            // Specific resiliency exceptions should bubble up unchanged to preserve their type and inner exception chain
+            ExceptionDispatchInfo.Capture(ex).Throw();
+            // This line is unreachable, but required by compiler
+            return PolicyResult.Failure(ex, "Pipeline", stopwatch.ElapsedMilliseconds);
         }
         catch (Exception ex)
         {
