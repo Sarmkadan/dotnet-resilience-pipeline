@@ -54,7 +54,6 @@ public sealed class AdaptiveTimeoutService
             return await operation(cancellationToken);
 
         var effectiveTimeout = policy.CurrentTimeout;
-
         using var timeoutCts = new CancellationTokenSource(effectiveTimeout);
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
@@ -74,8 +73,7 @@ public sealed class AdaptiveTimeoutService
 
             return result;
         }
-        catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested
-                                                 && !cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException ex) when (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
             stopwatch.Stop();
             var elapsed = stopwatch.ElapsedMilliseconds;
@@ -87,6 +85,17 @@ public sealed class AdaptiveTimeoutService
                 policy.Name, elapsed, effectiveTimeout.TotalMilliseconds);
 
             throw new OperationTimeoutException(policy.Name, effectiveTimeout, elapsed);
+        }
+        catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
+        {
+            stopwatch.Stop();
+
+            // External caller cancellation - rethrow without recording as timeout
+            _logger.LogDebug(
+                "AdaptiveTimeout '{PolicyName}' externally cancelled after {ElapsedMs}ms",
+                policy.Name, stopwatch.ElapsedMilliseconds);
+
+            throw;
         }
         catch (Exception ex)
         {
@@ -100,6 +109,10 @@ public sealed class AdaptiveTimeoutService
                 policy.Name, stopwatch.ElapsedMilliseconds);
 
             throw;
+        }
+        finally
+        {
+            stopwatch.Stop();
         }
     }
 
@@ -124,17 +137,17 @@ public sealed class AdaptiveTimeoutService
 
         return new Dictionary<string, object>
         {
-            { "PolicyName",          policy.Name },
-            { "CurrentTimeoutMs",    policy.CurrentTimeout.TotalMilliseconds },
-            { "InitialTimeoutMs",    policy.InitialTimeout.TotalMilliseconds },
-            { "TargetPercentile",    policy.TargetPercentile },
-            { "TotalAdjustments",    policy.TotalAdjustments },
-            { "LastAdjustmentAt",    policy.LastAdjustmentAt },
-            { "TimeoutCount",        policy.TimeoutCount },
-            { "TimeoutPercentage",   policy.GetTimeoutPercentage() },
-            { "P95ExecutionTimeMs",  policy.GetPercentileExecutionTime(95) },
-            { "SuccessRate",         policy.GetSuccessRate() },
-            { "TotalExecutions",     policy.TotalExecutions }
+            { "PolicyName", policy.Name },
+            { "CurrentTimeoutMs", policy.CurrentTimeout.TotalMilliseconds },
+            { "InitialTimeoutMs", policy.InitialTimeout.TotalMilliseconds },
+            { "TargetPercentile", policy.TargetPercentile },
+            { "TotalAdjustments", policy.TotalAdjustments },
+            { "LastAdjustmentAt", policy.LastAdjustmentAt },
+            { "TimeoutCount", policy.TimeoutCount },
+            { "TimeoutPercentage", policy.GetTimeoutPercentage() },
+            { "P95ExecutionTimeMs", policy.GetPercentileExecutionTime(95) },
+            { "SuccessRate", policy.GetSuccessRate() },
+            { "TotalExecutions", policy.TotalExecutions }
         };
     }
 }

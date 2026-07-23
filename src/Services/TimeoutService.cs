@@ -33,12 +33,12 @@ public sealed class TimeoutService
             return await operation(cancellationToken);
 
         var stopwatch = Stopwatch.StartNew();
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        cts.CancelAfter(policy.Timeout);
+        using var timeoutCts = new CancellationTokenSource(policy.Timeout);
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
         try
         {
-            var result = await operation(cts.Token);
+            var result = await operation(linkedCts.Token);
             stopwatch.Stop();
 
             policy.RecordExecutionTime(stopwatch.ElapsedMilliseconds);
@@ -46,13 +46,7 @@ public sealed class TimeoutService
 
             return result;
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            stopwatch.Stop();
-            // External cancellation - rethrow without recording as timeout
-            throw;
-        }
-        catch (OperationCanceledException ex) when (cts.Token.IsCancellationRequested)
+        catch (OperationCanceledException ex) when (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
             stopwatch.Stop();
             var timeoutMs = stopwatch.ElapsedMilliseconds;
@@ -63,6 +57,13 @@ public sealed class TimeoutService
                 policy.Name,
                 policy.Timeout,
                 timeoutMs);
+        }
+        catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
+        {
+            stopwatch.Stop();
+
+            // External caller cancellation - rethrow without recording as timeout
+            throw;
         }
         catch (Exception ex)
         {
