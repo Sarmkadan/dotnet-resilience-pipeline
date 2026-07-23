@@ -49,7 +49,7 @@ public static class PipelineEventObserverExtensions
     /// <exception cref="ArgumentNullException"><paramref name="observer"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="handlerId"/> is null or whitespace.</exception>
     /// <returns>The handler if found, otherwise null</returns>
-    public static EventHandler? FindHandler(this PipelineEventObserver observer, string handlerId)
+    public static PipelineEventHandler? FindHandler(this PipelineEventObserver observer, string handlerId)
     {
         ArgumentNullException.ThrowIfNull(observer);
         ArgumentException.ThrowIfNullOrWhiteSpace(handlerId);
@@ -103,7 +103,7 @@ public static class PipelineEventObserverExtensions
     /// <exception cref="ArgumentNullException"><paramref name="observer"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="eventType"/> is null or whitespace.</exception>
     /// <returns>List of handlers matching the event type</returns>
-    public static List<EventHandler> GetHandlersByEventType(this PipelineEventObserver observer, string eventType)
+    public static List<PipelineEventHandler> GetHandlersByEventType(this PipelineEventObserver observer, string eventType)
     {
         ArgumentNullException.ThrowIfNull(observer);
         ArgumentException.ThrowIfNullOrWhiteSpace(eventType);

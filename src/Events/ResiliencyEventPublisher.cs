@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System.Collections.Concurrent;
+using System.Threading;
 
 namespace DotNetResiliencePipeline.Events;
 
@@ -17,6 +18,14 @@ public sealed class ResiliencyEventPublisher
     private readonly ConcurrentDictionary<string, List<Delegate>> _subscribers = new();
     private readonly List<ResiliencyEvent> _eventHistory = new();
     private readonly object _lockObj = new object();
+    private long _totalEventsEmitted;
+    private long _successfulExecutions;
+    private long _failedExecutions;
+    private long _circuitBreakerChanges;
+    private long _bulkheadRejections;
+    private long _timeouts;
+    private long _fallbacksTriggered;
+    private long _policyHealthChanged;
     public int MaxHistorySize { get; set; } = 1000;
 
     /// <summary>
@@ -48,11 +57,62 @@ public sealed class ResiliencyEventPublisher
     }
 
     /// <summary>
+    /// Unsubscribes all handlers for a specific event type.
+    /// </summary>
+    /// <param name="eventType">The event type to clear</param>
+    /// <returns>True if subscribers were found and removed, otherwise false</returns>
+    public bool UnsubscribeAll(string eventType)
+    {
+        if (_subscribers.TryGetValue(eventType, out var subscribers))
+        {
+            lock (subscribers)
+            {
+                subscribers.Clear();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Publishes an event to all subscribers.
     /// </summary>
+    /// <param name="eventData">The event to publish</param>
+    /// <exception cref="ArgumentNullException"><paramref name="eventData"/> is null.</exception>
     public async Task PublishAsync<T>(T eventData) where T : ResiliencyEvent
     {
+        ArgumentNullException.ThrowIfNull(eventData);
+
         eventData.Timestamp = DateTime.UtcNow;
+
+        // Increment thread-safe counters
+        Interlocked.Increment(ref _totalEventsEmitted);
+
+        switch (eventData)
+        {
+            case PolicyExecutedSuccessfullyEvent _:
+                Interlocked.Increment(ref _successfulExecutions);
+                break;
+            case PolicyExecutionFailedEvent _:
+                Interlocked.Increment(ref _failedExecutions);
+                break;
+            case CircuitBreakerStateChangedEvent _:
+                Interlocked.Increment(ref _circuitBreakerChanges);
+                break;
+            case BulkheadRejectedEvent _:
+                Interlocked.Increment(ref _bulkheadRejections);
+                break;
+            case TimeoutOccurredEvent _:
+                Interlocked.Increment(ref _timeouts);
+                break;
+            case FallbackTriggeredEvent _:
+                Interlocked.Increment(ref _fallbacksTriggered);
+                break;
+            case PolicyHealthChangedEvent _:
+                Interlocked.Increment(ref _policyHealthChanged);
+                break;
+        }
 
         // Record in history
         lock (_lockObj)
@@ -151,6 +211,40 @@ public sealed class ResiliencyEventPublisher
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Gets thread-safe event statistics.
+    /// </summary>
+    /// <returns>Event statistics with atomic counters</returns>
+    public EventStatistics GetStatistics()
+    {
+        return new EventStatistics
+        {
+            TotalEventsEmitted = Volatile.Read(ref _totalEventsEmitted),
+            SuccessfulExecutions = Volatile.Read(ref _successfulExecutions),
+            FailedExecutions = Volatile.Read(ref _failedExecutions),
+            CircuitBreakerChanges = Volatile.Read(ref _circuitBreakerChanges),
+            BulkheadRejections = Volatile.Read(ref _bulkheadRejections),
+            Timeouts = Volatile.Read(ref _timeouts),
+            FallbacksTriggered = Volatile.Read(ref _fallbacksTriggered),
+            PolicyHealthChanged = Volatile.Read(ref _policyHealthChanged)
+        };
+    }
+
+    /// <summary>
+    /// Resets all statistics counters to zero.
+    /// </summary>
+    public void ResetStatistics()
+    {
+        Interlocked.Exchange(ref _totalEventsEmitted, 0);
+        Interlocked.Exchange(ref _successfulExecutions, 0);
+        Interlocked.Exchange(ref _failedExecutions, 0);
+        Interlocked.Exchange(ref _circuitBreakerChanges, 0);
+        Interlocked.Exchange(ref _bulkheadRejections, 0);
+        Interlocked.Exchange(ref _timeouts, 0);
+        Interlocked.Exchange(ref _fallbacksTriggered, 0);
+        Interlocked.Exchange(ref _policyHealthChanged, 0);
     }
 }
 
