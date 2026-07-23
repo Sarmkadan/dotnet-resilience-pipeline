@@ -193,6 +193,12 @@ private static readonly Random _random = Random.Shared;
         {
             error = "BackoffMultiplier must be positive";
             return false;
+
+	if (MaxDelay > TimeSpan.FromHours(1))
+	{
+		error = "MaxDelay must not exceed 1 hour to prevent overflow and excessive delays";
+		return false;
+	}
         }
 
         error = null;
