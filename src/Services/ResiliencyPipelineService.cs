@@ -341,8 +341,11 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
         ITimeoutStrategy? timeout = null,
         BulkheadPolicy? bulkhead = null)
     {
-        if (bulkhead?.IsEnabled == true && !_bulkheadService.TryAcquireSlot(bulkhead))
-            throw new BulkheadRejectedException(bulkhead.Name, bulkhead.ActiveExecutions, bulkhead.MaxParallelization, bulkhead.QueuedRequests);
+		if (bulkhead?.IsEnabled == true)
+		{
+			// Use the async bulkhead acquisition which properly handles queueing and timeouts
+			await _bulkheadService.AcquireSlotAsync(bulkhead, cancellationToken).ConfigureAwait(false);
+		}
 
         try
         {
