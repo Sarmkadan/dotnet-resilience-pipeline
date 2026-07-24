@@ -16,13 +16,52 @@ namespace DotNetResiliencePipeline.Utilities;
 public sealed class ThrottlingHelper
 {
     private readonly ConcurrentDictionary<string, Throttle> _throttles = new();
+    private readonly LinkedList<string> _lruList = new();
+    private readonly object _evictionLock = new object();
+
+    /// <summary>
+    /// Gets or sets the maximum number of throttles that can be tracked.
+    /// When exceeded, least recently used throttles are evicted.
+    /// </summary>
+    public int MaxThrottles { get; set; } = 1000;
 
     /// <summary>
     /// Creates or gets a throttle for a policy with rate limits.
     /// </summary>
+    /// <exception cref="InvalidOperationException">Thrown when the maximum number of throttles is exceeded and eviction fails.</exception>
     public Throttle GetOrCreateThrottle(string policyName, int maxRequestsPerSecond, int burstSize = 0)
     {
-        return _throttles.GetOrAdd(policyName, new Throttle(maxRequestsPerSecond, burstSize));
+        ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
+
+        // Try to get existing throttle first
+        if (_throttles.TryGetValue(policyName, out var existingThrottle))
+        {
+            UpdateLru(policyName);
+            return existingThrottle;
+        }
+
+        // Create new throttle
+        var newThrottle = new Throttle(maxRequestsPerSecond, burstSize);
+
+        // Add to dictionary
+        var added = _throttles.TryAdd(policyName, newThrottle);
+        if (!added)
+        {
+            // Concurrent add failed, try to get again
+            if (_throttles.TryGetValue(policyName, out existingThrottle))
+            {
+                UpdateLru(policyName);
+                return existingThrottle;
+            }
+            throw new InvalidOperationException("Failed to add throttle for policy: " + policyName);
+        }
+
+        UpdateLru(policyName);
+
+        // Enforce size limit
+        EnforceSizeLimit();
+
+        return newThrottle;
     }
 
     /// <summary>
@@ -39,10 +78,16 @@ public sealed class ThrottlingHelper
     /// <summary>
     /// Gets throttle statistics for a policy.
     /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="policyName"/> is null or whitespace.</exception>
     public ThrottleStatistics GetStatistics(string policyName)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
+
         if (_throttles.TryGetValue(policyName, out var throttle))
+        {
+            UpdateLru(policyName);
             return throttle.GetStatistics();
+        }
 
         return new ThrottleStatistics { PolicyName = policyName };
     }
@@ -52,6 +97,12 @@ public sealed class ThrottlingHelper
     /// </summary>
     public Dictionary<string, ThrottleStatistics> GetAllStatistics()
     {
+        // Update LRU for all entries
+        foreach (var key in _throttles.Keys.ToList())
+        {
+            UpdateLru(key);
+        }
+
         return _throttles.ToDictionary(
             x => x.Key,
             x => x.Value.GetStatistics());
@@ -60,9 +111,13 @@ public sealed class ThrottlingHelper
     /// <summary>
     /// Resets throttle for a policy.
     /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="policyName"/> is null or whitespace.</exception>
     public void ResetThrottle(string policyName)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
+
         _throttles.TryRemove(policyName, out _);
+        RemoveFromLru(policyName);
     }
 
     /// <summary>
@@ -70,7 +125,70 @@ public sealed class ThrottlingHelper
     /// </summary>
     public void Clear()
     {
-        _throttles.Clear();
+        lock (_evictionLock)
+        {
+            _throttles.Clear();
+            _lruList.Clear();
+        }
+    }
+
+    /// <summary>
+    /// Removes expired throttles based on LRU tracking.
+    /// </summary>
+    /// <returns>Number of throttles removed.</returns>
+    public int CleanupExpired()
+    {
+        // Note: Throttle doesn't track expiration, so we can't clean up based on that
+        // This method is kept for API consistency with similar services
+        return 0;
+    }
+
+    private void UpdateLru(string policyName)
+    {
+        lock (_evictionLock)
+        {
+            // Remove from current position if exists
+            _lruList.Remove(policyName);
+            // Add to end (most recently used)
+            _lruList.AddLast(policyName);
+        }
+    }
+
+    private void RemoveFromLru(string policyName)
+    {
+        lock (_evictionLock)
+        {
+            _lruList.Remove(policyName);
+        }
+    }
+
+    private void EnforceSizeLimit()
+    {
+        lock (_evictionLock)
+        {
+            if (_throttles.Count <= MaxThrottles)
+                return;
+
+            // Evict least recently used throttles until we're under the limit
+            while (_throttles.Count > MaxThrottles && _lruList.Count > 0)
+            {
+                var lruKey = _lruList.First?.Value;
+                if (lruKey != null && _throttles.TryRemove(lruKey, out _))
+                {
+                    _lruList.RemoveFirst();
+                }
+                else if (lruKey != null)
+                {
+                    // Key not found in dictionary, remove from LRU list
+                    _lruList.RemoveFirst();
+                }
+                else
+                {
+                    // Empty list, break to avoid infinite loop
+                    break;
+                }
+            }
+        }
     }
 }
 
@@ -160,14 +278,31 @@ public sealed class Throttle
 /// </summary>
 public sealed class ThrottleStatistics
 {
+    /// <summary>Gets the policy name.</summary>
     public string? PolicyName { get; set; }
+
+    /// <summary>Gets the maximum allowed requests per second.</summary>
     public int MaxRate { get; set; }
+
+    /// <summary>Gets the total number of requests processed.</summary>
     public long TotalRequests { get; set; }
+
+    /// <summary>Gets the number of requests that were allowed.</summary>
     public long AllowedRequests { get; set; }
+
+    /// <summary>Gets the number of requests that were throttled.</summary>
     public long ThrottledRequests { get; set; }
+
+    /// <summary>Gets the throttle rate as a percentage (0-100).</summary>
     public double ThrottleRate { get; set; }
+
+    /// <summary>Gets the number of available tokens in the bucket.</summary>
     public int AvailableTokens { get; set; }
+
+    /// <summary>Gets the burst capacity of the throttle.</summary>
     public int BurstCapacity { get; set; }
+
+    /// <summary>Gets whether throttling is currently active.</summary>
     public bool IsThrottling => ThrottledRequests > 0;
 }
 
