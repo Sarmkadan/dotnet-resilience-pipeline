@@ -52,7 +52,46 @@ public class AdaptiveTimeoutPolicyTests
 
         // Assert
         act.Should().Throw<ArgumentException>()
-            .WithMessage("*Execution time cannot be negative*");
+        .WithMessage("*Execution time cannot be negative*");
+    }
+
+    [Fact]
+    public void RecordExecutionTime_WithExtremeValues_ClampsToConfiguredBounds()
+    {
+        // Arrange: configure policy with tight bounds
+        var policy = new AdaptiveTimeoutPolicy("extreme-test")
+        {
+            InitialTimeout = TimeSpan.FromSeconds(1),
+            MinTimeout = TimeSpan.FromSeconds(1),
+            MaxTimeout = TimeSpan.FromSeconds(5),
+            TargetPercentile = 95.0,
+            HeadroomFactor = 1.0,
+            WindowSize = 10,
+            MinSampleSize = 1,
+            AdjustmentInterval = TimeSpan.Zero
+        };
+
+        // Act & Assert: Provide extreme values that would skew the calculation
+        // These values are way beyond reasonable bounds and should be rejected
+        Action act1 = () => policy.RecordExecutionTime(-1000);
+        act1.Should().Throw<ArgumentException>();
+
+        Action act2 = () => policy.RecordExecutionTime((long)TimeSpan.FromHours(1).TotalMilliseconds);
+        act2.Should().Throw<ArgumentException>();
+
+        // Act: Provide values that are within bounds but would produce extreme percentiles
+        // Fill window with values that would calculate to 1000 seconds if not clamped
+        for (int i = 0; i < 10; i++)
+        {
+            policy.RecordExecutionTime(1000); // 1 second
+        }
+
+        // Assert: CurrentTimeout should remain at InitialTimeout since all values are clamped to MaxTimeout
+        policy.CurrentTimeout.Should().Be(TimeSpan.FromSeconds(1));
+
+        // Act: Now test with values that would push timeout up but get clamped
+        policy.RecordExecutionTime(6000); // 6 seconds, would be 6000ms * 1.0 = 6000ms
+        policy.CurrentTimeout.Should().Be(TimeSpan.FromSeconds(5)); // Clamped to MaxTimeout
     }
 
     [Fact]
@@ -64,7 +103,7 @@ public class AdaptiveTimeoutPolicyTests
             InitialTimeout = TimeSpan.FromSeconds(1),
             MinTimeout = TimeSpan.FromMilliseconds(100),
             MaxTimeout = TimeSpan.FromSeconds(5),
-            TargetPercentile = 50.0,          // median
+            TargetPercentile = 50.0, // median
             HeadroomFactor = 1.0,
             WindowSize = 5,
             MinSampleSize = 1,
