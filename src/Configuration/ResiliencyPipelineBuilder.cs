@@ -342,7 +342,7 @@ public sealed class ResiliencyPipelineBuilder
     /// <exception cref="InvalidPolicyConfigurationException">Thrown if required policies are missing or configuration is invalid.</exception>
     /// <remarks>
     /// Validates that the pipeline configuration is semantically correct. This includes checking:
-    /// <list type="bullet">
+    /// <list bullet="true">
     ///   <item><description>No duplicate policies with the same name</description></item>
     ///   <item><description>Policy ordering follows canonical semantics (unless AllowCustomOrder() was called)</description></item>
     ///   <item><description>All policies are properly configured</description></item>
