@@ -7,6 +7,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DotNetResiliencePipeline.Utilities;
 
 namespace DotNetResiliencePipeline.Events;
 
@@ -15,14 +16,6 @@ namespace DotNetResiliencePipeline.Events;
 /// </summary>
 public static class ResiliencyEventPublisherJsonExtensions
 {
-    private static readonly JsonSerializerOptions _jsonSerializerOptions = new(JsonSerializerDefaults.Web)
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
-    };
-
     /// <summary>
     /// Serializes the <see cref="ResiliencyEventPublisher"/> to a JSON string.
     /// </summary>
@@ -33,11 +26,9 @@ public static class ResiliencyEventPublisherJsonExtensions
     public static string ToJson(this ResiliencyEventPublisher value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
-
         var options = indented
-            ? new JsonSerializerOptions(_jsonSerializerOptions) { WriteIndented = true }
-            : _jsonSerializerOptions;
-
+            ? new JsonSerializerOptions(JsonSerializerOptionsProvider.SharedOptions) { WriteIndented = true }
+            : JsonSerializerOptionsProvider.SharedOptions;
         return JsonSerializer.Serialize(value, options);
     }
 
@@ -53,8 +44,7 @@ public static class ResiliencyEventPublisherJsonExtensions
     {
         ArgumentNullException.ThrowIfNull(json);
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
-
-        return JsonSerializer.Deserialize<ResiliencyEventPublisher>(json, _jsonSerializerOptions)
+        return JsonSerializer.Deserialize<ResiliencyEventPublisher>(json, JsonSerializerOptionsProvider.SharedOptions)
             ?? throw new JsonException("Deserialization returned null for non-null input.");
     }
 
@@ -68,13 +58,11 @@ public static class ResiliencyEventPublisherJsonExtensions
     public static bool TryFromJson(string json, out ResiliencyEventPublisher? value)
     {
         ArgumentNullException.ThrowIfNull(json);
-
         try
         {
             value = string.IsNullOrWhiteSpace(json)
                 ? null
-                : JsonSerializer.Deserialize<ResiliencyEventPublisher>(json, _jsonSerializerOptions);
-
+                : JsonSerializer.Deserialize<ResiliencyEventPublisher>(json, JsonSerializerOptionsProvider.SharedOptions);
             return value is not null;
         }
         catch
