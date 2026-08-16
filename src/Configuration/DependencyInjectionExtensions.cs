@@ -46,7 +46,7 @@ public static class DependencyInjectionExtensions
 
         // Register services
         services.AddSingleton<CircuitBreakerService>();
-        services.AddSingleton<RetryService>();
+        services.AddSingleton<IRetryService, RetryService>();
         services.AddSingleton<TimeoutService>();
         services.AddSingleton<BulkheadService>();
         services.AddSingleton<FallbackService>();
@@ -97,7 +97,7 @@ public static class DependencyInjectionExtensions
 
         // Register services
         services.AddSingleton<CircuitBreakerService>();
-        services.AddSingleton<RetryService>();
+        services.AddSingleton<IRetryService, RetryService>();
         services.AddSingleton<TimeoutService>();
         services.AddSingleton<BulkheadService>();
         services.AddSingleton<FallbackService>();
@@ -179,7 +179,7 @@ public static class DependencyInjectionExtensions
 
         // Register services
         services.AddSingleton<CircuitBreakerService>();
-        services.AddSingleton<RetryService>();
+        services.AddSingleton<IRetryService, RetryService>();
         services.AddSingleton<TimeoutService>();
         services.AddSingleton<BulkheadService>();
         services.AddSingleton<FallbackService>();

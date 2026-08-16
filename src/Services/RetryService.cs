@@ -13,10 +13,10 @@ namespace DotNetResiliencePipeline.Services;
 /// <summary>
 /// Service handling retry policy execution with exponential backoff and jitter.
 /// </summary>
-public sealed class RetryService
+public sealed class RetryService : IRetryService
 {
     // Use Random.Shared for thread-safe random number generation across threads
-private static readonly Random _random = Random.Shared;
+    private static readonly Random _random = Random.Shared;
 
     /// <summary>
     /// Executes an operation with retry logic.
