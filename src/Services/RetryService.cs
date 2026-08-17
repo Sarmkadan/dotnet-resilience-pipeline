@@ -7,6 +7,7 @@
 using System.Diagnostics;
 using DotNetResiliencePipeline.Domain.Policies;
 using DotNetResiliencePipeline.Exceptions;
+using DotNetResiliencePipeline.Utilities;
 
 namespace DotNetResiliencePipeline.Services;
 
@@ -149,20 +150,18 @@ public sealed class RetryService : IRetryService
         else
         {
             var calculated = TimeSpan.FromMilliseconds(previousDelay.TotalMilliseconds * 3);
-            upperBound = calculated < maxDelay ? calculated : maxDelay;
+            upperBound = calculated.Min(maxDelay);
         }
 
         // Ensure the upper bound is not less than the base delay.
-        if (upperBound < baseDelay)
-            upperBound = baseDelay;
+        upperBound = upperBound.Max(baseDelay);
 
         // Random value between baseDelay and upperBound.
         var randomMs = baseDelay.TotalMilliseconds + (Random.Shared.NextDouble() * (upperBound.TotalMilliseconds - baseDelay.TotalMilliseconds));
         var delay = TimeSpan.FromMilliseconds(randomMs);
 
         // Clamp to maxDelay just in case.
-        if (delay > maxDelay)
-            delay = maxDelay;
+        delay = delay.Min(maxDelay);
 
         return delay;
     }
