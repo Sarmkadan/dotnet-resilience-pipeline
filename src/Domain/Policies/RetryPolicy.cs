@@ -4,6 +4,8 @@
 // CTO & Software Architect
 // =============================================================================
 
+using DotNetResiliencePipeline.Utilities;
+
 namespace DotNetResiliencePipeline.Domain.Policies;
 
 /// <summary>
@@ -65,8 +67,6 @@ public enum BackoffStrategy
 public bool UseDecorrelatedJitter { get; set; }
 
 
-    // Use Random.Shared for thread-safe random number generation across threads
-private static readonly Random _random = Random.Shared;
     public List<Type> RetryableExceptions { get; set; } = new();
 
     /// <summary>
@@ -116,25 +116,11 @@ private static readonly Random _random = Random.Shared;
                 break;
             case BackoffStrategy.ExponentialWithJitter:
                 // AWS 'full jitter' algorithm: sleep = random_between(0, min(cap, base * 2 ** attempt))
-                double cap = MaxDelay.TotalMilliseconds;
-                double baseDelayMs = InitialDelay.TotalMilliseconds;
-                double exponentialBackoff = baseDelayMs * Math.Pow(2, attemptNumber);
-                double maxJitteredDelay = Math.Min(cap, exponentialBackoff);
-
-        // Apply jitter based on UseJitter flag
-        // If UseJitter is false, use deterministic exponential backoff (maxJitteredDelay)
-        // If UseJitter is true, apply random jitter within the range
-        if (UseJitter)
-        {
-            // Apply JitterFactor: scale the random range
-            // If JitterFactor is 0, no jitter (random range is 0 to 0).
-            // If JitterFactor is 1 (full jitter), random range is 0 to maxJitteredDelay.
-            delay = TimeSpan.FromMilliseconds(_random.NextDouble() * maxJitteredDelay * JitterFactor);
-        }
-        else
-        {
-            delay = TimeSpan.FromMilliseconds(maxJitteredDelay);
-        }
+                var baseDelay = InitialDelay;
+                var exponentialBackoff = TimeSpan.FromMilliseconds(InitialDelay.TotalMilliseconds * Math.Pow(BackoffMultiplier, attemptNumber));
+                var jitteredDelay = baseDelay.WithJitter(JitterFactor);
+                var cappedDelay = jitteredDelay.Min(MaxDelay);
+                delay = cappedDelay;
                 break;
             default:
                 delay = InitialDelay;
@@ -142,8 +128,8 @@ private static readonly Random _random = Random.Shared;
         }
 
         // Cap at max delay if not already handled by ExponentialWithJitter
-        if (Strategy != BackoffStrategy.ExponentialWithJitter && delay > MaxDelay)
-            delay = MaxDelay;
+        if (Strategy != BackoffStrategy.ExponentialWithJitter)
+            delay = delay.Min(MaxDelay);
 
         return delay;
     }
