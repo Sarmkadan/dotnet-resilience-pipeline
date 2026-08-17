@@ -1,75 +1,83 @@
-#nullable enable
-// =============================================================================
-// Author: Vladyslav Zaiets | https://sarmkadan.com
-// CTO & Software Architect
-// =============================================================================
+using System;
+using System.Text;
 
-namespace DotNetResiliencePipeline.Utilities;
-
-/// <summary>
-/// Extension and helper methods for <see cref="TimeSpan"/> used across the resilience pipeline.
-/// </summary>
-public static class TimeSpanExtensions
+namespace DotNetResiliencePipeline.Utilities
 {
     /// <summary>
-    /// Applies random jitter to the duration.
+    /// Extension methods for <see cref="TimeSpan"/> that provide jitter, min/max helpers,
+    /// and a concise human‑readable string representation.
     /// </summary>
-    /// <param name="duration">The base duration to jitter.</param>
-    /// <param name="factor">Jitter factor in the range [0.0, 1.0]. 0.0 returns the duration unchanged,
-    /// 1.0 returns a random value between zero and the duration (full jitter).</param>
-    /// <returns>A jittered duration.</returns>
-    public static TimeSpan WithJitter(this TimeSpan duration, double factor)
+    public static class TimeSpanExtensions
     {
-        if (duration <= TimeSpan.Zero)
-            return TimeSpan.Zero;
+        private static readonly Random _random = new Random();
+        private static readonly object _lock = new object();
 
-        if (factor <= 0.0)
-            return duration;
+        /// <summary>
+        /// Applies a random jitter to the <paramref name="timeSpan"/>.
+        /// The jitter is calculated as a factor of the original duration.
+        /// <paramref name="factor"/> should be between 0.0 (no jitter) and 1.0 (full jitter).
+        /// </summary>
+        public static TimeSpan WithJitter(this TimeSpan timeSpan, double factor)
+        {
+            if (factor <= 0) return timeSpan;
+            if (factor > 1) factor = 1;
 
-        var jitterFactor = factor > 1.0 ? 1.0 : factor;
-        var jitteredMs = Random.Shared.NextDouble() * duration.TotalMilliseconds * jitterFactor;
-        return TimeSpan.FromMilliseconds(jitteredMs);
-    }
+            double jitterMs;
+            lock (_lock)
+            {
+                // Random value in range [-factor, +factor]
+                var rnd = _random.NextDouble() * 2 - 1;
+                jitterMs = timeSpan.TotalMilliseconds * factor * rnd;
+            }
 
-    /// <summary>
-    /// Returns the smaller of this duration and <paramref name="other"/>.
-    /// </summary>
-    public static TimeSpan Min(this TimeSpan duration, TimeSpan other)
-        => duration <= other ? duration : other;
+            var resultMs = timeSpan.TotalMilliseconds + jitterMs;
+            // Ensure we never return a negative duration.
+            if (resultMs < 0) resultMs = 0;
+            return TimeSpan.FromMilliseconds(resultMs);
+        }
 
-    /// <summary>
-    /// Returns the larger of this duration and <paramref name="other"/>.
-    /// </summary>
-    public static TimeSpan Max(this TimeSpan duration, TimeSpan other)
-        => duration >= other ? duration : other;
+        /// <summary>
+        /// Returns the smaller of two <see cref="TimeSpan"/> values.
+        /// </summary>
+        public static TimeSpan Min(this TimeSpan a, TimeSpan b) => a < b ? a : b;
 
-    /// <summary>
-    /// Formats the duration as a compact human-readable string, e.g. "1m 30s", "45s", "2h 5m".
-    /// </summary>
-    /// <param name="duration">The duration to format.</param>
-    /// <returns>A human-readable representation of the duration.</returns>
-    public static string ToHumanString(this TimeSpan duration)
-    {
-        if (duration < TimeSpan.Zero)
-            return "-" + (-duration).ToHumanString();
+        /// <summary>
+        /// Returns the larger of two <see cref="TimeSpan"/> values.
+        /// </summary>
+        public static TimeSpan Max(this TimeSpan a, TimeSpan b) => a > b ? a : b;
 
-        if (duration < TimeSpan.FromSeconds(1))
-            return $"{Math.Max(0, (int)duration.TotalMilliseconds)}ms";
+        /// <summary>
+        /// Formats the <see cref="TimeSpan"/> as a concise human‑readable string.
+        /// Example: "1h 2m 3s", "150ms", or "2d 4h".
+        /// </summary>
+        public static string ToHumanString(this TimeSpan ts)
+        {
+            var sb = new StringBuilder();
 
-        var parts = new List<string>();
+            void Append(int value, string suffix)
+            {
+                if (value > 0)
+                {
+                    if (sb.Length > 0) sb.Append(' ');
+                    sb.Append(value).Append(suffix);
+                }
+            }
 
-        if (duration.TotalDays >= 1)
-            parts.Add($"{duration.Days}d");
+            Append(ts.Days, "d");
+            Append(ts.Hours, "h");
+            Append(ts.Minutes, "m");
+            Append(ts.Seconds, "s");
 
-        if (duration.Hours > 0)
-            parts.Add($"{duration.Hours}h");
+            // Show milliseconds only if the total duration is less than a second
+            if (ts.TotalSeconds < 1)
+            {
+                Append(ts.Milliseconds, "ms");
+            }
 
-        if (duration.Minutes > 0)
-            parts.Add($"{duration.Minutes}m");
+            // If everything is zero, return "0s"
+            if (sb.Length == 0) return "0s";
 
-        if (duration.Seconds > 0)
-            parts.Add($"{duration.Seconds}s");
-
-        return parts.Count > 0 ? string.Join(" ", parts) : "0s";
+            return sb.ToString();
+        }
     }
 }

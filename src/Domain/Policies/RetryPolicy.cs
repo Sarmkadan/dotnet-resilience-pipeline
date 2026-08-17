@@ -4,6 +4,9 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using DotNetResiliencePipeline.Utilities;
 
 namespace DotNetResiliencePipeline.Domain.Policies;
@@ -13,14 +16,14 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// </summary>
 public sealed class RetryPolicy : ResiliencyPolicy
 {
-public enum BackoffStrategy
-{
-    Fixed,
-    Linear,
-    Exponential, // Multiplies BaseDelay by BackoffMultiplier
-    ExponentialWithJitter, // AWS 'full jitter' algorithm
-    DecorrelatedJitter // Decorrelated jitter algorithm: delay = min(maxDelay, random(baseDelay, previousDelay*3))
-}
+    public enum BackoffStrategy
+    {
+        Fixed,
+        Linear,
+        Exponential,            // Multiplies BaseDelay by BackoffMultiplier
+        ExponentialWithJitter, // AWS 'full jitter' algorithm
+        DecorrelatedJitter      // Decorrelated jitter algorithm: delay = min(maxDelay, random(baseDelay, previousDelay*3))
+    }
 
     /// <summary>
     /// Maximum number of retry attempts.
@@ -47,8 +50,6 @@ public enum BackoffStrategy
     /// </summary>
     public double BackoffMultiplier { get; set; } = 2.0;
 
-
-
     /// <summary>
     /// Whether to apply jitter to exponential backoff strategies.
     /// Set to false for deterministic delays (useful in tests).
@@ -60,12 +61,11 @@ public enum BackoffStrategy
     /// </summary>
     public double JitterFactor { get; set; } = 1.0;
 
-/// <summary>
-/// Whether to use decorrelated jitter backoff strategy instead of exponential backoff.
-/// When true, uses decorrelated jitter algorithm: delay = min(maxDelay, random(baseDelay, previousDelay*3)).
-/// </summary>
-public bool UseDecorrelatedJitter { get; set; }
-
+    /// <summary>
+    /// Whether to use decorrelated jitter backoff strategy instead of exponential backoff.
+    /// When true, uses decorrelated jitter algorithm: delay = min(maxDelay, random(baseDelay, previousDelay*3)).
+    /// </summary>
+    public bool UseDecorrelatedJitter { get; set; }
 
     public List<Type> RetryableExceptions { get; set; } = new();
 
@@ -108,29 +108,42 @@ public bool UseDecorrelatedJitter { get; set; }
             case BackoffStrategy.Fixed:
                 delay = InitialDelay;
                 break;
+
             case BackoffStrategy.Linear:
                 delay = TimeSpan.FromMilliseconds(InitialDelay.TotalMilliseconds * (attemptNumber + 1));
                 break;
+
             case BackoffStrategy.Exponential:
                 delay = TimeSpan.FromMilliseconds(InitialDelay.TotalMilliseconds * Math.Pow(BackoffMultiplier, attemptNumber));
+                if (UseJitter)
+                {
+                    delay = delay.WithJitter(JitterFactor);
+                }
                 break;
+
             case BackoffStrategy.ExponentialWithJitter:
-                // AWS 'full jitter' algorithm: sleep = random_between(0, min(cap, base * 2 ** attempt))
-                var baseDelay = InitialDelay;
+                // AWS 'full jitter' algorithm: random between 0 and min(cap, base * 2^attempt)
                 var exponentialBackoff = TimeSpan.FromMilliseconds(InitialDelay.TotalMilliseconds * Math.Pow(BackoffMultiplier, attemptNumber));
-                var jitteredDelay = baseDelay.WithJitter(JitterFactor);
-                var cappedDelay = jitteredDelay.Min(MaxDelay);
-                delay = cappedDelay;
+                delay = exponentialBackoff.WithJitter(JitterFactor).Min(MaxDelay);
                 break;
+
+            case BackoffStrategy.DecorrelatedJitter:
+                // Decorrelated jitter: delay = min(maxDelay, random(baseDelay, previousDelay*3))
+                var previousDelay = attemptNumber == 0
+                    ? InitialDelay
+                    : TimeSpan.FromMilliseconds(InitialDelay.TotalMilliseconds * Math.Pow(BackoffMultiplier, attemptNumber - 1));
+                var maxCandidateMs = previousDelay.TotalMilliseconds * 3;
+                var randomMs = new Random().NextDouble() * (maxCandidateMs - InitialDelay.TotalMilliseconds) + InitialDelay.TotalMilliseconds;
+                delay = TimeSpan.FromMilliseconds(randomMs).Min(MaxDelay);
+                break;
+
             default:
                 delay = InitialDelay;
                 break;
         }
 
-        // Cap at max delay if not already handled by ExponentialWithJitter
-        if (Strategy != BackoffStrategy.ExponentialWithJitter)
-            delay = delay.Min(MaxDelay);
-
+        // Ensure the delay never exceeds the configured maximum.
+        delay = delay.Min(MaxDelay);
         return delay;
     }
 
@@ -179,12 +192,12 @@ public bool UseDecorrelatedJitter { get; set; }
         {
             error = "BackoffMultiplier must be positive";
             return false;
+        }
 
-	if (MaxDelay > TimeSpan.FromHours(1))
-	{
-		error = "MaxDelay must not exceed 1 hour to prevent overflow and excessive delays";
-		return false;
-	}
+        if (MaxDelay > TimeSpan.FromHours(1))
+        {
+            error = "MaxDelay must not exceed 1 hour to prevent overflow and excessive delays";
+            return false;
         }
 
         error = null;
@@ -204,7 +217,9 @@ public bool UseDecorrelatedJitter { get; set; }
             { "Strategy", Strategy },
             { "TotalRetryAttempts", TotalRetryAttempts },
             { "BackoffMultiplier", BackoffMultiplier },
-            { "JitterFactor", JitterFactor }
+            { "JitterFactor", JitterFactor },
+            { "InitialDelayHuman", InitialDelay.ToHumanString() },
+            { "MaxDelayHuman", MaxDelay.ToHumanString() }
         };
         return baseSnapshot;
     }
