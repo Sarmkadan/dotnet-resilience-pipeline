@@ -22,6 +22,10 @@ public sealed class PerformanceMonitor
     /// </summary>
     public void RecordExecution(string policyName, long durationMs, bool success)
     {
+        // Ignore negative or zero measurements due to potential clock skew
+        if (durationMs <= 0)
+            return;
+
         lock (_lockObj)
         {
             if (!_metrics.ContainsKey(policyName))
@@ -135,15 +139,15 @@ public sealed class PerformanceMonitor
                 return new();
 
             var slowest = _metrics.Values.OrderByDescending(m => m.AverageDurationMs).First();
-            var fastest = _metrics.Values.OrderByDescending(m => m.AverageDurationMs).Last();
 
             return _metrics.Values.Select(m => new PerformanceComparison
             {
                 PolicyName = m.PolicyName,
                 AverageDurationMs = m.AverageDurationMs,
-                PercentageOfSlowest = (m.AverageDurationMs * 100.0) / slowest.AverageDurationMs,
+                PercentageOfSlowest = slowest.AverageDurationMs > 0 ? (m.AverageDurationMs * 100.0) / slowest.AverageDurationMs : 0,
                 SuccessRate = m.SuccessRate
             }).OrderByDescending(c => c.AverageDurationMs).ToList();
+
         }
     }
 }
