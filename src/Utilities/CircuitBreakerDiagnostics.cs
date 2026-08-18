@@ -20,6 +20,8 @@ public static class CircuitBreakerDiagnostics
     /// </summary>
     public static CircuitBreakerDiagnosticReport GenerateDiagnosticReport(CircuitBreakerPolicy policy)
     {
+        ArgumentNullException.ThrowIfNull(policy);
+
         var report = new CircuitBreakerDiagnosticReport
         {
             PolicyId = policy.Id,
@@ -103,6 +105,8 @@ public static class CircuitBreakerDiagnostics
         long totalExecutions,
         long failedExecutions)
     {
+        ArgumentNullException.ThrowIfNull(policy);
+
         var effectiveness = new CircuitBreakerEffectiveness
         {
             PolicyName = policy.Name,
@@ -145,6 +149,8 @@ public static class CircuitBreakerDiagnostics
         double observedFailureRate,
         long averageRecoveryTimeMs)
     {
+        ArgumentException.ThrowIfNullOrEmpty(policyName);
+
         var config = new CircuitBreakerConfiguration { PolicyName = policyName };
 
         // Suggest failure threshold based on failure rate
