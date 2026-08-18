@@ -32,6 +32,7 @@ public sealed class JsonPolicySerializer
     /// </summary>
     public string Serialize(ResiliencyPolicy policy)
     {
+        ArgumentNullException.ThrowIfNull(nameof(policy));
         var dto = MapToDto(policy);
         return JsonSerializer.Serialize(dto, _options);
     }
@@ -41,6 +42,7 @@ public sealed class JsonPolicySerializer
     /// </summary>
     public string SerializeMultiple(IEnumerable<ResiliencyPolicy> policies)
     {
+        ArgumentNullException.ThrowIfNull(nameof(policies));
         var dtos = policies.Select(MapToDto).ToList();
         return JsonSerializer.Serialize(dtos, _options);
     }
@@ -50,6 +52,7 @@ public sealed class JsonPolicySerializer
     /// </summary>
     public ResiliencyPolicy? Deserialize(string json)
     {
+        ArgumentException.ThrowIfNullOrEmpty(nameof(json));
         var dto = JsonSerializer.Deserialize<PolicyJson>(json, _options);
         return dto?.ToPolicy();
     }
@@ -59,6 +62,7 @@ public sealed class JsonPolicySerializer
     /// </summary>
     public string SerializeMetrics(object metrics)
     {
+        ArgumentNullException.ThrowIfNull(nameof(metrics));
         return JsonSerializer.Serialize(metrics, _options);
     }
 
@@ -67,6 +71,8 @@ public sealed class JsonPolicySerializer
     /// </summary>
     public async Task ExportToFileAsync(List<ResiliencyPolicy> policies, string filePath)
     {
+        ArgumentNullException.ThrowIfNull(nameof(policies));
+        ArgumentException.ThrowIfNullOrEmpty(nameof(filePath));
         var json = SerializeMultiple(policies);
         await File.WriteAllTextAsync(filePath, json);
     }
@@ -76,6 +82,7 @@ public sealed class JsonPolicySerializer
     /// </summary>
     public async Task<List<ResiliencyPolicy>> ImportFromFileAsync(string filePath)
     {
+        ArgumentException.ThrowIfNullOrEmpty(nameof(filePath));
         var json = await File.ReadAllTextAsync(filePath);
         var dtos = JsonSerializer.Deserialize<List<PolicyJson>>(json, _options);
         return dtos?.Select(dto => dto.ToPolicy()).OfType<ResiliencyPolicy>().ToList() ?? new();
