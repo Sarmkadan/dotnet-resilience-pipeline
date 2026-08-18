@@ -24,6 +24,8 @@ public sealed class PolicyNameGenerator
     /// </summary>
     public string GenerateName(string serviceName, string policyType, int? customNumber = null)
     {
+        ArgumentException.ThrowIfNullOrEmpty(serviceName);
+        ArgumentException.ThrowIfNullOrEmpty(policyType);
         var baseName = NormalizeServiceName(serviceName);
         var typeSuffix = policyType.ToLowerInvariant() switch
         {
@@ -57,6 +59,9 @@ public sealed class PolicyNameGenerator
     /// </summary>
     public string GenerateNameWithPrefix(string prefix, string serviceName, string policyType)
     {
+        ArgumentException.ThrowIfNullOrEmpty(prefix);
+        ArgumentException.ThrowIfNullOrEmpty(serviceName);
+        ArgumentException.ThrowIfNullOrEmpty(policyType);
         var baseName = GenerateName(serviceName, policyType);
         return $"{prefix}-{baseName}";
     }
@@ -66,6 +71,8 @@ public sealed class PolicyNameGenerator
     /// </summary>
     public string GenerateDescriptiveName(string serviceName, string policyType, string? purpose = null)
     {
+        ArgumentException.ThrowIfNullOrEmpty(serviceName);
+        ArgumentException.ThrowIfNullOrEmpty(policyType);
         var parts = new List<string>();
 
         parts.Add(NormalizeServiceName(serviceName));
@@ -83,8 +90,7 @@ public sealed class PolicyNameGenerator
     /// </summary>
     public bool IsValidPolicyName(string name)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            return false;
+        ArgumentException.ThrowIfNullOrEmpty(name);
 
         if (name.Length < 3 || name.Length > 100)
             return false;
@@ -98,6 +104,9 @@ public sealed class PolicyNameGenerator
     /// </summary>
     public string SuggestName(string serviceName, string operation, string failureScenario)
     {
+        ArgumentException.ThrowIfNullOrEmpty(serviceName);
+        ArgumentException.ThrowIfNullOrEmpty(operation);
+        ArgumentException.ThrowIfNullOrEmpty(failureScenario);
         var service = NormalizeServiceName(serviceName);
         var op = NormalizePurpose(operation);
         var scenario = NormalizePurpose(failureScenario);
@@ -110,6 +119,7 @@ public sealed class PolicyNameGenerator
     /// </summary>
     public void RegisterName(string name)
     {
+        ArgumentException.ThrowIfNullOrEmpty(name);
         lock (_lockObj)
         {
             _usedNames.Add(name);
@@ -121,6 +131,7 @@ public sealed class PolicyNameGenerator
     /// </summary>
     public void UnregisterName(string name)
     {
+        ArgumentException.ThrowIfNullOrEmpty(name);
         lock (_lockObj)
         {
             _usedNames.Remove(name);
