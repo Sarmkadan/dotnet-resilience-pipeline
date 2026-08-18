@@ -26,6 +26,8 @@ public sealed class MetricsCollectorWorker
 
     public MetricsCollectorWorker(ResiliencyPipelineService pipelineService, MetricsAggregator aggregator)
     {
+        ArgumentNullException.ThrowIfNull(pipelineService);
+        ArgumentNullException.ThrowIfNull(aggregator);
         _pipelineService = pipelineService;
         _aggregator = aggregator;
     }
