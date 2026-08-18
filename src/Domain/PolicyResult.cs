@@ -1,4 +1,5 @@
 #nullable enable
+
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -9,7 +10,7 @@ using System.Diagnostics;
 namespace DotNetResiliencePipeline.Domain;
 
 /// <summary>
-/// Encapsulates the result of a resilience policy execution with status and metadata.
+// Encapsulates the result of a resilience policy execution with status and metadata.
 /// </summary>
 public sealed class PolicyResult<T>
 {
@@ -28,6 +29,9 @@ public sealed class PolicyResult<T>
     /// </summary>
     public static PolicyResult<T> Success(T data, string policyName, long executionTimeMs, int attempts = 1)
     {
+        if (string.IsNullOrEmpty(policyName))
+            throw new ArgumentException("Policy name cannot be null or empty.", nameof(policyName));
+
         return new PolicyResult<T>
         {
             IsSuccess = true,
@@ -44,6 +48,11 @@ public sealed class PolicyResult<T>
     /// </summary>
     public static PolicyResult<T> Failure(Exception exception, string policyName, long executionTimeMs, int attempts = 1)
     {
+        if (exception == null)
+            throw new ArgumentNullException(nameof(exception), "Exception cannot be null.");
+        if (string.IsNullOrEmpty(policyName))
+            throw new ArgumentException("Policy name cannot be null or empty.", nameof(policyName));
+
         return new PolicyResult<T>
         {
             IsSuccess = false,
@@ -60,6 +69,9 @@ public sealed class PolicyResult<T>
     /// </summary>
     public static PolicyResult<T> Fallback(T data, Exception fallbackException, string policyName, long executionTimeMs)
     {
+        if (string.IsNullOrEmpty(policyName))
+            throw new ArgumentException("Policy name cannot be null or empty.", nameof(policyName));
+
         return new PolicyResult<T>
         {
             IsSuccess = true,
@@ -124,6 +136,9 @@ public sealed class PolicyResult
 
     public static PolicyResult Success(string policyName, long executionTimeMs, int attempts = 1)
     {
+        if (string.IsNullOrEmpty(policyName))
+            throw new ArgumentException("Policy name cannot be null or empty.", nameof(policyName));
+
         return new PolicyResult
         {
             IsSuccess = true,
@@ -136,6 +151,11 @@ public sealed class PolicyResult
 
     public static PolicyResult Failure(Exception exception, string policyName, long executionTimeMs, int attempts = 1)
     {
+        if (exception == null)
+            throw new ArgumentNullException(nameof(exception), "Exception cannot be null.");
+        if (string.IsNullOrEmpty(policyName))
+            throw new ArgumentException("Policy name cannot be null or empty.", nameof(policyName));
+
         return new PolicyResult
         {
             IsSuccess = false,
