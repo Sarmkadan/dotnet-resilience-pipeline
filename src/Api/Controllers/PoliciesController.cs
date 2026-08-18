@@ -49,6 +49,8 @@ public sealed class PoliciesController
     /// </summary>
     public async Task<ApiResponse<PolicyDto>> GetPolicyAsync(string id)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+
         try
         {
             var policy = _pipelineService.GetPolicy(id);
@@ -68,6 +70,8 @@ public sealed class PoliciesController
     /// </summary>
     public async Task<ApiResponse<PolicyDto>> CreatePolicyAsync(CreatePolicyRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         try
         {
             // Validate request
@@ -119,6 +123,9 @@ public sealed class PoliciesController
     /// </summary>
     public async Task<ApiResponse<PolicyDto>> UpdatePolicyAsync(string id, UpdatePolicyRequest request)
     {
+        ArgumentNullException.ThrowIfNull(id);
+        ArgumentNullException.ThrowIfNull(request);
+
         try
         {
             var policy = _pipelineService.GetPolicy(id);
@@ -154,6 +161,8 @@ public sealed class PoliciesController
     /// </summary>
     public async Task<ApiResponse<bool>> DeletePolicyAsync(string id)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+
         try
         {
             if (_pipelineService.RemovePolicy(id))
