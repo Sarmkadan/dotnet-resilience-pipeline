@@ -20,6 +20,8 @@ public static class PolicyValidationHelper
     /// </summary>
     public static ValidationReport ValidatePolicy(ResiliencyPolicy policy)
     {
+        ArgumentNullException.ThrowIfNull(policy);
+
         var report = new ValidationReport { PolicyId = policy.Id, PolicyName = policy.Name };
 
         if (policy is CircuitBreakerPolicy cb)
@@ -96,6 +98,8 @@ public static class PolicyValidationHelper
     /// </summary>
     public static List<string> IdentifyAntiPatterns(ResiliencyPolicy policy)
     {
+        ArgumentNullException.ThrowIfNull(policy);
+
         var antiPatterns = new List<string>();
 
         if (policy is CircuitBreakerPolicy cb)
@@ -121,6 +125,8 @@ public static class PolicyValidationHelper
     /// </summary>
     public static List<string> SuggestOptimizations(ResiliencyPolicy policy)
     {
+        ArgumentNullException.ThrowIfNull(policy);
+
         var suggestions = new List<string>();
 
         if (policy is CircuitBreakerPolicy cb)
