@@ -24,6 +24,8 @@ public sealed class MetricsFormatter
     /// </summary>
     public string FormatMetricsTable(List<PerformanceMetrics> metrics)
     {
+        ArgumentNullException.ThrowIfNull(metrics);
+
         var sb = new StringBuilder();
 
         sb.AppendLine("╔════════════════════════════════════════════════════════════════════════╗");
@@ -50,6 +52,8 @@ public sealed class MetricsFormatter
     /// </summary>
     public string FormatAggregatedMetrics(AggregatedMetrics metrics)
     {
+        ArgumentNullException.ThrowIfNull(metrics);
+
         var sb = new StringBuilder();
 
         sb.AppendLine("╔════════════════════════════════════════════════════════════════════════╗");
@@ -82,6 +86,8 @@ public sealed class MetricsFormatter
     /// </summary>
     public string FormatTrend(MetricsTrend trend)
     {
+        ArgumentNullException.ThrowIfNull(trend);
+
         var sb = new StringBuilder();
 
         sb.AppendLine("╔════════════════════════════════════════════════════════════════════════╗");
@@ -112,6 +118,8 @@ public sealed class MetricsFormatter
     /// </summary>
     public string FormatHealthStatus(string status, double successRate, long totalExecutions)
     {
+        ArgumentException.ThrowIfNullOrEmpty(status);
+
         var sb = new StringBuilder();
         var statusIcon = status switch
         {
@@ -146,6 +154,8 @@ public sealed class MetricsFormatter
     /// </summary>
     public string FormatComparison(PeriodComparison comparison)
     {
+        ArgumentNullException.ThrowIfNull(comparison);
+
         var sb = new StringBuilder();
 
         sb.AppendLine("╔════════════════════════════════════════════════════════════════════════╗");
