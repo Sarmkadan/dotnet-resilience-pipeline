@@ -21,6 +21,8 @@ public sealed class MetricsAggregator
     /// </summary>
     public void RecordSnapshot(MetricsSnapshot snapshot)
     {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
         lock (_lockObj)
         {
             _snapshots.Add(snapshot);
@@ -65,6 +67,8 @@ public sealed class MetricsAggregator
     /// </summary>
     public MetricsTrend AnalyzeTrend(TimeSpan timeWindow, string metricType = "SuccessRate")
     {
+        ArgumentException.ThrowIfNullOrEmpty(metricType);
+
         lock (_lockObj)
         {
             var cutoff = DateTime.UtcNow - timeWindow;
