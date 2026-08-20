@@ -43,6 +43,8 @@ public sealed class FailureInjectionService
         if (rule is null) throw new ArgumentNullException(nameof(rule));
         if (string.IsNullOrWhiteSpace(rule.Key)) throw new ArgumentException("Rule key cannot be empty", nameof(rule));
 
+        _logger.LogInformation("Adding failure injection rule {Key} (type={Type})", rule.Key, rule.Type);
+
         lock (_lock)
         {
             _rules[rule.Key] = rule;
@@ -56,9 +58,16 @@ public sealed class FailureInjectionService
     /// </summary>
     public bool RemoveRule(string key)
     {
+        _logger.LogInformation("Attempting to remove failure injection rule {Key}", key);
+
         lock (_lock)
         {
-            return _rules.Remove(key);
+            var removed = _rules.Remove(key);
+            if (removed)
+                _logger.LogInformation("Successfully removed failure injection rule {Key}", key);
+            else
+                _logger.LogInformation("Failed to remove failure injection rule {Key} (not found)", key);
+            return removed;
         }
     }
 
@@ -67,9 +76,13 @@ public sealed class FailureInjectionService
     /// </summary>
     public IReadOnlyList<InjectionRule> GetRules()
     {
+        _logger.LogInformation("Retrieving all failure injection rules");
+
         lock (_lock)
         {
-            return _rules.Values.ToList();
+            var rules = _rules.Values.ToList();
+            _logger.LogInformation("Retrieved {Count} failure injection rules", rules.Count);
+            return rules;
         }
     }
 
@@ -78,10 +91,17 @@ public sealed class FailureInjectionService
     /// </summary>
     public void DisableAll()
     {
+        _logger.LogInformation("Disabling all failure injection rules");
+
         lock (_lock)
         {
+            var count = 0;
             foreach (var rule in _rules.Values)
+            {
                 rule.IsEnabled = false;
+                count++;
+            }
+            _logger.LogInformation("Disabled {Count} failure injection rules", count);
         }
     }
 
@@ -96,29 +116,40 @@ public sealed class FailureInjectionService
         Func<CancellationToken, Task<T>> operation,
         CancellationToken cancellationToken = default)
     {
-        if (operation is null) throw new ArgumentNullException(nameof(operation));
-
-        InjectionRule? rule;
-        lock (_lock)
+        _logger.LogInformation("Starting execution with rule key {RuleKey}", ruleKey);
+        try
         {
-            _rules.TryGetValue(ruleKey, out rule);
+            if (operation is null) throw new ArgumentNullException(nameof(operation));
+
+            InjectionRule? rule;
+            lock (_lock)
+            {
+                _rules.TryGetValue(ruleKey, out rule);
+            }
+
+            if (rule is null || !rule.IsEnabled || !ShouldInject(rule))
+            {
+                _logger.LogInformation("No active injection rule for key {RuleKey}, executing normally", ruleKey);
+                return await operation(cancellationToken);
+            }
+
+            lock (_lock) { TotalInjections++; }
+            rule.InjectionsPerformed++;
+
+            _logger.LogWarning("Injecting {Type} failure for rule '{Key}'", rule.Type, rule.Key);
+
+            return rule.Type switch
+            {
+                InjectionType.Exception => InjectException<T>(rule),
+                InjectionType.Latency => await InjectLatencyAsync(rule, operation, cancellationToken),
+                InjectionType.Timeout => await InjectTimeoutAsync<T>(rule, cancellationToken),
+                _ => await operation(cancellationToken)
+            };
         }
-
-        if (rule is null || !rule.IsEnabled || !ShouldInject(rule))
-            return await operation(cancellationToken);
-
-        lock (_lock) { TotalInjections++; }
-        rule.InjectionsPerformed++;
-
-        _logger.LogWarning("Injecting {Type} failure for rule '{Key}'", rule.Type, rule.Key);
-
-        return rule.Type switch
+        finally
         {
-            InjectionType.Exception => InjectException<T>(rule),
-            InjectionType.Latency => await InjectLatencyAsync(rule, operation, cancellationToken),
-            InjectionType.Timeout => await InjectTimeoutAsync<T>(rule, cancellationToken),
-            _ => await operation(cancellationToken)
-        };
+            _logger.LogInformation("Finished execution with rule key {RuleKey} (total injections: {TotalInjections})", ruleKey, TotalInjections);
+        }
     }
 
     /// <summary>
@@ -129,9 +160,17 @@ public sealed class FailureInjectionService
         Func<CancellationToken, Task> operation,
         CancellationToken cancellationToken = default)
     {
-        await ExecuteAsync<object?>(ruleKey,
-            async ct => { await operation(ct); return null; },
-            cancellationToken);
+        _logger.LogInformation("Starting void execution with rule key {RuleKey}", ruleKey);
+        try
+        {
+            await ExecuteAsync<object?>(ruleKey,
+                async ct => { await operation(ct); return null; },
+                cancellationToken);
+        }
+        finally
+        {
+            _logger.LogInformation("Finished void execution with rule key {RuleKey}", ruleKey);
+        }
     }
 
     // ─── time window methods ────────────────────────────────────────────────────
