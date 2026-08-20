@@ -50,6 +50,9 @@ public sealed class AdaptiveTimeoutService
         if (operation is null)
             throw new ArgumentNullException(nameof(operation));
 
+        // Log start of execution
+        _logger.LogInformation("Starting execution of adaptive timeout policy {PolicyName}", policy.Name);
+
         // Use the common TimeoutService with the adaptive timeout policy
         var result = await _timeoutService.ExecuteAsync(policy, operation, cancellationToken);
 
@@ -57,6 +60,9 @@ public sealed class AdaptiveTimeoutService
         _logger.LogDebug(
             "AdaptiveTimeout '{PolicyName}' completed in {{ElapsedMs}}ms (limit={{TimeoutMs}}ms)",
             policy.Name, _timeoutService.GetTimeoutMilliseconds(policy));
+
+        // Log end of execution
+        _logger.LogInformation("Finished execution of adaptive timeout policy {PolicyName}", policy.Name);
 
         return result;
     }
@@ -69,7 +75,10 @@ public sealed class AdaptiveTimeoutService
         if (policy is null)
             throw new ArgumentNullException(nameof(policy));
 
-        return policy.CurrentTimeout;
+        _logger.LogInformation("Getting current timeout for policy {PolicyName}", policy.Name);
+        var timeout = policy.CurrentTimeout;
+        _logger.LogInformation("Returning current timeout {Timeout} for policy {PolicyName}", timeout, policy.Name);
+        return timeout;
     }
 
     /// <summary>
@@ -80,7 +89,8 @@ public sealed class AdaptiveTimeoutService
         if (policy is null)
             throw new ArgumentNullException(nameof(policy));
 
-        return new Dictionary<string, object>
+        _logger.LogInformation("Getting adaptation summary for policy {PolicyName}", policy.Name);
+        var summary = new Dictionary<string, object>
         {
             { "PolicyName", policy.Name },
             { "CurrentTimeoutMs", policy.CurrentTimeout.TotalMilliseconds },
@@ -94,5 +104,7 @@ public sealed class AdaptiveTimeoutService
             { "SuccessRate", policy.GetSuccessRate() },
             { "TotalExecutions", policy.TotalExecutions }
         };
+        _logger.LogInformation("Returning adaptation summary for policy {PolicyName}", policy.Name);
+        return summary;
     }
 }
