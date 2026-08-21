@@ -25,6 +25,10 @@ public sealed class ErrorHandlingMiddleware
     /// </summary>
     public ErrorContext HandleException(Exception ex, string policyName, string operationName)
     {
+        ArgumentNullException.ThrowIfNull(ex);
+        ArgumentException.ThrowIfNullOrEmpty(policyName);
+        ArgumentException.ThrowIfNullOrEmpty(operationName);
+
         var context = new ErrorContext
         {
             Id = Guid.NewGuid().ToString(),
@@ -112,6 +116,8 @@ public sealed class ErrorHandlingMiddleware
     /// </summary>
     public List<ErrorContext> GetErrorsForPolicy(string policyName)
     {
+        ArgumentException.ThrowIfNullOrEmpty(policyName);
+
         lock (_lockObj)
         {
             return _errorContexts.Where(c => c.PolicyName == policyName).ToList();
