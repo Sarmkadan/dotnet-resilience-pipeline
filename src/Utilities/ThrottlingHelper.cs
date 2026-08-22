@@ -69,6 +69,8 @@ public sealed class ThrottlingHelper
     /// </summary>
     public bool ShouldThrottle(string policyName, int cost = 1)
     {
+        ArgumentException.ThrowIfNullOrEmpty(policyName);
+
         if (!_throttles.TryGetValue(policyName, out var throttle))
             return false;
 
@@ -320,6 +322,10 @@ public static class ThrottlingExtensions
         Func<Task<T>> operation,
         TimeSpan? retryDelay = null)
     {
+        ArgumentNullException.ThrowIfNull(throttler);
+        ArgumentException.ThrowIfNullOrEmpty(policyName);
+        ArgumentNullException.ThrowIfNull(operation);
+
         int attempts = 0;
         const int maxAttempts = 3;
         retryDelay ??= TimeSpan.FromMilliseconds(100);
@@ -346,6 +352,10 @@ public static class ThrottlingExtensions
         Func<Task> operation,
         TimeSpan? retryDelay = null)
     {
+        ArgumentNullException.ThrowIfNull(throttler);
+        ArgumentException.ThrowIfNullOrEmpty(policyName);
+        ArgumentNullException.ThrowIfNull(operation);
+
         int attempts = 0;
         const int maxAttempts = 3;
         retryDelay ??= TimeSpan.FromMilliseconds(100);
