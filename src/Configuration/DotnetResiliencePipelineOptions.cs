@@ -86,6 +86,7 @@ public sealed class DotnetResiliencePipelineOptions
         /// </summary>
         public CircuitBreakerPolicy ToPolicy(string name)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
             return new CircuitBreakerPolicy(name)
             {
                 FailureThreshold = FailureThreshold,
@@ -152,6 +153,7 @@ public sealed class DotnetResiliencePipelineOptions
         /// </summary>
         public RetryPolicy ToPolicy(string name)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
             return new RetryPolicy(name)
             {
                 MaxRetries = MaxRetries,
@@ -182,6 +184,7 @@ public sealed class DotnetResiliencePipelineOptions
         /// </summary>
         public TimeoutPolicy ToPolicy(string name)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
             return new TimeoutPolicy(name)
             {
                 Timeout = TimeSpan.FromSeconds(TimeoutSeconds)
@@ -213,6 +216,7 @@ public sealed class DotnetResiliencePipelineOptions
         /// </summary>
         public BulkheadPolicy ToPolicy(string name)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
             return new BulkheadPolicy(name)
             {
                 MaxParallelization = MaxParallelization,
@@ -244,6 +248,7 @@ public sealed class DotnetResiliencePipelineOptions
         /// </summary>
         public FallbackPolicy ToPolicy(string name)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
             return new FallbackPolicy(name)
             {
                 FallbackOnAnyException = FallbackOnAnyException,
