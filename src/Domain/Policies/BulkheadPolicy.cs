@@ -16,6 +16,11 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// Bulkhead pattern implementation that isolates resources to prevent resource exhaustion.
 /// Limits concurrent executions to protect system resources.
 /// </summary>
+/// <summary>
+/// The <see cref="BulkheadPolicy"/> class implements the bulkhead pattern to isolate resources and prevent resource exhaustion.
+/// It limits concurrent executions to protect system resources and manages request queuing when the bulkhead is full.
+/// </summary>
+/// <seealso cref="ResiliencyPolicy"/>
 public sealed class BulkheadPolicy : ResiliencyPolicy
 {
     private readonly SemaphoreSlim _semaphore;
