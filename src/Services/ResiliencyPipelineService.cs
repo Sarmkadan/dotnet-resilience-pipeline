@@ -25,10 +25,25 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
     private readonly Dictionary<string, ResiliencyPolicy> _policies;
     private readonly object _lockObj = new object();
 
+    /// <summary>
+    /// Gets the unique identifier for this pipeline instance.
+    /// </summary>
     public string PipelineId { get; } = Guid.NewGuid().ToString();
+    /// <summary>
+    /// Gets the date and time when this pipeline was created.
+    /// </summary>
     public DateTime CreatedAt { get; } = DateTime.UtcNow;
+    /// <summary>
+    /// Gets the total number of executions performed by this pipeline.
+    /// </summary>
     public long TotalExecutions { get; private set; }
+    /// <summary>
+    /// Gets the number of successful executions performed by this pipeline.
+    /// </summary>
     public long SuccessfulExecutions { get; private set; }
+    /// <summary>
+    /// Gets the number of failed executions performed by this pipeline.
+    /// </summary>
     public long FailedExecutions { get; private set; }
 
     public ResiliencyPipelineService()
