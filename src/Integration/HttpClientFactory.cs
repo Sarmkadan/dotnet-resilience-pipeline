@@ -269,4 +269,6 @@ public sealed class ResilientHttpResponse
     public string? Message { get; set; }
     public Exception? Exception { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+    public override string ToString() => $"ResilientHttpResponse {{ Success = {Success}, Content = {Content}, Headers = {Headers}, Message = {Message}, Exception = {Exception}, Timestamp = {Timestamp} }}";
 }
