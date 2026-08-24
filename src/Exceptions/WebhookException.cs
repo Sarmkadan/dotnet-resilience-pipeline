@@ -27,6 +27,9 @@ public class WebhookException : ResiliencyException
         WebhookId = webhookId;
         WebhookUrl = webhookUrl;
     }
+
+    public override string ToString() =>
+        $"WebhookException {{ WebhookId = {WebhookId}, WebhookUrl = {WebhookUrl}, AttemptCount = {(this as WebhookDeliveryFailedException)?.AttemptCount}, EventType = {(this as WebhookDeliveryFailedException)?.EventType} }}";
 }
 
 /// <summary>
