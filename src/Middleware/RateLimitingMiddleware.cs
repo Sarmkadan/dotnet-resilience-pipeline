@@ -117,6 +117,12 @@ public sealed class RateLimitingMiddleware
 			_limiters.Clear();
 		}
 	}
+
+	/// <summary>
+	/// Returns a concise, informative representation of the middleware state.
+	/// </summary>
+	public override string ToString() =>
+		$"RateLimitingMiddleware {{ DefaultRequestsPerSecond = {_defaultRequestsPerSecond}, DefaultRequestsPerMinute = {_defaultRequestsPerMinute}, ActiveClients = {_limiters.Count} }}";
 }
 
 /// <summary>
