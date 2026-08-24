@@ -27,6 +27,17 @@ public class HttpClientException : ResiliencyException
         ClientName = clientName;
         RequestUrl = requestUrl;
     }
+
+    public override string ToString()
+    {
+        return this switch
+        {
+            InvalidHttpRequestException e => $"InvalidHttpRequestException {{ ClientName = {e.ClientName}, RequestUrl = {e.RequestUrl}, HttpMethod = {e.HttpMethod} }}",
+            HttpResponseException e => $"HttpResponseException {{ ClientName = {e.ClientName}, RequestUrl = {e.RequestUrl}, StatusCode = {e.StatusCode} }}",
+            HttpTimeoutException e => $"HttpTimeoutException {{ ClientName = {e.ClientName}, RequestUrl = {e.RequestUrl}, Timeout = {e.Timeout} }}",
+            _ => $"HttpClientException {{ ClientName = {ClientName}, RequestUrl = {RequestUrl} }}"
+        };
+    }
 }
 
 /// <summary>
