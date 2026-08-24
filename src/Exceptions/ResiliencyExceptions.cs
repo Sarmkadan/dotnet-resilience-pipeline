@@ -30,6 +30,19 @@ public class ResiliencyException : Exception
         PolicyType = policyType;
         OccurredAt = DateTime.UtcNow;
     }
+
+    /// <summary>
+    /// Returns a concise, informative representation of this exception,
+    /// including policy details and strategy-specific state when available.
+    /// </summary>
+    public override string ToString()
+    {
+        var timeUntilRetry = (this as CircuitBreakerOpenException)?.TimeUntilRetry.ToString() ?? "N/A";
+        var consecutiveFailures = (this as CircuitBreakerOpenException)?.ConsecutiveFailures.ToString() ?? "N/A";
+        var currentExecutions = (this as BulkheadRejectedException)?.CurrentExecutions.ToString() ?? "N/A";
+
+        return $"ResiliencyException {{ PolicyName = {PolicyName ?? "N/A"}, PolicyType = {PolicyType ?? "N/A"}, OccurredAt = {OccurredAt:O}, TimeUntilRetry = {timeUntilRetry}, ConsecutiveFailures = {consecutiveFailures}, CurrentExecutions = {currentExecutions} }}";
+    }
 }
 
 /// <summary>
