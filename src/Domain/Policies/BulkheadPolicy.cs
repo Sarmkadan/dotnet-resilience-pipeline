@@ -361,6 +361,12 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
     }
 
     /// <summary>
+    /// Returns a concise, informative representation of the bulkhead policy.
+    /// </summary>
+    public override string ToString() =>
+        $"BulkheadPolicy {{ MaxParallelization = {MaxParallelization}, MaxQueueLength = {MaxQueueLength} }}";
+
+    /// <summary>
     /// Disposes the internal SemaphoreSlim instances.
     /// </summary>
     ~BulkheadPolicy()
