@@ -31,6 +31,11 @@ public sealed class CommandOptions
     public string? ConfigFile { get; set; }
 
     /// <summary>
+    /// Returns a string representation of the command options.
+    /// </summary>
+    public override string ToString() => $"CommandOptions {{ Command = {Command}, Subcommand = {Subcommand}, Arguments = {string.Join(", ", Arguments.Select(kvp => $"{kvp.Key}:{kvp.Value}"))}, Flags = {string.Join(", ", Flags)}, PolicyName = {PolicyName}, PolicyType = {PolicyType} }}";
+
+    /// <summary>
     /// Gets a flag value by name, checking multiple variations.
     /// </summary>
     public bool HasFlag(params string[] names)
