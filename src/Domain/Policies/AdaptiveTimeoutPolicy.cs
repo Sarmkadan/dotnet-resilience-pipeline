@@ -84,6 +84,12 @@ public sealed class AdaptiveTimeoutPolicy : ResiliencyPolicy, ITimeoutStrategy
     }
 
     /// <summary>
+    /// Returns a concise, informative string representation of this policy.
+    /// </summary>
+    public override string ToString() =>
+        $"AdaptiveTimeoutPolicy {{ InitialTimeout = {InitialTimeout}, MinTimeout = {MinTimeout}, MaxTimeout = {MaxTimeout}, TargetPercentile = {TargetPercentile}, HeadroomFactor = {HeadroomFactor}, WindowSize = {WindowSize} }}";
+
+    /// <summary>
     /// Records an observed execution time and triggers timeout adaptation when the adjustment interval elapses.
     /// </summary>
     public void RecordExecutionTime(long executionTimeMs)
