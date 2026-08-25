@@ -140,6 +140,16 @@ public sealed class MetricsCollectorWorker
     {
         return _aggregator.GenerateReport(timeWindow);
     }
+
+    /// <summary>
+    /// Returns a concise, informative representation of the metrics collector worker.
+    /// </summary>
+    public override string ToString()
+    {
+        var status = GetStatus();
+
+        return $"MetricsCollectorWorker {{ CollectionInterval = {CollectionInterval}, IsRunning = {IsRunning}, TotalCollections = {TotalCollections}, LastCollectionTime = {status.LastCollectionTime}, RecentMetrics = {status.RecentMetrics} }}";
+    }
 }
 
 /// <summary>
