@@ -150,6 +150,24 @@ public sealed class PerformanceMonitor
 
         }
     }
+
+    /// <summary>
+    /// Returns a concise, informative representation of the monitor,
+    /// including each tracked policy and its key performance metrics.
+    /// </summary>
+    public override string ToString()
+    {
+        lock (_lockObj)
+        {
+            if (_metrics.Count == 0)
+                return "PerformanceMonitor { PoliciesTracked = 0 }";
+
+            var details = string.Join("; ", _metrics.Values.Select(m =>
+                $"(PolicyName = {m.PolicyName}, TotalExecutions = {m.TotalExecutions}, TotalDurationMs = {m.TotalDurationMs}, SuccessfulExecutions = {m.SuccessfulExecutions}, FailedExecutions = {m.FailedExecutions}, AllDurations.Count = {m.AllDurations.Count})"));
+
+            return $"PerformanceMonitor {{ PoliciesTracked = {_metrics.Count}, Metrics = [{details}] }}";
+        }
+    }
 }
 
 /// <summary>
