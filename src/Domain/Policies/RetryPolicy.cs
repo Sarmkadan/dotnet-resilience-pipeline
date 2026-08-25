@@ -223,4 +223,9 @@ public sealed class RetryPolicy : ResiliencyPolicy
         };
         return baseSnapshot;
     }
+
+    public override string ToString()
+    {
+        return $"RetryPolicy {{ MaxRetries = {MaxRetries}, InitialDelay = {InitialDelay}, Strategy = {Strategy}, MaxDelay = {MaxDelay}, BackoffMultiplier = {BackoffMultiplier}, UseJitter = {UseJitter} }}";
+    }
 }
