@@ -130,6 +130,15 @@ public sealed class HealthCheckWorker
     }
 
     /// <summary>
+    /// Returns a concise string representation of the health check worker state.
+    /// </summary>
+    public override string ToString()
+    {
+        var status = GetStatus();
+        return $"HealthCheckWorker {{ CheckInterval = {CheckInterval}, HealthyThreshold = {HealthyThreshold}, DegradedThreshold = {DegradedThreshold}, IsRunning = {IsRunning}, LastCheckTime = {status.LastCheckTime}, PipelineSuccessRate = {status.PipelineSuccessRate} }}";
+    }
+
+    /// <summary>
     /// Generates a comprehensive health report aggregating all policy health statuses.
     /// </summary>
     /// <returns>HealthReport containing aggregated health metrics</returns>
