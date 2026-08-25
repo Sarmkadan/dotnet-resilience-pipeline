@@ -6,11 +6,15 @@
 
 namespace DotNetResiliencePipeline.Domain.Policies;
 
-/// <summary>
+public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
+
+    /// <summary>
 /// Circuit breaker pattern implementation that prevents cascading failures.
 /// States: Closed (normal) -> Open (fail-fast) -> Half-Open (testing) -> Closed
 /// </summary>
-/// <summary>
+public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
+
+    /// <summary>
 /// The <see cref="CircuitBreakerPolicy"/> class implements the circuit breaker pattern to prevent cascading failures.
 /// It monitors failures and opens the circuit to reject requests when thresholds are exceeded,
 /// then allows recovery testing in a half-open state before closing the circuit.
@@ -30,15 +34,21 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
     private int _consecutiveFailures = 0;
     private long _circuitBreakerTrips = 0;
 
+    public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
+
     /// <summary>
     /// Number of consecutive failures before opening the circuit.
     /// </summary>
     public int FailureThreshold { get; set; } = 5;
 
+    public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
+
     /// <summary>
     /// Duration the circuit remains open before transitioning to half-open.
     /// </summary>
     public TimeSpan OpenDuration { get; set; } = TimeSpan.FromSeconds(30);
+
+    public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
 
     /// <summary>
     /// Number of successful executions in half-open state to close the circuit.
@@ -49,6 +59,8 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
         set => _successThresholdInHalfOpen = value <= 0 ? 1 : value; // Ensure it's at least 1
     }
     private int _successThresholdInHalfOpen = 3; // backing field
+
+    public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
 
     /// <summary>
     /// Current state of the circuit.
@@ -67,10 +79,14 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
         }
     }
 
+    public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
+
     /// <summary>
     /// Total number of times the circuit has tripped to the Open state.
     /// </summary>
     public long CircuitBreakerTrips => _circuitBreakerTrips;
+
+    public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
 
     /// <summary>
     /// Number of consecutive failures recorded.
@@ -80,6 +96,8 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
         get => _consecutiveFailures;
         private set => _consecutiveFailures = value;
     }
+
+    public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
 
     /// <summary>
     /// Time remaining until half-open state (if circuit is open).
@@ -101,6 +119,8 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
     {
         Metadata["CircuitState"] = CurrentState;
     }
+
+    public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
 
     /// <summary>
     /// Records a successful execution and potentially transitions state.
@@ -126,6 +146,8 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
         }
     }
 
+    public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
+
     /// <summary>
     /// Records a failed execution and potentially transitions to open state.
     /// </summary>
@@ -147,6 +169,8 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
         }
     }
 
+    public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
+
     /// <summary>
     /// Checks if the circuit should transition to half-open state.
     /// </summary>
@@ -159,6 +183,8 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
         }
     }
 
+    public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
+
     /// <summary>
     /// Opens the circuit, rejecting further requests.
     /// </summary>
@@ -170,6 +196,8 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
         Metadata["OpenedAt"] = DateTime.UtcNow;
     }
 
+    public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
+
     /// <summary>
     /// Transitions to half-open state to test if the system recovered.
     /// </summary>
@@ -179,6 +207,8 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
         Metadata["CircuitState"] = CurrentState;
         Metadata["SuccessfulInHalfOpen"] = 0;
     }
+
+    public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
 
     /// <summary>
     /// Closes the circuit, resuming normal operation.
@@ -191,6 +221,8 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
         Metadata["ClosedAt"] = DateTime.UtcNow;
     }
 
+    public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
+
     /// <summary>
     /// Manually resets the circuit to closed state.
     /// </summary>
@@ -199,6 +231,8 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
         CloseCircuit();
         ResetStatistics();
     }
+
+    public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
 
     /// <summary>
     /// Gets a detailed snapshot of the circuit breaker state.
