@@ -316,6 +316,8 @@ public sealed class ApiConfiguration
     public Dictionary<string, string> DefaultHeaders { get; set; } = new();
     public int MaxRetries { get; set; } = 3;
     public TimeSpan RetryDelay { get; set; } = TimeSpan.FromMilliseconds(100);
+
+    public override string ToString() => $"ApiConfiguration {{ BaseUrl = {BaseUrl}, ApiKey = {ApiKey}, BearerToken = {BearerToken}, Timeout = {Timeout}, DefaultHeaders = {DefaultHeaders}, MaxRetries = {MaxRetries} }}";
 }
 
 /// <summary>
