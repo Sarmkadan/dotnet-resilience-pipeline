@@ -6,13 +6,10 @@
 
 namespace DotNetResiliencePipeline.Domain.Policies;
 
-public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
-
     /// <summary>
 /// Circuit breaker pattern implementation that prevents cascading failures.
 /// States: Closed (normal) -> Open (fail-fast) -> Half-Open (testing) -> Closed
 /// </summary>
-public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}"; => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
 
     /// <summary>
 /// The <see cref="CircuitBreakerPolicy"/> class implements the circuit breaker pattern to prevent cascading failures.
@@ -220,4 +217,6 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
         };
         return baseSnapshot;
     }
+
+    public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
 }
