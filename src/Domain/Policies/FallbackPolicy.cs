@@ -245,4 +245,6 @@ public sealed class FallbackPolicy : ResiliencyPolicy
         };
         return baseSnapshot;
     }
+
+    public override string ToString() => $"FallbackPolicy {{ FallbackTriggerExceptions = {FallbackTriggerExceptions}, FallbackOnAnyException = {FallbackOnAnyException}, FallbackTimeout = {FallbackTimeout} }}";
 }
