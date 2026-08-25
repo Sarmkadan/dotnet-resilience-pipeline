@@ -28,6 +28,12 @@ public sealed class PoliciesController
     }
 
     /// <summary>
+    /// Returns a concise, informative representation of this controller.
+    /// </summary>
+    public override string ToString() =>
+        $"PoliciesController {{ PipelineService = {_pipelineService}, PolicyRepository = {_policyRepository} }}";
+
+    /// <summary>
     /// GET /api/policies - Retrieves all registered policies.
     /// </summary>
     public async Task<ApiResponse<List<PolicyDto>>> GetAllPoliciesAsync()
