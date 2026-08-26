@@ -20,6 +20,26 @@ public sealed class PolicyNameGenerator
     private readonly object _lockObj = new object();
 
     /// <summary>
+    /// Gets or sets the service name.
+    /// </summary>
+    public string Service { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the operation name.
+    /// </summary>
+    public string Operation { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the policy type.
+    /// </summary>
+    public string PolicyType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the environment.
+    /// </summary>
+    public string Environment { get; set; } = string.Empty;
+
+    /// <summary>
     /// Generates a policy name based on service and policy type.
     /// </summary>
     public string GenerateName(string serviceName, string policyType, int? customNumber = null)
@@ -160,6 +180,11 @@ public sealed class PolicyNameGenerator
             _nameCounters.Clear();
         }
     }
+
+    /// <summary>
+    /// Returns a string representation of the PolicyNameGenerator.
+    /// </summary>
+    public override string ToString() => $"PolicyNameGenerator {{ Service = {Service}, Operation = {Operation}, PolicyType = {PolicyType}, Environment = {Environment} }}";
 
     private string NormalizeServiceName(string name)
     {
