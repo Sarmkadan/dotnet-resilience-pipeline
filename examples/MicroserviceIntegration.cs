@@ -17,8 +17,16 @@ namespace DotNetResiliencePipeline.Examples;
 /// </summary>
 public sealed class MicroserviceIntegrationExample
 {
+    public CircuitBreakerPolicy? CircuitBreaker { get; set; }
+    public RetryPolicy? Retry { get; set; }
+    public TimeoutPolicy? Timeout { get; set; }
+    public BulkheadPolicy? Bulkhead { get; set; }
+    public FallbackPolicy? Fallback { get; set; }
+
     private record UserDto(int Id, string Name, string Email);
     private record OrderDto(int Id, int UserId, decimal Amount);
+
+    public override string ToString() => $"MicroserviceIntegrationExample {{ CircuitBreaker = {CircuitBreaker}, Retry = {Retry}, Timeout = {Timeout}, Bulkhead = {Bulkhead}, Fallback = {Fallback} }}";
 
     public static async Task Main()
     {
