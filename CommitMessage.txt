@@ -1,0 +1,1 @@
+Add ToString override to DotnetResiliencePipelineOptions
