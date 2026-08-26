@@ -33,6 +33,8 @@ public sealed class FailureInjectionService
         _logger = logger ?? NullLogger<FailureInjectionService>.Instance;
     }
 
+    public override string ToString() => $"FailureInjectionService {{ TotalInjections = {TotalInjections}, RulesCount = {_rules.Count} }}";
+
     // ─── rule management ──────────────────────────────────────────────────────
 
     /// <summary>
@@ -324,6 +326,8 @@ public sealed class InjectionRule
     [RegularExpression("^([01]?[0-9]|2[0-3]):([0-5][0-9])$",
         ErrorMessage = "EndTime must be in HH:mm format (24-hour clock)")]
     public string? EndTime { get; set; }
+
+    public override string ToString() => $"InjectionRule {{ Key = {Key}, Type = {Type}, IsEnabled = {IsEnabled}, InjectionRate = {InjectionRate}, ExceptionMessage = {ExceptionMessage}, ExceptionFactory = {ExceptionFactory} }}";
 }
 
 /// <summary>
