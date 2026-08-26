@@ -148,6 +148,11 @@ public sealed class MicroserviceIntegrationExample
         public TimeoutPolicy? Timeout { get; set; }
         public BulkheadPolicy? Bulkhead { get; set; }
         public FallbackPolicy? Fallback { get; set; }
+
+        public override string ToString()
+        {
+            return $"ServicePolicies {{ CircuitBreaker = {CircuitBreaker?.State ?? "null"}, Retry = {Retry?.GetType().Name ?? "null"}, Timeout = {Timeout?.GetType().Name ?? "null"}, Bulkhead = {Bulkhead?.GetType().Name ?? "null"}, Fallback = {Fallback?.GetType().Name ?? "null"} }}";
+        }
     }
 
     private static ServicePolicies GetPolicies(PolicyRepository repository, string serviceName)
