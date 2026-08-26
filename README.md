@@ -113,6 +113,42 @@ builder.AllowCustomOrder() // Opt-in for non-canonical ordering
 
 ⚠️ **Warning:** Non-canonical ordering can lead to unexpected behavior where policies don't work as expected. Use only when you have a specific reason.
 
+## RetryService
+
+`RetryService` is the execution engine behind `RetryPolicy`: it runs an asynchronous operation, re-executes it while the failure is considered retryable, and waits between attempts according to the configured backoff strategy (fixed, linear or exponential) or an AWS-style decorrelated jitter schedule. When the retry budget is exhausted it throws a `MaxRetriesExceededException` carrying every exception observed during the attempts. Beyond executing operations, the service exposes its decision helpers - `CalculateRetryDelay`, `IsRetryable` and `ComputeDecorrelatedJitterDelay` - so callers can reuse the same backoff and retryability rules without running an operation.
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Services;
+
+var retryService = new RetryService();
+
+var policy = new RetryPolicy
+{
+    MaxRetries = 3,
+    InitialDelay = TimeSpan.FromMilliseconds(100),
+    Strategy = RetryStrategy.Exponential,
+};
+
+using var httpClient = new HttpClient();
+
+// Executes the call, retrying transient failures with exponential backoff.
+string body = await retryService.ExecuteAsync(
+    policy,
+    async ct => await httpClient.GetStringAsync("https://api.example.com/orders", ct),
+    CancellationToken.None);
+
+// The backoff and retryability logic can also be used on its own:
+for (int attempt = 0; attempt < policy.MaxRetries; attempt++)
+{
+    TimeSpan delay = retryService.CalculateRetryDelay(policy, attempt);
+    Console.WriteLine($"Attempt {attempt}: waiting {delay.TotalMilliseconds:F0} ms");
+}
+
+bool shouldRetry = retryService.IsRetryable(policy, new TimeoutException());
+TimeSpan jittered = retryService.ComputeDecorrelatedJitterDelay(policy, TimeSpan.FromSeconds(2));
+```
+
 ## TimeoutPolicyTestsExtensions
 
 `TimeoutPolicyTestsExtensions` provides a collection of helper extension methods that simplify writing unit tests for `TimeoutPolicy`. The methods enable quick creation of test policies, recording of execution times and timeouts, generation of deterministic or random execution sequences, and fluent assertions on statistics and configuration validity.
