@@ -224,6 +224,16 @@ public sealed class MetricsAggregator
 
         return sortedValues[index];
     }
+
+    /// <summary>
+    /// Returns a concise string representation of the aggregator.
+    /// Includes MaxSnapshots and the most recent snapshot data (if any).
+    /// </summary>
+    public override string ToString()
+    {
+        var latest = _snapshots.Count > 0 ? _snapshots[^1] : null;
+        return $"MetricsAggregator {{ MaxSnapshots = {MaxSnapshots}, Timestamp = {latest?.Timestamp:u}, TotalExecutions = {latest?.TotalExecutions ?? 0}, SuccessfulExecutions = {latest?.SuccessfulExecutions ?? 0}, FailedExecutions = {latest?.FailedExecutions ?? 0}, SuccessRate = {latest?.SuccessRate ?? 0} }}";
+    }
 }
 
 /// <summary>
