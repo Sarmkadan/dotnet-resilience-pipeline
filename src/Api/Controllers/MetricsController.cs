@@ -25,6 +25,12 @@ public sealed class MetricsController
         _historyRepository = historyRepository;
     }
 
+    public override string ToString()
+    {
+        var stats = _pipelineService.GetStatistics();
+        return $"MetricsController {{ PipelineId = {stats.PipelineId}, CreatedAt = {stats.CreatedAt}, TotalExecutions = {stats.TotalExecutions}, SuccessfulExecutions = {stats.SuccessfulExecutions}, FailedExecutions = {stats.FailedExecutions}, SuccessRate = {stats.SuccessRate} }}";
+    }
+
     /// <summary>
     /// GET /api/metrics/pipeline - Retrieves pipeline-level metrics.
     /// </summary>
