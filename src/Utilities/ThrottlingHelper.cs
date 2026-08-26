@@ -135,6 +135,40 @@ public sealed class ThrottlingHelper
     }
 
     /// <summary>
+    /// Returns a concise string representation of the throttling helper.
+    /// Includes statistics for the most recently used throttle.
+    /// </summary>
+    public override string ToString()
+    {
+        string policyName = string.Empty;
+        int maxRate = 0;
+        long totalRequests = 0;
+        long allowedRequests = 0;
+        long throttledRequests = 0;
+        double throttleRate = 0.0;
+
+        lock (_evictionLock)
+        {
+            if (_lruList.Count > 0 && _lruList.Last != null)
+            {
+                string candidatePolicyName = _lruList.Last.Value;
+                if (_throttles.TryGetValue(candidatePolicyName, out var throttle))
+                {
+                    var stats = throttle.GetStatistics();
+                    policyName = stats.PolicyName ?? string.Empty;
+                    maxRate = stats.MaxRate;
+                    totalRequests = stats.TotalRequests;
+                    allowedRequests = stats.AllowedRequests;
+                    throttledRequests = stats.ThrottledRequests;
+                    throttleRate = stats.ThrottleRate;
+                }
+            }
+        }
+
+        return $"ThrottlingHelper {{ PolicyName = {policyName}, MaxRate = {maxRate}, TotalRequests = {totalRequests}, AllowedRequests = {allowedRequests}, ThrottledRequests = {throttledRequests}, ThrottleRate = {throttleRate} }}";
+    }
+
+    /// <summary>
     /// Removes expired throttles based on LRU tracking.
     /// </summary>
     /// <returns>Number of throttles removed.</returns>
