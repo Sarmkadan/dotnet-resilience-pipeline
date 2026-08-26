@@ -202,6 +202,20 @@ public sealed class PolicyCacheService
         if (lru is not null)
             _cache.TryRemove(lru.PolicyName, out _);
     }
+
+    public override string ToString()
+    {
+        var firstEntry = _cache.FirstOrDefault();
+        if (firstEntry.Value != null)
+        {
+            var cached = firstEntry.Value;
+            return $"PolicyCacheService {{ DefaultTtl = {DefaultTtl}, MaxCacheSize = {MaxCacheSize}, PolicyName = {cached.PolicyName}, Config = {cached.Config}, CreatedAt = {cached.CreatedAt}, ExpiresAt = {cached.ExpiresAt} }}";
+        }
+        else
+        {
+            return $"PolicyCacheService {{ DefaultTtl = {DefaultTtl}, MaxCacheSize = {MaxCacheSize}, PolicyName = (none), Config = (none), CreatedAt = (none), ExpiresAt = (none) }}";
+        }
+    }
 }
 
 /// <summary>
