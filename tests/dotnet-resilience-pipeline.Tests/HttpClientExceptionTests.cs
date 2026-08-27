@@ -4,8 +4,14 @@ using Xunit;
 
 namespace DotNetResiliencePipeline.Tests
 {
+    /// <summary>
+    /// Contains unit tests for the HttpClientException and related exception classes.
+    /// </summary>
     public class HttpClientExceptionTests
     {
+        /// <summary>
+        /// Verifies that the HttpClientException constructor sets the Message, ClientName, and RequestUrl properties correctly when provided.
+        /// </summary>
         [Fact]
         public void HttpClientException_Constructor_SetsProperties()
         {
@@ -24,6 +30,9 @@ namespace DotNetResiliencePipeline.Tests
             Assert.Null(ex.InnerException);
         }
 
+        /// <summary>
+        /// Verifies that the HttpClientException constructor correctly sets the InnerException when provided.
+        /// </summary>
         [Fact]
         public void HttpClientException_Constructor_WithInnerException_SetsInnerException()
         {
@@ -43,6 +52,9 @@ namespace DotNetResiliencePipeline.Tests
             Assert.Equal(requestUrl, ex.RequestUrl);
         }
 
+        /// <summary>
+        /// Verifies that the InvalidHttpRequestException constructor correctly sets the HttpMethod property.
+        /// </summary>
         [Fact]
         public void InvalidHttpRequestException_Constructor_SetsHttpMethod()
         {
@@ -62,6 +74,9 @@ namespace DotNetResiliencePipeline.Tests
             Assert.Equal(httpMethod, ex.HttpMethod);
         }
 
+        /// <summary>
+        /// Verifies that the HttpResponseException constructor correctly sets the StatusCode property.
+        /// </summary>
         [Fact]
         public void HttpResponseException_Constructor_SetsStatusCode()
         {
@@ -81,6 +96,9 @@ namespace DotNetResiliencePipeline.Tests
             Assert.Equal(requestUrl, ex.RequestUrl);
         }
 
+        /// <summary>
+        /// Verifies that the HttpTimeoutException constructor correctly sets the Timeout property.
+        /// </summary>
         [Fact]
         public void HttpTimeoutException_Constructor_SetsTimeout()
         {
@@ -100,6 +118,9 @@ namespace DotNetResiliencePipeline.Tests
             Assert.Equal(requestUrl, ex.RequestUrl);
         }
 
+        /// <summary>
+        /// Verifies that the ClientName and RequestUrl properties of HttpClientException are nullable and default to null.
+        /// </summary>
         [Fact]
         public void HttpClientException_Properties_AreNullable()
         {
@@ -111,6 +132,9 @@ namespace DotNetResiliencePipeline.Tests
             Assert.Null(ex.RequestUrl);
         }
 
+        /// <summary>
+        /// Verifies that the ClientName and RequestUrl properties of HttpClientException can be set after object construction.
+        /// </summary>
         [Fact]
         public void HttpClientException_Properties_CanBeSetAfterConstruction()
         {
@@ -126,6 +150,9 @@ namespace DotNetResiliencePipeline.Tests
             Assert.Equal("https://new.url", ex.RequestUrl);
         }
 
+        /// <summary>
+        /// Verifies that derived exception classes inherit from HttpClientException and ResiliencyException.
+        /// </summary>
         [Fact]
         public void DerivedException_InheritsFromHttpClientException()
         {
