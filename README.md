@@ -212,6 +212,50 @@ public class BulkheadExtensionsDemo
 }
 ```
 
+## AdaptiveTimeoutServiceTests
+
+`AdaptiveTimeoutServiceTests` contains unit tests for the `AdaptiveTimeoutService` class, which implements an adaptive timeout mechanism that adjusts timeout durations based on historical execution times. The tests verify behavior such as timeout growth after slow samples, shrinkage after fast samples, respect for min/max bounds, and proper handling of null policies and disabled policies.
+
+**Example usage**
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Services;
+using Microsoft.Extensions.Logging.Abstractions;
+using Xunit;
+
+public class AdaptiveTimeoutServiceUsageExample
+{
+    [Fact]
+    public void Timeout_Grows_After_Slow_Samples()
+    {
+        var service = new AdaptiveTimeoutService(NullLogger<AdaptiveTimeoutService>.Instance);
+        var policy = new AdaptiveTimeoutPolicy("grow-test")
+        {
+            InitialTimeout = TimeSpan.FromMilliseconds(100),
+            MinTimeout = TimeSpan.FromMilliseconds(50),
+            MaxTimeout = TimeSpan.FromSeconds(10),
+            TargetPercentile = 90.0,
+            HeadroomFactor = 1.5,
+            WindowSize = 10,
+            MinSampleSize = 5,
+            AdjustmentInterval = TimeSpan.Zero // Disable interval for immediate adaptation
+        };
+
+        // Record several slow executions to trigger timeout growth
+        var slowTimes = new long[] { 200, 250, 300, 350, 400 };
+        foreach (var time in slowTimes)
+        {
+            policy.RecordExecutionTime(time);
+        }
+
+        // After recording slow samples, timeout should have grown
+        Assert.True(policy.CurrentTimeout > policy.InitialTimeout);
+        Assert.True(policy.CurrentTimeout <= policy.MaxTimeout);
+    }
+}
+```
+
 ## MicroserviceIntegrationExample
 
 The `MicroserviceIntegrationExample` class demonstrates how to integrate multiple resilience policies into a microservice architecture. It provides a `Main` method to execute a sample workflow, and properties to access the circuit breaker, retry, timeout, bulkhead, and fallback policies. Here’s an example of how to use it:
