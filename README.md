@@ -327,6 +327,27 @@ var responseEx = new HttpResponseException(
     "https://api.example.com/missing");
 ```
 
+## ResiliencyExceptionTests
+
+`ResiliencyExceptionTests` contains unit tests for the `ResiliencyException` base class and all derived exception types in the `DotNetResiliencePipeline.Exceptions` namespace. 
+The tests verify constructor behavior, property assignment, message formatting, and inheritance hierarchy.
+
+```csharp
+using DotNetResiliencePipeline.Exceptions;
+using System;
+
+// Creating a ResiliencyException with a message and policy information
+var exception = new ResiliencyException(
+    "Something went wrong in the retry policy",
+    "RetryPolicy",
+    "Retry");
+
+// Properties can be read
+Console.WriteLine(exception.Message); // "Something went wrong in the retry policy"
+Console.WriteLine(exception.PolicyName); // "RetryPolicy"
+Console.WriteLine(exception.PolicyType); // "Retry"
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
