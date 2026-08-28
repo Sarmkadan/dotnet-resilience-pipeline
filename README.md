@@ -300,6 +300,33 @@ Console.WriteLine(example.Bulkhead?.MaxParallelization);
 Console.WriteLine(example.Fallback?.FallbackOnAnyException);
 ```
 
+## HttpClientExceptionTests
+
+`HttpClientExceptionTests` contains unit tests for the `HttpClientException` and related exception classes (`InvalidHttpRequestException`, `HttpResponseException`, `HttpTimeoutException`). 
+The tests verify constructor parameter handling, property assignment, nullability of properties, and inheritance hierarchy.
+
+```csharp
+using DotNetResiliencePipeline.Exceptions;
+
+// Creating an HttpClientException with all parameters
+var httpEx = new HttpClientException(
+    "Failed to connect",
+    "MyHttpClient",
+    "https://api.example.com/data",
+    new TimeoutException("The request timed out"));
+
+// Properties can be read and set after construction
+httpEx.ClientName = "UpdatedClient";
+httpEx.RequestUrl = "https://updated.example.com";
+
+// Creating a derived exception
+var responseEx = new HttpResponseException(
+    "Not found",
+    404,
+    "MyHttpClient",
+    "https://api.example.com/missing");
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
