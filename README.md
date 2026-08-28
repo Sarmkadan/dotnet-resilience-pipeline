@@ -256,6 +256,36 @@ public class AdaptiveTimeoutServiceUsageExample
 }
 ```
 
+## WebhookExceptionTests
+
+`WebhookExceptionTests` contains unit tests for the webhook exception types exposed by the `DotNetResiliencePipeline.Exceptions` namespace. The tests verify constructor parameter handling, property assignment, generated message formatting, defaults for optional arguments, and the inheritance hierarchy rooted at `ResiliencyException`.
+
+**Example usage**
+
+```csharp
+using DotNetResiliencePipeline.Exceptions;
+using FluentAssertions;
+using Xunit;
+
+public class WebhookExceptionTestsExample
+{
+    [Fact]
+    public void WebhookException_WithMessageOnly_SetsPropertiesCorrectly()
+    {
+        // Arrange
+        var message = "Test webhook exception message";
+
+        // Act
+        var exception = new WebhookException(message);
+
+        // Assert
+        exception.Message.Should().Be(message);
+        exception.WebhookId.Should().BeNull();
+        exception.WebhookUrl.Should().BeNull();
+        exception.InnerException.Should().BeNull();
+    }
+}
+
 ## MicroserviceIntegrationExample
 
 The `MicroserviceIntegrationExample` class demonstrates how to integrate multiple resilience policies into a microservice architecture. It provides a `Main` method to execute a sample workflow, and properties to access the circuit breaker, retry, timeout, bulkhead, and fallback policies. Here’s an example of how to use it:
