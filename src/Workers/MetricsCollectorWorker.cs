@@ -6,6 +6,9 @@
 
 using DotNetResiliencePipeline.Services;
 using DotNetResiliencePipeline.Utilities;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using System.Diagnostics;
 
 namespace DotNetResiliencePipeline.Workers;
 
@@ -13,10 +16,11 @@ namespace DotNetResiliencePipeline.Workers;
 /// Background worker that periodically collects and aggregates metrics.
 /// Maintains time-series data for trend analysis and reporting.
 /// </summary>
-public sealed class MetricsCollectorWorker
+public sealed partial class MetricsCollectorWorker
 {
     private readonly ResiliencyPipelineService _pipelineService;
     private readonly MetricsAggregator _aggregator;
+    private readonly ILogger<MetricsCollectorWorker> _logger;
     private CancellationTokenSource? _cancellationTokenSource;
     private Task? _workerTask;
 
@@ -24,12 +28,16 @@ public sealed class MetricsCollectorWorker
     public bool IsRunning { get; private set; }
     public int TotalCollections { get; private set; }
 
-    public MetricsCollectorWorker(ResiliencyPipelineService pipelineService, MetricsAggregator aggregator)
+    public MetricsCollectorWorker(
+        ResiliencyPipelineService pipelineService,
+        MetricsAggregator aggregator,
+        ILogger<MetricsCollectorWorker>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(pipelineService);
         ArgumentNullException.ThrowIfNull(aggregator);
         _pipelineService = pipelineService;
         _aggregator = aggregator;
+        _logger = logger ?? NullLogger<MetricsCollectorWorker>.Instance;
     }
 
     /// <summary>
@@ -42,6 +50,7 @@ public sealed class MetricsCollectorWorker
 
         IsRunning = true;
         _cancellationTokenSource = new CancellationTokenSource();
+        TryLog(WorkerLogs.WorkerStarted, CollectionInterval.TotalMilliseconds);
         _workerTask = RunCollectionAsync(_cancellationTokenSource.Token);
     }
 
@@ -60,16 +69,20 @@ public sealed class MetricsCollectorWorker
             await _workerTask;
 
         _cancellationTokenSource?.Dispose();
+        TryLog(WorkerLogs.WorkerStopped, TotalCollections);
     }
 
     private async Task RunCollectionAsync(CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
+            var stopwatch = Stopwatch.StartNew();
+
             try
             {
-                CollectMetrics();
+                var policyCount = CollectMetrics();
                 TotalCollections++;
+                TryLog(WorkerLogs.CollectionCompleted, policyCount, 1, stopwatch.ElapsedMilliseconds);
                 await Task.Delay(CollectionInterval, cancellationToken);
             }
             catch (OperationCanceledException)
@@ -78,12 +91,12 @@ public sealed class MetricsCollectorWorker
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in metrics collection: {ex.Message}");
+                TryLog(WorkerLogs.CollectionFailed, "MetricsCollection", stopwatch.ElapsedMilliseconds, ex);
             }
         }
     }
 
-    private void CollectMetrics()
+    private int CollectMetrics()
     {
         var stats = _pipelineService.GetStatistics();
 
@@ -99,6 +112,52 @@ public sealed class MetricsCollectorWorker
         };
 
         _aggregator.RecordSnapshot(snapshot);
+        return stats.PolicyCount;
+    }
+
+    private void TryLog<T1>(Action<ILogger, T1, Exception?> logAction, T1 value1)
+    {
+        try
+        {
+            logAction(_logger, value1, null);
+        }
+        catch
+        {
+            // Logging must never interrupt the worker lifecycle or collection loop.
+        }
+    }
+
+    private void TryLog<T1, T2, T3>(
+        Action<ILogger, T1, T2, T3, Exception?> logAction,
+        T1 value1,
+        T2 value2,
+        T3 value3,
+        Exception? exception = null)
+    {
+        try
+        {
+            logAction(_logger, value1, value2, value3, exception);
+        }
+        catch
+        {
+            // Logging must never interrupt the worker lifecycle or collection loop.
+        }
+    }
+
+    private void TryLog<T1, T2>(
+        Action<ILogger, T1, T2, Exception?> logAction,
+        T1 value1,
+        T2 value2,
+        Exception exception)
+    {
+        try
+        {
+            logAction(_logger, value1, value2, exception);
+        }
+        catch
+        {
+            // Logging must never interrupt the worker lifecycle or collection loop.
+        }
     }
 
     /// <summary>
@@ -149,6 +208,21 @@ public sealed class MetricsCollectorWorker
         var status = GetStatus();
 
         return $"MetricsCollectorWorker {{ CollectionInterval = {CollectionInterval}, IsRunning = {IsRunning}, TotalCollections = {TotalCollections}, LastCollectionTime = {status.LastCollectionTime}, RecentMetrics = {status.RecentMetrics} }}";
+    }
+
+    private static partial class WorkerLogs
+    {
+        [LoggerMessage(1, LogLevel.Information, "Metrics collector worker started with a collection interval of {CollectionIntervalMs} ms")]
+        internal static partial void WorkerStarted(ILogger logger, double collectionIntervalMs, Exception? exception);
+
+        [LoggerMessage(2, LogLevel.Information, "Metrics collector worker stopped after {TotalCollections} collections")]
+        internal static partial void WorkerStopped(ILogger logger, int totalCollections, Exception? exception);
+
+        [LoggerMessage(3, LogLevel.Debug, "Metrics collection cycle completed: {PolicyCount} policies and {MetricCount} metrics collected in {ElapsedMs} ms")]
+        internal static partial void CollectionCompleted(ILogger logger, int policyCount, int metricCount, long elapsedMs, Exception? exception);
+
+        [LoggerMessage(4, LogLevel.Error, "Metrics collection failed for {PolicyName} after {ElapsedMs} ms")]
+        internal static partial void CollectionFailed(ILogger logger, string policyName, long elapsedMs, Exception? exception);
     }
 }
 
