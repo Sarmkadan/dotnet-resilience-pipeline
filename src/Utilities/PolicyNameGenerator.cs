@@ -4,7 +4,6 @@
 // CTO & Software Architect
 // =============================================================================
 
-using System.Collections.Concurrent;
 using System.Text;
 
 namespace DotNetResiliencePipeline.Utilities;
@@ -12,10 +11,11 @@ namespace DotNetResiliencePipeline.Utilities;
 /// <summary>
 /// Generates meaningful, unique, and consistent policy names.
 /// Supports naming conventions, auto-numbering, and namespace prefixing.
+/// This class is thread-safe.
 /// </summary>
 public sealed class PolicyNameGenerator
 {
-    private readonly ConcurrentDictionary<string, int> _nameCounters = new();
+    private readonly Dictionary<string, int> _nameCounters = new();
     private readonly HashSet<string> _usedNames = new();
     private readonly object _lockObj = new object();
 
@@ -208,7 +208,12 @@ public sealed class PolicyNameGenerator
 
     private int IncrementCounter(string key)
     {
-        return _nameCounters.AddOrUpdate(key, 1, (k, v) => v + 1);
+        int nextValue = _nameCounters.TryGetValue(key, out int currentValue)
+            ? currentValue + 1
+            : 1;
+
+        _nameCounters[key] = nextValue;
+        return nextValue;
     }
 }
 
