@@ -20,8 +20,7 @@ public sealed class BulkheadService
 	/// </summary>
 	public bool TryAcquireSlot(BulkheadPolicy policy)
 	{
-		if (policy is null)
-			throw new ArgumentNullException(nameof(policy));
+		ArgumentNullException.ThrowIfNull(policy);
 
 		if (!policy.IsEnabled)
 			return true;
@@ -32,10 +31,14 @@ public sealed class BulkheadService
 	/// <summary>
 	/// Attempts to acquire a slot in the bulkhead with a timeout.
 	/// </summary>
+	/// <exception cref="ArgumentOutOfRangeException">
+	/// <paramref name="timeout"/> is negative and is not <see cref="Timeout.InfiniteTimeSpan"/>.
+	/// </exception>
 	public async Task<bool> TryAcquireSlotAsync(BulkheadPolicy policy, TimeSpan timeout)
 	{
-		if (policy is null)
-			throw new ArgumentNullException(nameof(policy));
+		ArgumentNullException.ThrowIfNull(policy);
+		if (timeout < TimeSpan.Zero && timeout != Timeout.InfiniteTimeSpan)
+			throw new ArgumentOutOfRangeException(nameof(timeout));
 
 		if (!policy.IsEnabled)
 			return true;
@@ -49,8 +52,7 @@ public sealed class BulkheadService
 	/// </summary>
 	public async Task AcquireSlotAsync(BulkheadPolicy policy, CancellationToken cancellationToken = default)
 	{
-		if (policy is null)
-			throw new ArgumentNullException(nameof(policy));
+		ArgumentNullException.ThrowIfNull(policy);
 
 		if (!policy.IsEnabled)
 			return;
@@ -63,8 +65,7 @@ public sealed class BulkheadService
 	/// </summary>
 	public void ReleaseSlot(BulkheadPolicy policy)
 	{
-		if (policy is null)
-			throw new ArgumentNullException(nameof(policy));
+		ArgumentNullException.ThrowIfNull(policy);
 
 		policy.ReleaseSlot();
 	}
@@ -74,8 +75,7 @@ public sealed class BulkheadService
 	/// </summary>
 	public void DequeueRequest(BulkheadPolicy policy)
 	{
-		if (policy is null)
-			throw new ArgumentNullException(nameof(policy));
+		ArgumentNullException.ThrowIfNull(policy);
 
 		policy.DequeueRequest();
 	}
@@ -83,10 +83,13 @@ public sealed class BulkheadService
 	/// <summary>
 	/// Records queue wait time.
 	/// </summary>
+	/// <exception cref="ArgumentOutOfRangeException">
+	/// <paramref name="waitTimeMs"/> is negative.
+	/// </exception>
 	public void RecordQueueWaitTime(BulkheadPolicy policy, long waitTimeMs)
 	{
-		if (policy is null)
-			throw new ArgumentNullException(nameof(policy));
+		ArgumentNullException.ThrowIfNull(policy);
+		ArgumentOutOfRangeException.ThrowIfNegative(waitTimeMs);
 
 		policy.RecordQueueWaitTime(waitTimeMs);
 	}
