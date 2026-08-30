@@ -15,6 +15,14 @@ namespace DotNetResiliencePipeline.Utilities;
 /// </summary>
 public sealed class ThrottlingHelper
 {
+    private const int DefaultMaxThrottles = 1000;
+    private const int DefaultBurstSize = 0;
+    private const int DefaultRequestCost = 1;
+    private const int EmptyThrottleCount = 0;
+    private const int InitialStatisticValue = 0;
+    private const double InitialThrottleRate = 0.0;
+    private const int NoExpiredThrottlesRemoved = 0;
+
     private readonly ConcurrentDictionary<string, Throttle> _throttles = new();
     private readonly LinkedList<string> _lruList = new();
     private readonly object _evictionLock = new object();
@@ -23,13 +31,13 @@ public sealed class ThrottlingHelper
     /// Gets or sets the maximum number of throttles that can be tracked.
     /// When exceeded, least recently used throttles are evicted.
     /// </summary>
-    public int MaxThrottles { get; set; } = 1000;
+    public int MaxThrottles { get; set; } = DefaultMaxThrottles;
 
     /// <summary>
     /// Creates or gets a throttle for a policy with rate limits.
     /// </summary>
     /// <exception cref="InvalidOperationException">Thrown when the maximum number of throttles is exceeded and eviction fails.</exception>
-    public Throttle GetOrCreateThrottle(string policyName, int maxRequestsPerSecond, int burstSize = 0)
+    public Throttle GetOrCreateThrottle(string policyName, int maxRequestsPerSecond, int burstSize = DefaultBurstSize)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
 
@@ -67,7 +75,7 @@ public sealed class ThrottlingHelper
     /// <summary>
     /// Checks if a request should be throttled.
     /// </summary>
-    public bool ShouldThrottle(string policyName, int cost = 1)
+    public bool ShouldThrottle(string policyName, int cost = DefaultRequestCost)
     {
         ArgumentException.ThrowIfNullOrEmpty(policyName);
 
@@ -141,15 +149,15 @@ public sealed class ThrottlingHelper
     public override string ToString()
     {
         string policyName = string.Empty;
-        int maxRate = 0;
-        long totalRequests = 0;
-        long allowedRequests = 0;
-        long throttledRequests = 0;
-        double throttleRate = 0.0;
+        int maxRate = InitialStatisticValue;
+        long totalRequests = InitialStatisticValue;
+        long allowedRequests = InitialStatisticValue;
+        long throttledRequests = InitialStatisticValue;
+        double throttleRate = InitialThrottleRate;
 
         lock (_evictionLock)
         {
-            if (_lruList.Count > 0 && _lruList.Last != null)
+            if (_lruList.Count > EmptyThrottleCount && _lruList.Last != null)
             {
                 string candidatePolicyName = _lruList.Last.Value;
                 if (_throttles.TryGetValue(candidatePolicyName, out var throttle))
@@ -176,7 +184,7 @@ public sealed class ThrottlingHelper
     {
         // Note: Throttle doesn't track expiration, so we can't clean up based on that
         // This method is kept for API consistency with similar services
-        return 0;
+        return NoExpiredThrottlesRemoved;
     }
 
     private void UpdateLru(string policyName)
@@ -206,7 +214,7 @@ public sealed class ThrottlingHelper
                 return;
 
             // Evict least recently used throttles until we're under the limit
-            while (_throttles.Count > MaxThrottles && _lruList.Count > 0)
+            while (_throttles.Count > MaxThrottles && _lruList.Count > EmptyThrottleCount)
             {
                 var lruKey = _lruList.First?.Value;
                 if (lruKey != null && _throttles.TryRemove(lruKey, out _))
@@ -233,6 +241,12 @@ public sealed class ThrottlingHelper
 /// </summary>
 public sealed class Throttle
 {
+    private const int DefaultBurstSize = 0;
+    private const int DefaultRequestCost = 1;
+    private const int NoRequests = 0;
+    private const double PercentageMultiplier = 100.0;
+    private const double MinimumElapsedSeconds = 0;
+
     private readonly int _maxRate;
     private readonly int _burstSize;
     private double _tokens;
@@ -242,10 +256,10 @@ public sealed class Throttle
     private long _throttledRequests;
     private readonly object _lockObj = new object();
 
-    public Throttle(int maxRequestsPerSecond, int burstSize = 0)
+    public Throttle(int maxRequestsPerSecond, int burstSize = DefaultBurstSize)
     {
         _maxRate = maxRequestsPerSecond;
-        _burstSize = burstSize > 0 ? burstSize : maxRequestsPerSecond;
+        _burstSize = burstSize > DefaultBurstSize ? burstSize : maxRequestsPerSecond;
         _tokens = _burstSize;
         _lastRefill = DateTime.UtcNow;
     }
@@ -253,7 +267,7 @@ public sealed class Throttle
     /// <summary>
     /// Checks if a request is allowed under the current rate limit.
     /// </summary>
-    public bool IsAllowed(int cost = 1)
+    public bool IsAllowed(int cost = DefaultRequestCost)
     {
         lock (_lockObj)
         {
@@ -285,7 +299,7 @@ public sealed class Throttle
                 TotalRequests = _totalRequests,
                 AllowedRequests = _allowedRequests,
                 ThrottledRequests = _throttledRequests,
-                ThrottleRate = _totalRequests > 0 ? (_throttledRequests * 100.0) / _totalRequests : 0,
+                ThrottleRate = _totalRequests > NoRequests ? (_throttledRequests * PercentageMultiplier) / _totalRequests : NoRequests,
                 AvailableTokens = (int)_tokens,
                 BurstCapacity = _burstSize
             };
@@ -300,7 +314,7 @@ public sealed class Throttle
         var now = DateTime.UtcNow;
         var elapsed = (now - _lastRefill).TotalSeconds;
 
-        if (elapsed > 0)
+        if (elapsed > MinimumElapsedSeconds)
         {
             var tokensToAdd = _maxRate * elapsed;
             _tokens = Math.Min(_tokens + tokensToAdd, _burstSize);
@@ -314,6 +328,8 @@ public sealed class Throttle
 /// </summary>
 public sealed class ThrottleStatistics
 {
+    private const int NoThrottledRequests = 0;
+
     /// <summary>Gets the policy name.</summary>
     public string? PolicyName { get; set; }
 
@@ -339,7 +355,7 @@ public sealed class ThrottleStatistics
     public int BurstCapacity { get; set; }
 
     /// <summary>Gets whether throttling is currently active.</summary>
-    public bool IsThrottling => ThrottledRequests > 0;
+    public bool IsThrottling => ThrottledRequests > NoThrottledRequests;
 }
 
 /// <summary>
@@ -347,6 +363,11 @@ public sealed class ThrottleStatistics
 /// </summary>
 public static class ThrottlingExtensions
 {
+    private const int InitialAttemptCount = 0;
+    private const int MaxAttempts = 3;
+    private const double DefaultRetryDelayMilliseconds = 100;
+    private const string RequestThrottledMessageFormat = "Request throttled after {0} attempts for policy: {1}";
+
     /// <summary>
     /// Executes a function with throttling protection.
     /// </summary>
@@ -360,21 +381,20 @@ public static class ThrottlingExtensions
         ArgumentException.ThrowIfNullOrEmpty(policyName);
         ArgumentNullException.ThrowIfNull(operation);
 
-        int attempts = 0;
-        const int maxAttempts = 3;
-        retryDelay ??= TimeSpan.FromMilliseconds(100);
+        int attempts = InitialAttemptCount;
+        retryDelay ??= TimeSpan.FromMilliseconds(DefaultRetryDelayMilliseconds);
 
-        while (attempts < maxAttempts)
+        while (attempts < MaxAttempts)
         {
             if (!throttler.ShouldThrottle(policyName))
                 return await operation();
 
             attempts++;
-            if (attempts < maxAttempts)
+            if (attempts < MaxAttempts)
                 await Task.Delay(retryDelay.Value);
         }
 
-        throw new InvalidOperationException($"Request throttled after {maxAttempts} attempts for policy: {policyName}");
+        throw new InvalidOperationException(string.Format(RequestThrottledMessageFormat, MaxAttempts, policyName));
     }
 
     /// <summary>
@@ -390,11 +410,10 @@ public static class ThrottlingExtensions
         ArgumentException.ThrowIfNullOrEmpty(policyName);
         ArgumentNullException.ThrowIfNull(operation);
 
-        int attempts = 0;
-        const int maxAttempts = 3;
-        retryDelay ??= TimeSpan.FromMilliseconds(100);
+        int attempts = InitialAttemptCount;
+        retryDelay ??= TimeSpan.FromMilliseconds(DefaultRetryDelayMilliseconds);
 
-        while (attempts < maxAttempts)
+        while (attempts < MaxAttempts)
         {
             if (!throttler.ShouldThrottle(policyName))
             {
@@ -403,10 +422,10 @@ public static class ThrottlingExtensions
             }
 
             attempts++;
-            if (attempts < maxAttempts)
+            if (attempts < MaxAttempts)
                 await Task.Delay(retryDelay.Value);
         }
 
-        throw new InvalidOperationException($"Request throttled after {maxAttempts} attempts for policy: {policyName}");
+        throw new InvalidOperationException(string.Format(RequestThrottledMessageFormat, MaxAttempts, policyName));
     }
 }
