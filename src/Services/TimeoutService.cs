@@ -39,7 +39,7 @@ public sealed class TimeoutService
 
         try
         {
-            var result = await operation(cancellationToken);
+            var result = await operation(linkedCts.Token);
             stopwatch.Stop();
 
             timeoutStrategy.RecordExecutionTime(stopwatch.ElapsedMilliseconds);
