@@ -53,6 +53,10 @@ public sealed class RetryService : IRetryService
                 policy.RecordSuccess();
                 return result;
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 exceptions.Add(ex);
@@ -82,7 +86,7 @@ public sealed class RetryService : IRetryService
                     delay = policy.CalculateDelay(attempt);
                 }
 
-                await Task.Delay((int)delay.TotalMilliseconds, cancellationToken); // Pass token to Task.Delay
+                await Task.Delay(delay, cancellationToken); // Pass token to Task.Delay
             }
         }
 
