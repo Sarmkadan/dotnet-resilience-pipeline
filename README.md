@@ -552,6 +552,53 @@ catch (BulkheadRejectedException exception)
 }
 ```
 
+## CircuitBreakerService
+
+`src/Services/CircuitBreakerService.cs` provides the execution engine and state-management helpers for `CircuitBreakerPolicy`. `ExecuteAsync` runs an asynchronous operation while the circuit is Closed and records its success or failure on the policy. Consecutive failures drive the policy from Closed to Open at `FailureThreshold`; calls then fail fast with `CircuitBreakerOpenException`, which reports the policy name, time until retry and consecutive failure count. After `OpenDuration`, the service asks the policy to enter Half-Open and admits a limited number of concurrent probe calls (one by default). Successful probes close the circuit after `SuccessThresholdInHalfOpen`, while a failed probe returns it to Open. An externally requested cancellation is propagated without being counted as a failure.
+
+The primary `ExecuteAsync` overload accepts a cancellation-aware operation, and a convenience overload accepts `Func<Task<T>>`. `OpenCircuit` records a failure (and therefore opens a policy whose threshold is reached), `ResetCircuit` manually returns the policy to Closed and resets its statistics, and `GetCircuitState` returns the current state name or `"Unknown"` for a null policy. The constructor also accepts an optional logger and `halfOpenMaxProbes` limit.
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Exceptions;
+using DotNetResiliencePipeline.Services;
+
+var circuitBreaker = new CircuitBreakerService(halfOpenMaxProbes: 1);
+var policy = new CircuitBreakerPolicy("catalog-circuit")
+{
+    FailureThreshold = 1,
+    OpenDuration = TimeSpan.FromSeconds(30),
+    SuccessThresholdInHalfOpen = 1
+};
+
+try
+{
+    string result = await circuitBreaker.ExecuteAsync(
+        policy,
+        _ => Task.FromResult("catalog response"),
+        CancellationToken.None);
+
+    Console.WriteLine(result);
+}
+catch (CircuitBreakerOpenException exception)
+{
+    Console.WriteLine(
+        $"{exception.PolicyName} is open; retry in {exception.TimeUntilRetry}.");
+}
+
+// With a threshold of one, recording one failure opens this policy.
+circuitBreaker.OpenCircuit(policy);
+Console.WriteLine(circuitBreaker.GetCircuitState(policy)); // Open
+
+circuitBreaker.ResetCircuit(policy);
+Console.WriteLine(circuitBreaker.GetCircuitState(policy)); // Closed
+
+// Convenience overload for operations that do not accept a cancellation token.
+string cached = await circuitBreaker.ExecuteAsync(
+    policy,
+    () => Task.FromResult("cached catalog response"));
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
