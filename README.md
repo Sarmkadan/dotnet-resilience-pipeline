@@ -599,6 +599,44 @@ string cached = await circuitBreaker.ExecuteAsync(
     () => Task.FromResult("cached catalog response"));
 ```
 
+## TimeoutService
+
+`src/Services/TimeoutService.cs` provides `TimeoutService`, the execution engine for `TimeoutPolicy`. Its `ExecuteAsync` method runs an asynchronous operation with a linked `CancellationTokenSource` so either caller cancellation or the configured timeout stops the work; when the timeout expires, it records the event and throws `OperationTimeoutException`. The `HasExceededTimeout` and `GetTimeoutMilliseconds` helpers expose the same timeout comparison and configured duration for callers that need them independently.
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Exceptions;
+using DotNetResiliencePipeline.Services;
+
+var timeoutService = new TimeoutService();
+var policy = new TimeoutPolicy("orders-timeout")
+{
+    Timeout = TimeSpan.FromSeconds(2)
+};
+
+try
+{
+    string result = await timeoutService.ExecuteAsync(
+        policy,
+        async cancellationToken =>
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
+            return "order completed";
+        },
+        CancellationToken.None);
+
+    Console.WriteLine(result);
+}
+catch (OperationTimeoutException exception)
+{
+    Console.WriteLine(exception.Message);
+}
+
+bool exceeded = timeoutService.HasExceededTimeout(policy, executionTimeMs: 2_500);
+long timeoutMilliseconds = timeoutService.GetTimeoutMilliseconds(policy);
+Console.WriteLine($"Exceeded: {exceeded}; timeout: {timeoutMilliseconds} ms");
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
