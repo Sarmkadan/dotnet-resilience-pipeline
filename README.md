@@ -521,6 +521,37 @@ if (fallbackService.ShouldTriggerFallback(policy, primaryException))
 fallbackService.RemoveFallbackTrigger(policy, typeof(TimeoutException));
 ```
 
+## BulkheadService
+
+`src/Services/BulkheadService.cs` provides fail-fast concurrency limiting around `BulkheadPolicy`. `TryAcquireSlot` attempts to reserve capacity immediately, while `TryAcquireSlotAsync` performs the asynchronous attempt and validates its timeout; both return `false` when no execution slot is available. `AcquireSlotAsync` can wait in the bounded queue and throws `BulkheadRejectedException` when the queue is full or its wait expires. Callers release acquired capacity with `ReleaseSlot`; the remaining public helpers are `DequeueRequest`, `RecordQueueWaitTime`, `GetUtilizationPercentage`, `GetActiveExecutionCount`, `GetQueuedRequestCount` and `IsValidConfiguration`, which expose queue maintenance, metrics and policy validation.
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Exceptions;
+using DotNetResiliencePipeline.Services;
+
+var bulkheadService = new BulkheadService();
+var policy = new BulkheadPolicy("orders-bulkhead");
+
+try
+{
+    await bulkheadService.AcquireSlotAsync(policy, CancellationToken.None);
+    try
+    {
+        // Run work while the execution slot is held.
+        await Task.Delay(TimeSpan.FromMilliseconds(100));
+    }
+    finally
+    {
+        bulkheadService.ReleaseSlot(policy);
+    }
+}
+catch (BulkheadRejectedException exception)
+{
+    Console.WriteLine($"Bulkhead rejected the request: {exception.Message}");
+}
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
