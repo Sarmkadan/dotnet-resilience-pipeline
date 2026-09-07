@@ -487,6 +487,40 @@ string csv = exporter.ExportCsv(snapshot);
 string prometheus = exporter.ExportPrometheus(snapshot);
 ```
 
+## FallbackService
+
+`src/Services/FallbackService.cs` provides the execution engine for `FallbackPolicy`. Its `ExecuteAsync` method receives the exception and execution time from a failed primary operation and, when the policy allows it, runs the configured fallback action within the fallback timeout. `ShouldTriggerFallback` exposes the policy's exception-matching decision, `GetFallbackSuccessRate` reports the percentage of successful fallback executions, and `AddFallbackTrigger` and `RemoveFallbackTrigger` manage the exception types that activate a selective fallback policy.
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Services;
+
+var fallbackService = new FallbackService();
+var policy = new FallbackPolicy("catalog-fallback")
+{
+    FallbackOnAnyException = false,
+    FallbackTimeout = TimeSpan.FromSeconds(2)
+};
+
+policy.SetFallbackAction<string>(_ => Task.FromResult("cached catalog response"));
+fallbackService.AddFallbackTrigger(policy, typeof(TimeoutException));
+
+Exception primaryException = new TimeoutException("The catalog request timed out");
+if (fallbackService.ShouldTriggerFallback(policy, primaryException))
+{
+    var result = await fallbackService.ExecuteAsync<string>(
+        policy,
+        primaryException,
+        primaryExecutionTimeMs: 2_000,
+        CancellationToken.None);
+
+    Console.WriteLine(result.Data);
+    Console.WriteLine($"Fallback success rate: {fallbackService.GetFallbackSuccessRate(policy):F1}%");
+}
+
+fallbackService.RemoveFallbackTrigger(policy, typeof(TimeoutException));
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
