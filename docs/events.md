@@ -1,145 +1,95 @@
-# Resiliency events
+# Event Model
 
-The event model in `src/Events/ResiliencyEventPublisher.cs` represents observable outcomes and state changes from resiliency policies. All event types are in the `DotNetResiliencePipeline.Events` namespace and derive from `ResiliencyEvent`.
+The event model in `DotNetResiliencePipeline` provides a centralized way to track, monitor, and react to resilience policy executions and state changes. It consists of an abstract base event, several concrete event types representing specific policy behaviors, and a publisher mechanism for distributing these events.
 
-For publisher API details, see [ResiliencyEventPublisher](ResiliencyEventPublisher.md). For the higher-level observer, see [PipelineEventObserver](PipelineEventObserver.md).
+## Base Event
 
-## Base event
+### `ResiliencyEvent`
+The abstract base class for all resilience events.
+- `Id` (`string`): Unique identifier for the event.
+- `Timestamp` (`DateTime`): UTC timestamp when the event was published.
+- `SourcePolicy` (`string`): Name of the resilience policy that generated the event.
 
-`ResiliencyEvent` is the abstract base class for every event described below.
-
-| Property | Type | Default | Description |
-| --- | --- | --- | --- |
-| `Id` | `string` | A new GUID converted to a string | Identifies the event instance. |
-| `Timestamp` | `DateTime` | `DateTime.UtcNow` | Records the event time. `PublishAsync` replaces this value with the current UTC time when publishing. |
-| `SourcePolicy` | `string` | `string.Empty` | Identifies the policy that originated the event. |
-
-All three properties have public getters and setters.
-
-## Concrete events
-
-Each concrete event inherits `Id`, `Timestamp`, and `SourcePolicy` from `ResiliencyEvent`. The tables list only the properties declared by that concrete type.
+## Concrete Events
 
 ### `PolicyExecutedSuccessfullyEvent`
-
 Raised when a policy executes successfully.
-
-| Property | Type | Default |
-| --- | --- | --- |
-| `PolicyName` | `string` | `string.Empty` |
-| `DurationMs` | `long` | `0` |
-| `AttemptNumber` | `int` | `0` |
+- `PolicyName` (`string`): Name of the policy.
+- `DurationMs` (`long`): Duration of the operation in milliseconds.
+- `AttemptNumber` (`int`): The attempt number for retryable operations.
 
 ### `PolicyExecutionFailedEvent`
-
 Raised when a policy execution fails.
-
-| Property | Type | Default |
-| --- | --- | --- |
-| `PolicyName` | `string` | `string.Empty` |
-| `ExceptionType` | `string` | `string.Empty` |
-| `ExceptionMessage` | `string` | `string.Empty` |
-| `DurationMs` | `long` | `0` |
+- `PolicyName` (`string`): Name of the policy.
+- `ExceptionType` (`string`): Type name of the exception that triggered the event.
+- `ExceptionMessage` (`string`): Message of the exception that triggered the event.
+- `DurationMs` (`long`): Duration of the operation in milliseconds.
 
 ### `CircuitBreakerStateChangedEvent`
-
-Raised when a circuit breaker changes state.
-
-| Property | Type | Default |
-| --- | --- | --- |
-| `PolicyName` | `string` | `string.Empty` |
-| `PreviousState` | `string` | `string.Empty` |
-| `NewState` | `string` | `string.Empty` |
-| `ConsecutiveFailures` | `int` | `0` |
+Raised when a circuit breaker state changes.
+- `PolicyName` (`string`): Name of the policy.
+- `PreviousState` (`string`): Previous state of the circuit breaker.
+- `NewState` (`string`): New state of the circuit breaker.
+- `ConsecutiveFailures` (`int`): Number of consecutive failures recorded.
 
 ### `BulkheadRejectedEvent`
-
 Raised when bulkhead capacity is exceeded.
-
-| Property | Type | Default |
-| --- | --- | --- |
-| `PolicyName` | `string` | `string.Empty` |
-| `ActiveExecutions` | `int` | `0` |
-| `MaxCapacity` | `int` | `0` |
-| `QueuedRequests` | `int` | `0` |
+- `PolicyName` (`string`): Name of the policy.
+- `ActiveExecutions` (`int`): Current number of active executions.
+- `MaxCapacity` (`int`): Maximum allowed concurrent executions.
+- `QueuedRequests` (`int`): Number of requests currently queued.
 
 ### `TimeoutOccurredEvent`
-
 Raised when a timeout occurs.
-
-| Property | Type | Default |
-| --- | --- | --- |
-| `PolicyName` | `string` | `string.Empty` |
-| `TimeoutMs` | `long` | `0` |
-| `ActualDurationMs` | `long` | `0` |
+- `PolicyName` (`string`): Name of the policy.
+- `TimeoutMs` (`long`): Configured timeout duration in milliseconds.
+- `ActualDurationMs` (`long`): Actual duration before the timeout triggered.
 
 ### `FallbackTriggeredEvent`
-
 Raised when a fallback is triggered.
-
-| Property | Type | Default |
-| --- | --- | --- |
-| `PolicyName` | `string` | `string.Empty` |
-| `Reason` | `string` | `string.Empty` |
-| `FallbackSucceeded` | `bool` | `false` |
+- `PolicyName` (`string`): Name of the policy.
+- `Reason` (`string`): Reason why the fallback was triggered.
+- `FallbackSucceeded` (`bool`): Indicates whether the fallback execution succeeded.
 
 ### `PolicyHealthChangedEvent`
-
 Raised when policy health changes.
+- `PolicyName` (`string`): Name of the policy.
+- `PreviousHealth` (`string`): Previous health status.
+- `NewHealth` (`string`): New health status.
+- `SuccessRate` (`double`): Current success rate of the policy.
 
-| Property | Type | Default |
-| --- | --- | --- |
-| `PolicyName` | `string` | `string.Empty` |
-| `PreviousHealth` | `string` | `string.Empty` |
-| `NewHealth` | `string` | `string.Empty` |
-| `SuccessRate` | `double` | `0` |
+## Publishing and Subscribing
 
-All properties declared by the concrete event types have public getters and setters.
+Events are managed and distributed via the `ResiliencyEventPublisher` class.
 
-## Subscribe and publish
-
-`ResiliencyEventPublisher` stores subscriptions under a string key. `PublishAsync` looks up subscribers using the published event's runtime type name, so the subscription key should normally be the concrete type name. `nameof` keeps that key aligned with the type.
-
+### Subscribing
+Use `Subscribe<T>` to register a handler for a specific event type:
 ```csharp
-using DotNetResiliencePipeline.Events;
-
-var publisher = new ResiliencyEventPublisher();
-
-Action<TimeoutOccurredEvent> onTimeout = timeout =>
-{
-    Console.WriteLine(
-        $"{timeout.PolicyName} exceeded {timeout.TimeoutMs} ms " +
-        $"after {timeout.ActualDurationMs} ms");
-};
-
-publisher.Subscribe(nameof(TimeoutOccurredEvent), onTimeout);
-
-await publisher.PublishAsync(new TimeoutOccurredEvent
-{
-    SourcePolicy = "Timeout",
-    PolicyName = "RemoteCallTimeout",
-    TimeoutMs = 1_000,
-    ActualDurationMs = 1_125
+publisher.Subscribe<PolicyExecutedSuccessfullyEvent>("policy.success", e => {
+    Console.WriteLine($"Policy {e.PolicyName} succeeded in {e.DurationMs}ms");
 });
-
-publisher.Unsubscribe(nameof(TimeoutOccurredEvent), onTimeout);
 ```
 
-Publishing performs the following work:
+### Publishing
+Use `PublishAsync<T>` to emit an event. The publisher automatically records it in the history and notifies all registered subscribers:
+```csharp
+var successEvent = new PolicyExecutedSuccessfullyEvent { PolicyName = "RetryPolicy", DurationMs = 150, AttemptNumber = 1 };
+await publisher.PublishAsync(successEvent);
+```
 
-1. Sets `Timestamp` to `DateTime.UtcNow`.
-2. Increments the total counter and the counter associated with the concrete event type.
-3. Adds the event to history, removing the oldest entry when `MaxHistorySize` is exceeded.
-4. Invokes matching `Action<T>` subscribers.
+### Querying History
+- `GetEventHistory(int limit)`: Retrieves the most recent events.
+- `GetEvents<T>(int limit)`: Retrieves recent events of a specific type.
+- `GetSubscriberCount(string eventType)`: Returns the number of active subscribers for an event type.
+- `GetStatistics()`: Returns aggregated counters for total events, successes, failures, circuit breaker changes, bulkhead rejections, timeouts, fallbacks, and health changes.
+- `ClearHistory()` / `ClearSubscribers()`: Resets history or removes all subscribers.
 
-Subscriber exceptions are caught and written to the console; they do not stop the remaining handlers. `PublishAsync` rejects a null event with `ArgumentNullException`.
+For a complete API reference, see [ResiliencyEventPublisher.md](ResiliencyEventPublisher.md).
 
-Subscriptions can also be managed with `Unsubscribe`, `UnsubscribeAll`, and `ClearSubscribers`. Use `GetEventHistory` or `GetEvents<T>` to query recent published events and `GetStatistics` to read the event counters.
+## Relationship to PipelineEventObserver
 
-## Relationship to `PipelineEventObserver`
+While `ResiliencyEventPublisher` focuses on a pub-sub model for distributing events to multiple listeners, `PipelineEventObserver` provides a centralized observer mechanism for tracking and managing events emitted by resilience pipelines. It allows components to register typed handlers, query execution statistics, and dynamically enable or disable observers without affecting the underlying pipeline behavior.
 
-`PipelineEventObserver` is constructed with a `ResiliencyEventPublisher`. During construction it subscribes default handlers for all seven concrete event types, using their class names as publisher keys. Those handlers write event-specific status messages to the console.
+Both systems can be used independently or together depending on whether you need a broadcast pub-sub model (`ResiliencyEventPublisher`) or a dedicated observer with built-in statistics and handler lifecycle management (`PipelineEventObserver`).
 
-`RegisterHandler<T>` adds a named handler to the observer and subscribes the supplied `Action<T>` to the underlying publisher. Consequently, an event sent through `publisher.PublishAsync(...)` is delivered to matching observer registrations and is reflected in the publisher statistics returned by `observer.GetStatistics()`.
-
-The observer also exposes `RecordEvent(ResiliencyEvent)`, which queues an event on its internal channel for asynchronous event-specific processing. `RecordEvent` does not call `PublishAsync`; by itself it does not add the event to publisher history, update publisher statistics, or notify publisher subscribers. Use `PublishAsync` when those publisher behaviors are required.
+For more details on the observer pattern implementation, see [PipelineEventObserver.md](PipelineEventObserver.md).
