@@ -432,6 +432,34 @@ bool removed = cache.Invalidate("checkout-retry");
 Console.WriteLine($"Entry removed: {removed}");
 ```
 
+## WebhookManager
+
+`src/Integration/WebhookManager.cs` manages webhook subscriptions and delivery records. `RegisterWebhook` creates an active subscription for one or more event types and returns its ID, while `UnregisterWebhook` removes it. `TriggerEventAsync` sends an event to each active matching subscription with retry handling. `SetWebhookActive` enables or disables a subscription without removing it, and `GetDeliveryHistory` returns recent delivery records, optionally filtered by webhook ID. `GetStatistics` summarizes total, successful, and failed deliveries, the success rate, and the number of active subscriptions.
+
+```csharp
+using DotNetResiliencePipeline.Integration;
+
+var webhooks = new WebhookManager();
+string webhookId = webhooks.RegisterWebhook(
+    "https://example.com/hooks/orders",
+    new[] { "order.created" },
+    new Dictionary<string, string> { ["X-Webhook-Source"] = "checkout" });
+
+await webhooks.TriggerEventAsync(
+    "order.created",
+    new { OrderId = "order-123", Total = 49.95m });
+
+List<WebhookDelivery> history = webhooks.GetDeliveryHistory(webhookId, limit: 20);
+WebhookStatistics statistics = webhooks.GetStatistics();
+Console.WriteLine(
+    $"{statistics.SuccessfulDeliveries}/{statistics.TotalDeliveries} deliveries succeeded " +
+    $"({statistics.SuccessRate:F1}%); {statistics.ActiveSubscriptions} active subscriptions");
+
+bool deactivated = webhooks.SetWebhookActive(webhookId, false);
+bool unregistered = webhooks.UnregisterWebhook(webhookId);
+Console.WriteLine($"Deactivated: {deactivated}; unregistered: {unregistered}");
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
