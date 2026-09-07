@@ -460,6 +460,33 @@ bool unregistered = webhooks.UnregisterWebhook(webhookId);
 Console.WriteLine($"Deactivated: {deactivated}; unregistered: {unregistered}");
 ```
 
+## MetricsExporter
+
+The `MetricsExporter` class in `src/Formatters/MetricsExporter.cs` provides methods to export pipeline metrics in various formats.
+It takes a `PipelineMetricsSnapshot` (obtained from `ResiliencyPipelineService.GetMetricsSnapshot()`) and can export to JSON, CSV, or Prometheus text format.
+
+Example usage:
+
+```csharp
+using DotNetResiliencePipeline.Formatters;
+using DotNetResiliencePipeline.Services;
+
+// Assume we have a ResiliencyPipelineService instance
+var pipeline = provider.GetRequiredService<ResiliencyPipelineService>();
+var snapshot = pipeline.GetMetricsSnapshot();
+
+var exporter = new MetricsExporter();
+
+// Export to JSON
+string json = exporter.ExportJson(snapshot);
+
+// Export to CSV
+string csv = exporter.ExportCsv(snapshot);
+
+// Export to Prometheus format
+string prometheus = exporter.ExportPrometheus(snapshot);
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
