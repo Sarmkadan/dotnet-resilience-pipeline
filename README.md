@@ -393,6 +393,45 @@ if (activeAtNoon)
 failureInjection.RemoveRule("catalog-read");
 ```
 
+## PolicyCacheService
+
+`src/Caching/PolicyCacheService.cs` provides an in-memory cache for policy configurations. `Get` returns a non-expired `CachedPolicy`, while `GetOrLoad` invokes a loader on a cache miss and caches the returned configuration. `Set` accepts an optional TTL (or uses `DefaultTtl`), and `Invalidate` removes an entry by name. `MaxCacheSize` bounds the cache and causes the least-recently-used entry to be evicted when space is needed. `GetStatistics` returns `CacheStatistics`, including total, valid, and expired entry counts, hit rate, and average TTL.
+
+```csharp
+using DotNetResiliencePipeline.Caching;
+
+var cache = new PolicyCacheService
+{
+    DefaultTtl = TimeSpan.FromMinutes(5),
+    MaxCacheSize = 100
+};
+
+cache.Set("checkout-retry", new { MaxRetries = 3 }, TimeSpan.FromMinutes(10));
+
+CachedPolicy? cached = cache.Get("checkout-retry");
+Console.WriteLine(cached?.Config);
+
+CachedPolicy? loaded = cache.GetOrLoad("catalog-timeout", policyName =>
+{
+    DateTime now = DateTime.UtcNow;
+    return new CachedPolicy
+    {
+        PolicyName = policyName,
+        Config = new { Timeout = TimeSpan.FromSeconds(2) },
+        CreatedAt = now,
+        ExpiresAt = now.AddMinutes(5),
+        LastAccessTime = now,
+        AccessCount = 1
+    };
+});
+
+CacheStatistics statistics = cache.GetStatistics();
+Console.WriteLine($"{statistics.ValidEntries}/{statistics.TotalEntries} entries are valid");
+
+bool removed = cache.Invalidate("checkout-retry");
+Console.WriteLine($"Entry removed: {removed}");
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
