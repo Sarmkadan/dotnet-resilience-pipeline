@@ -348,6 +348,51 @@ Console.WriteLine(exception.PolicyName); // "RetryPolicy"
 Console.WriteLine(exception.PolicyType); // "Retry"
 ```
 
+## FailureInjectionService
+
+`src/Services/FailureInjectionService.cs` provides `FailureInjectionService` for chaos-style testing of resilience policies and application behavior. An `InjectionRule` identifies a scenario by key and configures its `InjectionType` (`Exception`, `Latency`, or `Timeout`), probability, enabled state, and type-specific settings. Register or replace rules with `AddRule`, remove them with `RemoveRule`, and wrap asynchronous operations with either the generic or non-generic `ExecuteAsync` overload. If a rule does not apply, the wrapped operation runs normally; otherwise the service throws an exception, adds latency before running the operation, or simulates a timeout.
+
+Rules can also define inclusive `StartTime` and `EndTime` values in 24-hour `HH:mm` format. `IsActiveAt` checks these windows deterministically for a supplied `DateTimeOffset`; rules without a window are always active. Exception rules use their configured `ExceptionFactory`, or throw `InjectedFaultException` by default. That exception exposes the `RuleKey` that caused the injected failure.
+
+```csharp
+using DotNetResiliencePipeline.Services;
+
+var failureInjection = new FailureInjectionService();
+var rule = new InjectionRule
+{
+    Key = "catalog-read",
+    Type = InjectionType.Exception,
+    InjectionRate = 1.0,
+    ExceptionMessage = "The catalog dependency is unavailable",
+    StartTime = "09:00",
+    EndTime = "17:00"
+};
+
+failureInjection.AddRule(rule);
+
+bool activeAtNoon = FailureInjectionService.IsActiveAt(
+    rule,
+    new DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero));
+
+if (activeAtNoon)
+{
+    try
+    {
+        string result = await failureInjection.ExecuteAsync(
+            "catalog-read",
+            _ => Task.FromResult("catalog response"));
+
+        Console.WriteLine(result);
+    }
+    catch (InjectedFaultException exception)
+    {
+        Console.WriteLine($"Rule {exception.RuleKey} injected: {exception.Message}");
+    }
+}
+
+failureInjection.RemoveRule("catalog-read");
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
