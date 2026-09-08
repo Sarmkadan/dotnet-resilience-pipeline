@@ -1,4 +1,8 @@
 #nullable enable
+// =============================================================================
+// Author: Vladyslav Zaiets | https://sarmkadan.com
+// CTO & Software Architect
+// =============================================================================
 
 namespace DotNetResiliencePipeline.Domain.Policies;
 
