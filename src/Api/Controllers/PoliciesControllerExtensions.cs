@@ -1,8 +1,12 @@
 #nullable enable
+// =============================================================================
+// Author: Vladyslav Zaiets | https://sarmkadan.com
+// CTO & Software Architect
+// =============================================================================
 
+using System.Text.Json;
 using DotNetResiliencePipeline.Api.Controllers;
 using DotNetResiliencePipeline.Domain.Policies;
-using System.Text.Json;
 
 namespace DotNetResiliencePipeline.Api.Controllers;
 
