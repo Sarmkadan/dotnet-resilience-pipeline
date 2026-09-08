@@ -76,7 +76,7 @@ public sealed class AdvancedUsageExample
 
         Console.WriteLine($"\nResult: {result.Value}");
         Console.WriteLine($"Success: {result.IsSuccess}");
-        Console.WriteLine($"Error: {result.Error?.Message ?? \"None\"}");
+        Console.WriteLine($"Error: {result.Error?.Message ?? "None"}");
     }
 
     private static async Task<string> SimulateFragileApiCallAsync(CancellationToken ct)
