@@ -4,11 +4,11 @@
 // CTO & Software Architect
 // =============================================================================
 
-using Microsoft.Extensions.DependencyInjection;
 using DotNetResiliencePipeline.Configuration;
 using DotNetResiliencePipeline.Data;
 using DotNetResiliencePipeline.Domain.Policies;
 using DotNetResiliencePipeline.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DotNetResiliencePipeline.Examples;
 
