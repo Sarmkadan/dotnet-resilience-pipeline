@@ -1,3 +1,9 @@
+#nullable enable
+// =============================================================================
+// Author: Vladyslav Zaiets | https://sarmkadan.com
+// CTO & Software Architect
+// =============================================================================
+
 /// <summary>
 /// Represents an exception that occurs within the Dotnet Resilience Pipeline.
 /// </summary>
