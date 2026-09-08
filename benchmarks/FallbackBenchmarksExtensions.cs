@@ -3,13 +3,13 @@ using System;
 namespace DotNetResiliencePipeline.Benchmarks;
 
 /// <summary>
-/// Provides extension methods for analyzing fallback policy benchmark results, including calculating fallback invocation rates, 
+/// Provides extension methods for analyzing fallback policy benchmark results, including calculating fallback invocation rates,
 /// determining frequency of fallback triggers, and computing success ratios of fallback operations.
 /// </summary>
 public static class FallbackBenchmarksExtensions
 {
     /// <summary>
-    /// Calculates the average fallback invocation rate (fallbacks per second) based on total fallback invocations, 
+    /// Calculates the average fallback invocation rate (fallbacks per second) based on total fallback invocations,
     /// fallback invocation percentage, and the fallback timeout duration.
     /// </summary>
     /// <param name="benchmarks">The benchmark instance containing fallback metrics.</param>
@@ -31,7 +31,7 @@ public static class FallbackBenchmarksExtensions
     }
 
     /// <summary>
-    /// Determines whether the fallback policy was triggered frequently by comparing the fallback invocation percentage 
+    /// Determines whether the fallback policy was triggered frequently by comparing the fallback invocation percentage
     /// against a specified threshold percentage.
     /// </summary>
     /// <param name="benchmarks">The benchmark instance containing fallback metrics.</param>
@@ -48,7 +48,7 @@ public static class FallbackBenchmarksExtensions
     }
 
     /// <summary>
-    /// Calculates the success ratio of fallback operations by comparing the number of successful fallbacks to the total 
+    /// Calculates the success ratio of fallback operations by comparing the number of successful fallbacks to the total
     /// number of fallback invocations. The success rate is derived from the fallback success percentage and total invocations.
     /// </summary>
     /// <param name="benchmarks">The benchmark instance containing fallback metrics.</param>
