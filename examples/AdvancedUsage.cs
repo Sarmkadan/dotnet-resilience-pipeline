@@ -4,11 +4,11 @@
 // CTO & Software Architect
 // =============================================================================
 
-using DotNetResiliencePipeline.Configuration;
-using DotNetResiliencePipeline.Domain.Policies;
-using DotNetResiliencePipeline.Data;
-using DotNetResiliencePipeline.Services;
 using Microsoft.Extensions.DependencyInjection;
+using DotNetResiliencePipeline.Configuration;
+using DotNetResiliencePipeline.Data;
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Services;
 
 namespace DotNetResiliencePipeline.Examples;
 
@@ -24,7 +24,7 @@ public sealed class AdvancedUsageExample
 
         // Setup dependency injection
         var services = new ServiceCollection();
-        
+
         // Use the fluent builder with advanced configurations
         services.AddResiliencePipeline(builder =>
         {
@@ -49,7 +49,7 @@ public sealed class AdvancedUsageExample
 
             // Fallback policy configured with an asynchronous action
             builder.WithFallback("advanced-api");
-            builder.WithFallbackAction<string>(async ct => 
+            builder.WithFallbackAction<string>(async ct =>
             {
                 Console.WriteLine("  [Fallback] Executing fallback logic...");
                 await Task.Delay(50, ct); // Simulate fallback delay
@@ -76,7 +76,7 @@ public sealed class AdvancedUsageExample
 
         Console.WriteLine($"\nResult: {result.Value}");
         Console.WriteLine($"Success: {result.IsSuccess}");
-        Console.WriteLine($"Error: {result.Error?.Message ?? "None"}");
+        Console.WriteLine($"Error: {result.Error?.Message ?? \"None\"}");
     }
 
     private static async Task<string> SimulateFragileApiCallAsync(CancellationToken ct)
