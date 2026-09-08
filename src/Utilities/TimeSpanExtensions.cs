@@ -47,6 +47,33 @@ namespace DotNetResiliencePipeline.Utilities
         public static TimeSpan Max(this TimeSpan a, TimeSpan b) => a > b ? a : b;
 
         /// <summary>
+        /// Restricts a <see cref="TimeSpan"/> value to the inclusive range defined by
+        /// <paramref name="min"/> and <paramref name="max"/>.
+        /// </summary>
+        /// <param name="value">The value to restrict.</param>
+        /// <param name="min">The inclusive minimum value.</param>
+        /// <param name="max">The inclusive maximum value.</param>
+        /// <returns>
+        /// <paramref name="min"/> when <paramref name="value"/> is less than the minimum,
+        /// <paramref name="max"/> when it is greater than the maximum; otherwise,
+        /// <paramref name="value"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// Thrown when <paramref name="min"/> is greater than <paramref name="max"/>.
+        /// </exception>
+        public static TimeSpan Clamp(this TimeSpan value, TimeSpan min, TimeSpan max)
+        {
+            if (min > max)
+            {
+                throw new ArgumentException("The minimum value cannot be greater than the maximum value.");
+            }
+
+            if (value < min) return min;
+            if (value > max) return max;
+            return value;
+        }
+
+        /// <summary>
         /// Formats the <see cref="TimeSpan"/> as a concise human‑readable string.
         /// Example: "1h 2m 3s", "150ms", or "2d 4h".
         /// </summary>
