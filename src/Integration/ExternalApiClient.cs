@@ -329,4 +329,9 @@ public sealed class ApiResponse<T>
     public T? Data { get; set; }
     public string? Message { get; set; }
     public Dictionary<string, string>? Headers { get; set; }
+
+    /// <summary>
+    /// Returns a string representation of the API response.
+    /// </summary>
+    public override string ToString() => $"ApiResponse {{ Success = {Success}, Data = {Data?.ToString() ?? "null"}, Message = {Message}, Headers = {Headers} }}";
 }
