@@ -189,4 +189,10 @@ public sealed class PipelineHealthReport
     public HealthStatus HealthStatus { get; set; }
     public List<PolicySnapshot> Policies { get; set; } = new();
     public Dictionary<string, object> HistoryStatistics { get; set; } = new();
+
+    /// <summary>
+    /// Returns a string representation of the pipeline health report.
+    /// </summary>
+    public override string ToString() =>
+        $"PipelineHealthReport {{ PipelineId = {PipelineId}, ReportGeneratedAt = {ReportGeneratedAt}, TotalExecutions = {TotalExecutions}, SuccessRate = {SuccessRate}, PolicyCount = {PolicyCount}, HealthStatus = {HealthStatus}, Policies = {Policies.Count}, HistoryStatistics = {HistoryStatistics.Count} }}";
 }
