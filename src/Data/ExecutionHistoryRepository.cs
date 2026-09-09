@@ -34,8 +34,13 @@ public sealed class ExecutionHistoryRepository
     private readonly object _lockObj = new object();
     private readonly int _maxRetentionMinutes;
     private DateTime _lastCleanup = DateTime.UtcNow;
+    public const int DefaultRetentionMinutes = 60;
+    private const int P50Rank = 50;
+    private const int P90Rank = 90;
+    private const int P99Rank = 99;
+    private const double PercentageFactor = 100.0;
 
-    public ExecutionHistoryRepository(int maxRetentionMinutes = 60)
+    public ExecutionHistoryRepository(int maxRetentionMinutes = DefaultRetentionMinutes)
     {
         _history = new List<ExecutionRecord>();
         _maxRetentionMinutes = maxRetentionMinutes;
@@ -166,7 +171,7 @@ public sealed class ExecutionHistoryRepository
             if (_history.Count == 0) return 0;
 
             var successCount = _history.Count(r => r.IsSuccess);
-            return (successCount * 100.0) / _history.Count;
+            return (successCount * PercentageFactor) / _history.Count;
         }
     }
 
@@ -257,9 +262,9 @@ public sealed class ExecutionHistoryRepository
 
             return new LatencyPercentiles
             {
-                P50 = GetPercentile(executionTimes, 50, count),
-                P90 = GetPercentile(executionTimes, 90, count),
-                P99 = GetPercentile(executionTimes, 99, count)
+                P50 = GetPercentile(executionTimes, P50Rank, count),
+                P90 = GetPercentile(executionTimes, P90Rank, count),
+                P99 = GetPercentile(executionTimes, P99Rank, count)
             };
         }
     }
