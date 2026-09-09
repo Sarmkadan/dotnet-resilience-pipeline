@@ -244,4 +244,12 @@ public sealed class CacheStatistics
     public int ExpiredEntries { get; set; }
     public double HitRate { get; set; }
     public TimeSpan AverageTtl { get; set; }
+
+    /// <summary>
+    /// Returns a string representation of the CacheStatistics object.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"CacheStatistics {{ TotalEntries = {TotalEntries}, ValidEntries = {ValidEntries}, ExpiredEntries = {ExpiredEntries}, HitRate = {HitRate}, AverageTtl = {AverageTtl} }}";
+    }
 }
