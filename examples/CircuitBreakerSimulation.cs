@@ -17,6 +17,10 @@ namespace DotNetResiliencePipeline.Examples;
 /// </summary>
 public sealed class CircuitBreakerSimulationExample
 {
+    /// <summary>
+    /// Simulates the circuit breaker pattern by demonstrating state transitions (Closed, Open, Half-Open)
+    /// through a series of operations that succeed or fail based on the configured policy.
+    /// </summary>
     public static async Task Main()
     {
         Console.WriteLine("=== Circuit Breaker State Transitions ===\n");
@@ -171,6 +175,9 @@ public sealed class CircuitBreakerSimulationExample
         Console.WriteLine($"Consecutive Failures: {cbPolicy.ConsecutiveFailures}");
     }
 
+    /// <summary>
+    /// Simulates a call to a payment service that either succeeds or throws an HttpRequestException based on the shouldFail parameter.
+    /// </summary>
     private static async Task<bool> CallPaymentServiceAsync(bool shouldFail, CancellationToken ct)
     {
         await Task.Delay(50, ct);
