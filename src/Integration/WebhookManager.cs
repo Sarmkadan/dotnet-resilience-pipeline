@@ -16,10 +16,15 @@ namespace DotNetResiliencePipeline.Integration;
 /// </summary>
 public sealed class WebhookManager
 {
+    public const int DefaultMaxHistoryEntries = 1000;
+    public const int DefaultDeliveryHistoryLimit = 100;
+    private const double PercentageMultiplier = 100.0;
+    private static readonly TimeSpan DeliveryTimeout = TimeSpan.FromSeconds(10);
+
     private readonly ConcurrentDictionary<string, WebhookSubscription> _subscriptions = new();
     private readonly List<WebhookDelivery> _deliveryHistory = new();
     private readonly object _lockObj = new object();
-    public int MaxHistoryEntries { get; set; } = 1000;
+    public int MaxHistoryEntries { get; set; } = DefaultMaxHistoryEntries;
 
     /// <summary>
     /// Registers a webhook subscription.
@@ -123,7 +128,7 @@ public sealed class WebhookManager
 
             try
             {
-                using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+                using var client = new HttpClient { Timeout = DeliveryTimeout };
 
                 var payload = new
                 {
@@ -247,7 +252,7 @@ public sealed class WebhookManager
     /// <summary>
     /// Gets delivery history.
     /// </summary>
-    public List<WebhookDelivery> GetDeliveryHistory(string? webhookId = null, int limit = 100)
+    public List<WebhookDelivery> GetDeliveryHistory(string? webhookId = null, int limit = DefaultDeliveryHistoryLimit)
     {
         if (limit <= 0)
             throw new ArgumentException("Limit must be greater than 0", nameof(limit));
@@ -278,7 +283,7 @@ public sealed class WebhookManager
                 TotalDeliveries = totalCount,
                 SuccessfulDeliveries = successCount,
                 FailedDeliveries = totalCount - successCount,
-                SuccessRate = totalCount > 0 ? (successCount * 100.0) / totalCount : 0,
+                SuccessRate = totalCount > 0 ? (successCount * PercentageMultiplier) / totalCount : 0,
                 ActiveSubscriptions = _subscriptions.Count(x => x.Value.IsActive)
             };
         }
