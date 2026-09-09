@@ -16,6 +16,10 @@ namespace DotNetResiliencePipeline.Api.Controllers;
 /// </summary>
 public sealed class MetricsController
 {
+    private const double HealthySuccessRateThreshold = 95;
+    private const double DegradedSuccessRateThreshold = 80;
+    public const int DefaultHistoryLimit = 100;
+
     private readonly ResiliencyPipelineService _pipelineService;
     private readonly ExecutionHistoryRepository _historyRepository;
 
@@ -104,8 +108,8 @@ public sealed class MetricsController
             // Determine health based on success rate
             string status = stats.SuccessRate switch
             {
-                >= 95 => "Healthy",
-                >= 80 => "Degraded",
+                >= HealthySuccessRateThreshold => "Healthy",
+                >= DegradedSuccessRateThreshold => "Degraded",
                 _ => "Critical"
             };
 
@@ -203,7 +207,7 @@ public sealed class MetricsController
     /// <summary>
     /// GET /api/metrics/history - Retrieves execution history.
     /// </summary>
-    public async Task<ApiResponse<List<ExecutionRecordDto>>> GetExecutionHistoryAsync(int limit = 100)
+    public async Task<ApiResponse<List<ExecutionRecordDto>>> GetExecutionHistoryAsync(int limit = DefaultHistoryLimit)
     {
         try
         {
@@ -270,9 +274,9 @@ public sealed class MetricsController
 
     private string DetermineHealthStatus(double successRate)
     {
-        if (successRate >= 95)
+        if (successRate >= HealthySuccessRateThreshold)
             return "Healthy";
-        if (successRate >= 80)
+        if (successRate >= DegradedSuccessRateThreshold)
             return "Degraded";
         return "Unhealthy";
     }
