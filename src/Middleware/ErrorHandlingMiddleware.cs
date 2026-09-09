@@ -177,4 +177,9 @@ public sealed class ErrorStatistics
     public int Count { get; set; }
     public DateTime LastOccurrence { get; set; }
     public double Frequency => Count > 0 ? 100.0 / Count : 0;
+
+    /// <summary>
+    /// Returns a string representation of the error statistics.
+    /// </summary>
+    public override string ToString() => $"ErrorStatistics {{ Count = {Count}, LastOccurrence = {LastOccurrence}, Frequency = {Frequency} }}";
 }
