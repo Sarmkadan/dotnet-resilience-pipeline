@@ -19,6 +19,11 @@ namespace DotNetResiliencePipeline.Examples;
 /// </summary>
 public sealed class IntegrationExample
 {
+    /// <summary>
+    /// Entry point of the ASP.NET Core integration example.
+    /// Configures the resilience pipeline and runs the host.
+    /// </summary>
+    /// <param name="args">Command line arguments.</param>
     public static void Main(string[] args)
     {
         var builder = Host.CreateApplicationBuilder(args);
@@ -38,7 +43,7 @@ public sealed class IntegrationExample
 
         var host = builder.Build();
         var myService = host.Services.GetRequiredService<MyApiService>();
-        
+
         Console.WriteLine("Integration Example configured.");
     }
 }
@@ -51,19 +56,29 @@ public sealed class MyApiService
     private readonly ResiliencyPipelineService _pipeline;
     private readonly PolicyRepository _policyRepository;
 
+    /// <summary>
+    /// Initializes a new instance of the MyApiService class.
+    /// </summary>
+    /// <param name="pipeline">The resilience pipeline service.</param>
+    /// <param name="policyRepository">The policy repository.</param>
     public MyApiService(ResiliencyPipelineService pipeline, PolicyRepository policyRepository)
     {
         _pipeline = pipeline;
         _policyRepository = policyRepository;
     }
 
+    /// <summary>
+    /// Asynchronously retrieves data using the resilience pipeline.
+    /// </summary>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The retrieved data or default value if execution fails.</returns>
     public async Task<string> GetDataAsync(CancellationToken ct)
     {
         var retryPolicy = _policyRepository.GetPolicy<RetryPolicy>("api-client");
         var timeoutPolicy = _policyRepository.GetPolicy<TimeoutPolicy>("api-client");
 
         var result = await _pipeline.ExecuteAsync(
-            async token => 
+            async token =>
             {
                 // Actual API call logic here
                 await Task.Delay(100, token);
