@@ -146,4 +146,12 @@ public sealed class PolicySnapshot
     public double SuccessRate { get; set; }
     public DateTime SnapshotTime { get; set; }
     public Dictionary<string, object>? Metadata { get; set; }
+
+    /// <summary>
+    /// Returns a string representation of the policy snapshot.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"PolicySnapshot {{ PolicyId = {PolicyId}, PolicyName = {PolicyName}, PolicyType = {PolicyType}, IsEnabled = {IsEnabled}, TotalExecutions = {TotalExecutions}, SuccessfulExecutions = {SuccessfulExecutions}, FailedExecutions = {FailedExecutions}, SuccessRate = {SuccessRate}, SnapshotTime = {SnapshotTime}, Metadata = {Metadata} }}";
+    }
 }
