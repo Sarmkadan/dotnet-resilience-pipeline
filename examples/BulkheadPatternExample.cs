@@ -17,6 +17,9 @@ namespace DotNetResiliencePipeline.Examples;
 /// </summary>
 public sealed class BulkheadPatternExample
 {
+    /// <summary>
+    /// Demonstrates the bulkhead pattern by configuring two bulkheads (database and API) and executing concurrent operations to show resource isolation.
+    /// </summary>
     public static async Task Main()
     {
         Console.WriteLine("=== Bulkhead Pattern - Resource Isolation Example ===\n");
@@ -111,6 +114,9 @@ public sealed class BulkheadPatternExample
         Console.WriteLine($"API - Current: {apiBulkhead?.CurrentExecutions}/{apiBulkhead?.MaxParallelization}, Queue: {apiBulkhead?.CurrentQueueLength}");
     }
 
+    /// <summary>
+    /// Simulates a database query operation with a random delay of 200-300ms.
+    /// </summary>
     private static async Task<string> PerformDatabaseQuery(int queryId, CancellationToken ct)
     {
         // Simulate database operation taking 200-300ms
@@ -118,6 +124,9 @@ public sealed class BulkheadPatternExample
         return $"Query {queryId} Result";
     }
 
+    /// <summary>
+    /// Simulates an external API call with a random delay of 100-200ms.
+    /// </summary>
     private static async Task<string> CallExternalApi(int requestId, CancellationToken ct)
     {
         // Simulate API call taking 100-200ms
