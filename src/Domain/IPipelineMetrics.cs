@@ -52,4 +52,10 @@ public sealed class PipelineMetricsSnapshot
 
     /// <summary>Per-policy snapshots for detailed inspection.</summary>
     public IReadOnlyList<Policies.PolicySnapshot> PolicySnapshots { get; init; } = Array.Empty<Policies.PolicySnapshot>();
+
+    /// <summary>
+    /// Returns a string representation of the pipeline metrics snapshot.
+    /// </summary>
+    public override string ToString() =>
+        $"PipelineMetricsSnapshot {{ TotalExecutions = {TotalExecutions}, SuccessfulExecutions = {SuccessfulExecutions}, FailedExecutions = {FailedExecutions}, SuccessRate = {SuccessRate}, RetryCount = {RetryCount}, CircuitBreakerTrips = {CircuitBreakerTrips}, TimeoutCount = {TimeoutCount}, PolicySnapshots.Count = {PolicySnapshots.Count} }}";
 }
