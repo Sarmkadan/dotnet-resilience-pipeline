@@ -153,9 +153,9 @@ public sealed class MetricsAggregator
         // Add health assessment
         report.HealthStatus = aggregated.AverageSuccessRate switch
         {
-            >= 95 => "Healthy",
-            >= 85 => "Acceptable",
-            >= 70 => "Degraded",
+            >= HealthySuccessRate => "Healthy",
+            >= AcceptableSuccessRate => "Acceptable",
+            >= DegradedSuccessRate => "Degraded",
             _ => "Critical"
         };
 
