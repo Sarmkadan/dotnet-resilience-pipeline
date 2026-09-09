@@ -23,11 +23,20 @@ public sealed class MicroserviceIntegrationExample
     public BulkheadPolicy? Bulkhead { get; set; }
     public FallbackPolicy? Fallback { get; set; }
 
+    /// <summary>
+    /// Data transfer object representing a user.
+    /// </summary>
     private record UserDto(int Id, string Name, string Email);
+    /// <summary>
+    /// Data transfer object representing an order.
+    /// </summary>
     private record OrderDto(int Id, int UserId, decimal Amount);
 
     public override string ToString() => $"MicroserviceIntegrationExample {{ CircuitBreaker = {CircuitBreaker}, Retry = {Retry}, Timeout = {Timeout}, Bulkhead = {Bulkhead}, Fallback = {Fallback} }}";
 
+    /// <summary>
+    /// Entry point of the microservice integration example demonstrating resilience policies.
+    /// </summary>
     public static async Task Main()
     {
         Console.WriteLine("=== Microservice Integration Example ===\n");
@@ -149,6 +158,9 @@ public sealed class MicroserviceIntegrationExample
         Console.WriteLine($"Order Service: {orderServicePolicies.CircuitBreaker?.State ?? "N/A"}");
     }
 
+    /// <summary>
+    /// Container for resilience policies for a specific service.
+    /// </summary>
     private class ServicePolicies
     {
         public CircuitBreakerPolicy? CircuitBreaker { get; set; }
@@ -163,6 +175,9 @@ public sealed class MicroserviceIntegrationExample
         }
     }
 
+    /// <summary>
+    /// Retrieves the resilience policies for a given service from the policy repository.
+    /// </summary>
     private static ServicePolicies GetPolicies(PolicyRepository repository, string serviceName)
     {
         return new ServicePolicies
@@ -175,18 +190,27 @@ public sealed class MicroserviceIntegrationExample
         };
     }
 
+    /// <summary>
+    /// Simulates fetching a user by ID.
+    /// </summary>
     private static async Task<UserDto> FetchUserAsync(int userId, CancellationToken ct)
     {
         await Task.Delay(100, ct);
         return new UserDto(userId, "John Doe", "john@example.com");
     }
 
+    /// <summary>
+    /// Simulates fetching an order by ID and user ID.
+    /// </summary>
     private static async Task<OrderDto> FetchOrderAsync(int orderId, int userId, CancellationToken ct)
     {
         await Task.Delay(150, ct);
         return new OrderDto(orderId, userId, 99.99m);
     }
 
+    /// <summary>
+    /// Simulates sending a notification to the given email address.
+    /// </summary>
     private static async Task<bool> SendNotificationAsync(string email, CancellationToken ct)
     {
         await Task.Delay(50, ct);
