@@ -18,6 +18,23 @@ namespace DotNetResiliencePipeline;
 /// </summary>
 class Program
 {
+    private const int CircuitBreakerFailureThreshold = 5;
+    private static readonly TimeSpan CircuitBreakerOpenDuration = TimeSpan.FromSeconds(30);
+    private const int RetryMaxAttempts = 3;
+    private static readonly TimeSpan RetryInitialDelay = TimeSpan.FromMilliseconds(100);
+    private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(10);
+    private const int BulkheadMaxParallelization = 10;
+    private const int BulkheadMaxQueueLength = 50;
+    private static readonly TimeSpan FallbackTimeout = TimeSpan.FromSeconds(5);
+    private const int SimpleOperationDelayMilliseconds = 50;
+    private const int CircuitBreakerDemoIterationCount = 8;
+    private const int SimulatedFailureCount = 5;
+    private const int SuccessfulPaymentDelayMilliseconds = 10;
+    private const int FastOperationDelayMilliseconds = 500;
+    private const int SlowOperationDelayMilliseconds = 15000;
+    private const int BulkheadDemoTaskCount = 15;
+    private const int BulkheadTaskDelayMilliseconds = 200;
+
     static async Task Main(string[] args)
     {
         Console.WriteLine("========================================");
@@ -31,21 +48,21 @@ class Program
             builder
                 .WithCircuitBreaker("payment-circuit", policy =>
                 {
-                    policy.FailureThreshold = 5;
-                    policy.OpenDuration = TimeSpan.FromSeconds(30);
+                    policy.FailureThreshold = CircuitBreakerFailureThreshold;
+                    policy.OpenDuration = CircuitBreakerOpenDuration;
                 })
                 .WithRetry("api-retry", policy =>
                 {
-                    policy.MaxRetries = 3;
-                    policy.InitialDelay = TimeSpan.FromMilliseconds(100);
+                    policy.MaxRetries = RetryMaxAttempts;
+                    policy.InitialDelay = RetryInitialDelay;
                     policy.Strategy = RetryPolicy.BackoffStrategy.Exponential;
                 })
-                .WithTimeout("operation-timeout", TimeSpan.FromSeconds(10))
-                .WithBulkhead("resource-bulkhead", 10, 50)
+                .WithTimeout("operation-timeout", OperationTimeout)
+                .WithBulkhead("resource-bulkhead", BulkheadMaxParallelization, BulkheadMaxQueueLength)
                 .WithFallback("graceful-fallback", policy =>
                 {
                     policy.FallbackOnAnyException = true;
-                    policy.FallbackTimeout = TimeSpan.FromSeconds(5);
+                    policy.FallbackTimeout = FallbackTimeout;
                 });
         });
 
@@ -98,7 +115,7 @@ class Program
         var result = await pipeline.ExecuteAsync(
             async ct =>
             {
-                await Task.Delay(50);
+                await Task.Delay(SimpleOperationDelayMilliseconds);
                 return "Success: Data retrieved successfully";
             },
             retry: retryPolicy);
@@ -123,7 +140,7 @@ class Program
         var cbPolicy = pipeline.GetPolicyByName("payment-circuit") as CircuitBreakerPolicy;
         int failureCount = 0;
 
-        for (int i = 0; i < 8; i++)
+        for (int i = 0; i < CircuitBreakerDemoIterationCount; i++)
         {
             try
             {
@@ -131,12 +148,12 @@ class Program
                     async ct =>
                     {
                         // Simulate failures for first 5 attempts
-                        if (failureCount < 5)
+                        if (failureCount < SimulatedFailureCount)
                         {
                             failureCount++;
                             throw new Exception("Simulated payment failure");
                         }
-                        await Task.Delay(10);
+                        await Task.Delay(SuccessfulPaymentDelayMilliseconds);
                         return true;
                     },
                     circuitBreaker: cbPolicy);
@@ -160,7 +177,7 @@ class Program
             var result = await pipeline.ExecuteAsync(
                 async ct =>
                 {
-                    await Task.Delay(500, ct);
+                    await Task.Delay(FastOperationDelayMilliseconds, ct);
                     return "Completed";
                 },
                 timeout: timeoutPolicy);
@@ -178,7 +195,7 @@ class Program
             var result = await pipeline.ExecuteAsync(
                 async ct =>
                 {
-                    await Task.Delay(15000, ct);
+                    await Task.Delay(SlowOperationDelayMilliseconds, ct);
                     return "Completed";
                 },
                 timeout: timeoutPolicy);
@@ -198,7 +215,7 @@ class Program
         Console.WriteLine($"Bulkhead Capacity: {bulkheadPolicy?.MaxParallelization}/{bulkheadPolicy?.MaxQueueLength}");
 
         var tasks = new List<Task>();
-        for (int i = 0; i < 15; i++)
+        for (int i = 0; i < BulkheadDemoTaskCount; i++)
         {
             int index = i;
             tasks.Add(Task.Run(async () =>
@@ -208,7 +225,7 @@ class Program
                     var result = await pipeline.ExecuteAsync(
                         async ct =>
                         {
-                            await Task.Delay(200, ct);
+                            await Task.Delay(BulkheadTaskDelayMilliseconds, ct);
                             return $"Task {index} completed";
                         },
                         bulkhead: bulkheadPolicy);
