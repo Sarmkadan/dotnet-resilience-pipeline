@@ -21,9 +21,14 @@ public sealed class HealthCheckWorker
     private CancellationTokenSource? _cancellationTokenSource;
     private Task? _workerTask;
 
-    public TimeSpan CheckInterval { get; set; } = TimeSpan.FromSeconds(30);
-    public double HealthyThreshold { get; set; } = 0.95; // 95% success rate
-    public double DegradedThreshold { get; set; } = 0.80; // 80% success rate
+    private const int DefaultCheckIntervalSeconds = 30;
+    private const double DefaultHealthyThreshold = 0.95;
+    private const double DefaultDegradedThreshold = 0.80;
+    private const int PercentageMultiplier = 100;
+
+    public TimeSpan CheckInterval { get; set; } = TimeSpan.FromSeconds(DefaultCheckIntervalSeconds);
+    public double HealthyThreshold { get; set; } = DefaultHealthyThreshold;
+    public double DegradedThreshold { get; set; } = DefaultDegradedThreshold;
     public bool IsRunning { get; private set; }
 
     public HealthCheckWorker(ResiliencyPipelineService pipelineService, ResiliencyEventPublisher eventPublisher)
@@ -104,9 +109,9 @@ public sealed class HealthCheckWorker
 
     private string DetermineHealth(double successRate)
     {
-        if (successRate >= HealthyThreshold * 100)
+        if (successRate >= DefaultHealthyThreshold * PercentageMultiplier)
             return "Healthy";
-        if (successRate >= DegradedThreshold * 100)
+        if (successRate >= DefaultDegradedThreshold * PercentageMultiplier)
             return "Degraded";
         return "Unhealthy";
     }
@@ -203,8 +208,8 @@ public sealed class HealthCheckWorker
         report.AdditionalMetrics["CreatedAt"] = pipelineStats.CreatedAt;
         report.AdditionalMetrics["Thresholds"] = new Dictionary<string, double>
         {
-            { "Healthy", HealthyThreshold * 100 },
-            { "Degraded", DegradedThreshold * 100 }
+            { "Healthy", DefaultHealthyThreshold * PercentageMultiplier },
+            { "Degraded", DefaultDegradedThreshold * PercentageMultiplier }
         };
 
         return report;
