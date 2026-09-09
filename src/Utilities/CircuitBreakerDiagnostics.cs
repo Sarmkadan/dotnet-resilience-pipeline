@@ -15,6 +15,23 @@ namespace DotNetResiliencePipeline.Utilities;
 /// </summary>
 public static class CircuitBreakerDiagnostics
 {
+    private const int MinimumReasonableFailureThreshold = 2;
+    private const int MaximumReasonableFailureThreshold = 100;
+    private const int SingleHalfOpenSuccessThreshold = 1;
+    private const int RecommendedMinimumFailureThreshold = 5;
+    private const int RecommendedMinimumHalfOpenSuccessThreshold = 3;
+    private const long MinimumExecutionCountForFailureRate = 0;
+    private const double PercentageMultiplier = 100.0;
+    private const double ExcellentFailureRateUpperBound = 5;
+    private const double GoodFailureRateUpperBound = 15;
+    private const double FairFailureRateUpperBound = 30;
+    private const double FastRecoveryTimeUpperBoundMilliseconds = 1000;
+    private const double ModerateRecoveryTimeUpperBoundMilliseconds = 5000;
+    private const double SlowRecoveryTimeUpperBoundMilliseconds = 30000;
+    private static readonly TimeSpan MinimumReasonableOpenDuration = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan MaximumReasonableOpenDuration = TimeSpan.FromHours(1);
+    private static readonly TimeSpan RecommendedMinimumOpenDuration = TimeSpan.FromSeconds(30);
+
     /// <summary>
     /// Generates a detailed diagnostic report for a circuit breaker.
     /// </summary>
@@ -47,19 +64,19 @@ public static class CircuitBreakerDiagnostics
     {
         var issues = new List<string>();
 
-        if (policy.FailureThreshold < 2)
+        if (policy.FailureThreshold < MinimumReasonableFailureThreshold)
             issues.Add("Low failure threshold may cause unnecessary circuit opens");
 
-        if (policy.FailureThreshold > 100)
+        if (policy.FailureThreshold > MaximumReasonableFailureThreshold)
             issues.Add("High failure threshold may allow too many failures before opening");
 
-        if (policy.OpenDuration < TimeSpan.FromSeconds(10))
+        if (policy.OpenDuration < MinimumReasonableOpenDuration)
             issues.Add("Very short open duration may cause rapid state cycling");
 
-        if (policy.OpenDuration > TimeSpan.FromHours(1))
+        if (policy.OpenDuration > MaximumReasonableOpenDuration)
             issues.Add("Very long open duration may prevent service recovery");
 
-        if (policy.SuccessThresholdInHalfOpen == 1)
+        if (policy.SuccessThresholdInHalfOpen == SingleHalfOpenSuccessThreshold)
             issues.Add("Allowing single success in half-open may be risky");
 
         if (!policy.IsEnabled)
@@ -75,13 +92,13 @@ public static class CircuitBreakerDiagnostics
     {
         var recommendations = new List<string>();
 
-        if (policy.FailureThreshold < 5)
+        if (policy.FailureThreshold < RecommendedMinimumFailureThreshold)
             recommendations.Add("Consider increasing failure threshold to reduce false positives");
 
-        if (policy.OpenDuration < TimeSpan.FromSeconds(30))
+        if (policy.OpenDuration < RecommendedMinimumOpenDuration)
             recommendations.Add("Increase open duration to allow sufficient service recovery time");
 
-        if (policy.SuccessThresholdInHalfOpen < 3)
+        if (policy.SuccessThresholdInHalfOpen < RecommendedMinimumHalfOpenSuccessThreshold)
             recommendations.Add("Increase success threshold for more reliable recovery validation");
 
         // Add state-specific recommendations
@@ -112,22 +129,24 @@ public static class CircuitBreakerDiagnostics
             PolicyName = policy.Name,
             TotalExecutions = totalExecutions,
             FailedExecutions = failedExecutions,
-            FailureRate = totalExecutions > 0 ? (failedExecutions * 100.0) / totalExecutions : 0,
+            FailureRate = totalExecutions > MinimumExecutionCountForFailureRate
+                ? (failedExecutions * PercentageMultiplier) / totalExecutions
+                : MinimumExecutionCountForFailureRate,
             CurrentState = policy.CurrentState
         };
 
         // Rate effectiveness
-        if (effectiveness.FailureRate < 5)
+        if (effectiveness.FailureRate < ExcellentFailureRateUpperBound)
         {
             effectiveness.EffectivenessRating = "Excellent";
             effectiveness.IsProblematic = false;
         }
-        else if (effectiveness.FailureRate < 15)
+        else if (effectiveness.FailureRate < GoodFailureRateUpperBound)
         {
             effectiveness.EffectivenessRating = "Good";
             effectiveness.IsProblematic = false;
         }
-        else if (effectiveness.FailureRate < 30)
+        else if (effectiveness.FailureRate < FairFailureRateUpperBound)
         {
             effectiveness.EffectivenessRating = "Fair";
             effectiveness.IsProblematic = true;
@@ -156,9 +175,9 @@ public static class CircuitBreakerDiagnostics
         // Suggest failure threshold based on failure rate
         config.SuggestedFailureThreshold = observedFailureRate switch
         {
-            < 5 => 10,  // Very stable - higher threshold
-            < 15 => 7,  // Mostly stable
-            < 30 => 5,  // Moderate instability
+            < ExcellentFailureRateUpperBound => 10,  // Very stable - higher threshold
+            < GoodFailureRateUpperBound => 7,  // Mostly stable
+            < FairFailureRateUpperBound => 5,  // Moderate instability
             _ => 3      // High instability - lower threshold
         };
 
@@ -166,17 +185,17 @@ public static class CircuitBreakerDiagnostics
         var recoveryDuration = TimeSpan.FromMilliseconds(averageRecoveryTimeMs);
         config.SuggestedOpenDuration = recoveryDuration.TotalMilliseconds switch
         {
-            < 1000 => TimeSpan.FromSeconds(10),
-            < 5000 => TimeSpan.FromSeconds(30),
-            < 30000 => TimeSpan.FromMinutes(1),
+            < FastRecoveryTimeUpperBoundMilliseconds => TimeSpan.FromSeconds(10),
+            < ModerateRecoveryTimeUpperBoundMilliseconds => TimeSpan.FromSeconds(30),
+            < SlowRecoveryTimeUpperBoundMilliseconds => TimeSpan.FromMinutes(1),
             _ => TimeSpan.FromMinutes(2)
         };
 
         config.SuggestedSuccessThreshold = observedFailureRate switch
         {
-            < 5 => 2,   // Low risk - can use lower threshold
-            < 15 => 3,  // Moderate
-            < 30 => 5,  // Higher risk - require more confirmations
+            < ExcellentFailureRateUpperBound => 2,   // Low risk - can use lower threshold
+            < GoodFailureRateUpperBound => 3,  // Moderate
+            < FairFailureRateUpperBound => 5,  // Higher risk - require more confirmations
             _ => 10     // Very high risk
         };
 
