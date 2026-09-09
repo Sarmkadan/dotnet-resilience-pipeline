@@ -12,9 +12,15 @@ namespace DotNetResiliencePipeline.Utilities;
 /// </summary>
 public sealed class MetricsAggregator
 {
+    private const int DefaultMaxSnapshots = 1000;
+    private const double AnomalyChangePercentageThreshold = 20;
+    private const double HealthySuccessRate = 95;
+    private const double AcceptableSuccessRate = 85;
+    private const double DegradedSuccessRate = 70;
+
     private readonly List<MetricsSnapshot> _snapshots = new();
     private readonly object _lockObj = new object();
-    public int MaxSnapshots { get; set; } = 1000;
+    public int MaxSnapshots { get; set; } = DefaultMaxSnapshots;
 
     /// <summary>
     /// Records a metrics snapshot at a point in time.
@@ -101,7 +107,7 @@ public sealed class MetricsAggregator
                 trend.ChangePercentage = ((secondHalf - firstHalf) / firstHalf) * 100;
                 trend.Current = values.Last();
                 trend.Previous = values.First();
-                trend.IsAnomaly = Math.Abs(trend.ChangePercentage) > 20;
+                trend.IsAnomaly = Math.Abs(trend.ChangePercentage) > AnomalyChangePercentageThreshold;
             }
 
             return trend;
