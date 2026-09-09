@@ -131,6 +131,15 @@ public sealed class JsonPolicySerializer
 /// </summary>
 public sealed class PolicyJson
 {
+    private const int DefaultFailureThreshold = 5;
+    private const int DefaultOpenDurationSeconds = 30;
+    private const int DefaultSuccessThreshold = 2;
+    private const int DefaultMaxRetries = 3;
+    private const int DefaultInitialDelayMs = 100;
+    private const int DefaultTimeoutSeconds = 10;
+    private const int DefaultMaxParallelization = 10;
+    private const int DefaultMaxQueueLength = 50;
+
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
@@ -162,29 +171,29 @@ public sealed class PolicyJson
             "CircuitBreakerPolicy" => new CircuitBreakerPolicy(Name)
             {
                 Id = Id,
-                FailureThreshold = FailureThreshold ?? 5,
-                OpenDuration = TimeSpan.FromSeconds(OpenDurationSeconds ?? 30),
-                SuccessThresholdInHalfOpen = SuccessThreshold ?? 2,
+                FailureThreshold = FailureThreshold ?? DefaultFailureThreshold,
+                OpenDuration = TimeSpan.FromSeconds(OpenDurationSeconds ?? DefaultOpenDurationSeconds),
+                SuccessThresholdInHalfOpen = SuccessThreshold ?? DefaultSuccessThreshold,
                 IsEnabled = IsEnabled
             },
             "RetryPolicy" => new RetryPolicy(Name)
             {
                 Id = Id,
-                MaxRetries = MaxRetries ?? 3,
-                InitialDelay = TimeSpan.FromMilliseconds(InitialDelayMs ?? 100),
+                MaxRetries = MaxRetries ?? DefaultMaxRetries,
+                InitialDelay = TimeSpan.FromMilliseconds(InitialDelayMs ?? DefaultInitialDelayMs),
                 IsEnabled = IsEnabled
             },
             "TimeoutPolicy" => new TimeoutPolicy(Name)
             {
                 Id = Id,
-                Timeout = TimeSpan.FromSeconds(TimeoutSeconds ?? 10),
+                Timeout = TimeSpan.FromSeconds(TimeoutSeconds ?? DefaultTimeoutSeconds),
                 IsEnabled = IsEnabled
             },
             "BulkheadPolicy" => new BulkheadPolicy(Name)
             {
                 Id = Id,
-                MaxParallelization = MaxParallelization ?? 10,
-                MaxQueueLength = MaxQueueLength ?? 50,
+                MaxParallelization = MaxParallelization ?? DefaultMaxParallelization,
+                MaxQueueLength = MaxQueueLength ?? DefaultMaxQueueLength,
                 IsEnabled = IsEnabled
             },
             "FallbackPolicy" => new FallbackPolicy(Name) { Id = Id, IsEnabled = IsEnabled },
