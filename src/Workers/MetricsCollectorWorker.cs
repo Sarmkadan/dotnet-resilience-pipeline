@@ -235,4 +235,13 @@ public sealed class MetricsCollectorStatus
     public int TotalCollections { get; set; }
     public DateTime LastCollectionTime { get; set; }
     public AggregatedMetrics RecentMetrics { get; set; } = new();
+
+    /// <summary>
+    /// Returns a concise, informative representation of the metrics collector status.
+    /// </summary>
+    /// <returns>A string representation of the metrics collector status.</returns>
+    public override string ToString()
+    {
+        return $"MetricsCollectorStatus {{ IsRunning = {IsRunning}, TotalCollections = {TotalCollections}, LastCollectionTime = {LastCollectionTime}, RecentMetrics = {RecentMetrics} }}";
+    }
 }
