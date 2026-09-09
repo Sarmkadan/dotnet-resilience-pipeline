@@ -17,6 +17,10 @@ namespace DotNetResiliencePipeline.Examples;
 /// </summary>
 public sealed class MetricsMonitoringExample
 {
+    /// <summary>
+    /// Demonstrates metrics and monitoring by running a load test with simulated operations,
+    /// collecting and printing metrics at intervals, and finally showing a health report.
+    /// </summary>
     public static async Task Main()
     {
         Console.WriteLine("=== Metrics & Monitoring Example ===\n");
@@ -93,6 +97,9 @@ public sealed class MetricsMonitoringExample
         }
     }
 
+    /// <summary>
+    /// Prints current metrics including operation count, successes, failures, success rate, average duration, and min/max duration.
+    /// </summary>
     private static void PrintMetrics(ResiliencyPipelineService pipeline, int operationCount)
     {
         var stats = pipeline.GetStatistics();
@@ -105,6 +112,9 @@ public sealed class MetricsMonitoringExample
         Console.WriteLine($"  Min/Max: {stats.MinDurationMs:F2}ms / {stats.MaxDurationMs:F2}ms");
     }
 
+    /// <summary>
+    /// Prints final metrics after the load test, including total operations, success/failure counts, performance averages, min/max, 95th percentile, and any open circuit breakers.
+    /// </summary>
     private static void PrintFinalMetrics(ResiliencyPipelineService pipeline, int success, int failures)
     {
         var stats = pipeline.GetStatistics();
@@ -125,12 +135,19 @@ public sealed class MetricsMonitoringExample
         }
     }
 
+    /// <summary>
+    /// Calculates a simplified percentile value for demonstration purposes.
+    /// In a real implementation, this would compute the actual percentile from execution durations.
+    /// </summary>
     private static double CalculatePercentile(int percentile)
     {
         // Simplified percentile calculation
         return Random.Shared.Next(50, 200);
     }
 
+    /// <summary>
+    /// Simulates an operation that takes a random delay and occasionally fails (10% rate) to demonstrate metrics.
+    /// </summary>
     private static async Task<string> SimulateOperationAsync(CancellationToken ct)
     {
         // Simulate realistic operation with occasional failures
