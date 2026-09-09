@@ -94,6 +94,15 @@ public sealed class DotnetResiliencePipelineOptions
                 SuccessThresholdInHalfOpen = SuccessThresholdInHalfOpen
             };
         }
+
+        /// <summary>
+        /// Returns a string representation of the CircuitBreakerOptions.
+        /// </summary>
+        /// <returns>A string in the format: CircuitBreakerOptions { FailureThreshold = value, OpenDurationSeconds = value, SuccessThresholdInHalfOpen = value }</returns>
+        public override string ToString()
+        {
+            return $"CircuitBreakerOptions {{ FailureThreshold = {FailureThreshold}, OpenDurationSeconds = {OpenDurationSeconds}, SuccessThresholdInHalfOpen = {SuccessThresholdInHalfOpen} }}";
+        }
     }
 
     /// <summary>
