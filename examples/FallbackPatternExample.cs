@@ -19,6 +19,13 @@ public sealed class FallbackPatternExample
 {
     private record UserProfile(int Id, string Name, string Status);
 
+    /// <summary>
+    /// Demonstrates the fallback pattern with various scenarios:
+    /// 1. Primary service works successfully.
+    /// 2. Primary service fails, fallback succeeds.
+    /// 3. Multiple primary failures showing retry behavior.
+    /// 4. Circuit breaker open, using fallback.
+    /// </summary>
     public static async Task Main()
     {
         Console.WriteLine("=== Fallback Pattern - Graceful Degradation ===\n");
@@ -111,6 +118,10 @@ public sealed class FallbackPatternExample
         }
     }
 
+    /// <summary>
+    /// Executes a primary operation with circuit breaker, retry, and fallback policies.
+    /// If the primary operation fails, attempts the fallback operation.
+    /// </summary>
     private static async Task<UserProfile?> ExecuteWithFallback(
         ResiliencyPipelineService pipeline,
         Func<CancellationToken, Task<UserProfile>> primary,
@@ -156,6 +167,10 @@ public sealed class FallbackPatternExample
         }
     }
 
+    /// <summary>
+    /// Simulates fetching a user profile from a primary service.
+    /// When useFallback is true, may throw an exception to trigger fallback.
+    /// </summary>
     private static async Task<UserProfile> GetUserProfileAsync(
         int userId,
         bool useFallback,
@@ -171,6 +186,9 @@ public sealed class FallbackPatternExample
         return new UserProfile(userId, $"User {userId}", "Active");
     }
 
+    /// <summary>
+    /// Returns stale but available data from cache as a fallback.
+    /// </summary>
     private static async Task<UserProfile> GetCachedUserProfileAsync(int userId, CancellationToken ct)
     {
         // Return stale but available data from cache
