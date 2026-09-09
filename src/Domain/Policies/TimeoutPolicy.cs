@@ -189,6 +189,12 @@ public sealed class TimeoutPolicy : ResiliencyPolicy, ITimeoutStrategy
         ShortestExecutionTimeMs = long.MaxValue;
     }
 
+    /// <summary>
+    /// Returns a concise, informative string representation of this policy.
+    /// </summary>
+    public override string ToString() =>
+        $"TimeoutPolicy {{ Name = {Name}, IsEnabled = {IsEnabled}, Timeout = {Timeout}, TimeoutCount = {TimeoutCount}, AverageExecutionTimeMs = {AverageExecutionTimeMs}, LongestExecutionTimeMs = {LongestExecutionTimeMs}, ShortestExecutionTimeMs = {ShortestExecutionTimeMs} }}";
+
     private void UpdateStatistics(long executionTimeMs)
     {
         if (executionTimeMs > LongestExecutionTimeMs)
