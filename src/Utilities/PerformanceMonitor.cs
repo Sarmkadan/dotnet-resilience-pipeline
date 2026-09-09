@@ -20,8 +20,10 @@ public sealed class PerformanceMonitor
     /// <summary>
     /// Records an execution with its duration.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policyName"/> is null.</exception>
     public void RecordExecution(string policyName, long durationMs, bool success)
     {
+        ArgumentNullException.ThrowIfNull(policyName);
         // Ignore negative or zero measurements due to potential clock skew
         if (durationMs <= 0)
             return;
@@ -50,8 +52,10 @@ public sealed class PerformanceMonitor
     /// <summary>
     /// Gets performance metrics for a policy.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policyName"/> is null.</exception>
     public PerformanceMetrics GetMetrics(string policyName)
     {
+        ArgumentNullException.ThrowIfNull(policyName);
         lock (_lockObj)
         {
             if (_metrics.TryGetValue(policyName, out var metrics))
