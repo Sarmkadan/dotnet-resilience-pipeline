@@ -425,6 +425,12 @@ public sealed class PolicyDto
     public string Type { get; set; } = string.Empty;
     public bool IsEnabled { get; set; }
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Returns a string representation of the policy data transfer object.
+    /// </summary>
+    public override string ToString() =>
+        $"PolicyDto {{ Id = {Id}, Name = {Name}, Type = {Type}, IsEnabled = {IsEnabled}, CreatedAt = {CreatedAt} }}";
 }
 
 /// <summary>
