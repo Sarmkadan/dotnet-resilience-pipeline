@@ -288,6 +288,15 @@ public sealed class CircuitBreakerStateChangedEvent : ResiliencyEvent
     public string PreviousState { get; set; } = string.Empty;
     public string NewState { get; set; } = string.Empty;
     public int ConsecutiveFailures { get; set; }
+
+    /// <summary>
+    /// Returns a one-line summary of the event.
+    /// </summary>
+    /// <returns>A string representation of the event.</returns>
+    public override string ToString()
+    {
+        return $"CircuitBreakerStateChangedEvent {{ Id = {Id}, Timestamp = {Timestamp}, SourcePolicy = {SourcePolicy}, PolicyName = {PolicyName}, PreviousState = {PreviousState}, NewState = {NewState}, ConsecutiveFailures = {ConsecutiveFailures} }}";
+    }
 }
 
 /// <summary>
