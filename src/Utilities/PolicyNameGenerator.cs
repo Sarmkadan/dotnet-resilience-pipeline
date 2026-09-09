@@ -248,4 +248,8 @@ public sealed class NamingTemplate
 
         return string.Join("-", parts);
     }
+    /// <summary>
+    /// Returns a string representation of the NamingTemplate.
+    /// </summary>
+    public override string ToString() => $"NamingTemplate {{ Service = {Service}, Operation = {Operation}, PolicyType = {PolicyType}, Environment = {Environment} }}";
 }
