@@ -414,4 +414,13 @@ public sealed class EventStatistics
     /// </summary>
     /// <returns>A new statistics instance</returns>
     public static EventStatistics Create() => new();
+
+    /// <summary>
+    /// Returns a string representation of the event statistics.
+    /// </summary>
+    /// <returns>A string in the format EventStatistics { ... }</returns>
+    public override string ToString()
+    {
+        return $"EventStatistics {{ TotalEventsEmitted = {TotalEventsEmitted}, SuccessfulExecutions = {SuccessfulExecutions}, FailedExecutions = {FailedExecutions}, CircuitBreakerChanges = {CircuitBreakerChanges}, BulkheadRejections = {BulkheadRejections}, Timeouts = {Timeouts}, FallbacksTriggered = {FallbacksTriggered}, PolicyHealthChanged = {PolicyHealthChanged}, FailureRate = {FailureRate:F2}, SuccessRate = {SuccessRate:F2} }}";
+    }
 }
