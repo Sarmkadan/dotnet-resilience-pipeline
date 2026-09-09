@@ -22,8 +22,11 @@ public sealed class CsvReportFormatter
     /// <summary>
     /// Formats pipeline metrics as CSV.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="stats"/> is null.</exception>
     public string FormatPipelineMetrics(PipelineStatistics stats)
     {
+        ArgumentNullException.ThrowIfNull(stats);
+
         var sb = new StringBuilder();
 
         // Header
@@ -44,8 +47,11 @@ public sealed class CsvReportFormatter
     /// <summary>
     /// Formats policy details as CSV.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policies"/> is null.</exception>
     public string FormatPolicies(List<Domain.Policies.ResiliencyPolicy> policies)
     {
+        ArgumentNullException.ThrowIfNull(policies);
+
         var sb = new StringBuilder();
 
         // Header
@@ -63,8 +69,11 @@ public sealed class CsvReportFormatter
     /// <summary>
     /// Formats execution history as CSV.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="records"/> is null.</exception>
     public string FormatExecutionHistory(List<ExecutionRecord> records)
     {
+        ArgumentNullException.ThrowIfNull(records);
+
         var sb = new StringBuilder();
 
         // Header
@@ -83,8 +92,11 @@ public sealed class CsvReportFormatter
     /// <summary>
     /// Formats performance metrics as CSV.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="metrics"/> is null.</exception>
     public string FormatPerformanceMetrics(List<PerformanceMetrics> metrics)
     {
+        ArgumentNullException.ThrowIfNull(metrics);
+
         var sb = new StringBuilder();
 
         // Header
@@ -111,8 +123,11 @@ public sealed class CsvReportFormatter
     /// <summary>
     /// Formats logging data as CSV.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="logs"/> is null.</exception>
     public string FormatLogs(List<Middleware.LogEntry> logs)
     {
+        ArgumentNullException.ThrowIfNull(logs);
+
         var sb = new StringBuilder();
 
         // Header
@@ -136,8 +151,11 @@ public sealed class CsvReportFormatter
     /// <summary>
     /// Formats error contexts as CSV.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="errors"/> is null.</exception>
     public string FormatErrors(List<Middleware.ErrorContext> errors)
     {
+        ArgumentNullException.ThrowIfNull(errors);
+
         var sb = new StringBuilder();
 
         // Header
@@ -160,8 +178,12 @@ public sealed class CsvReportFormatter
     /// <summary>
     /// Exports report to file.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="content"/> or <paramref name="filePath"/> is null.</exception>
     public async Task ExportToFileAsync(string content, string filePath)
     {
+        ArgumentNullException.ThrowIfNull(content);
+        ArgumentNullException.ThrowIfNull(filePath);
+
         await File.WriteAllTextAsync(filePath, content, Encoding.UTF8);
     }
 
