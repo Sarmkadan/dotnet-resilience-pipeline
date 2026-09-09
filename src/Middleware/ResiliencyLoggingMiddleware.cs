@@ -160,4 +160,11 @@ public sealed class LogSummary
     public double AverageDurationMs { get; set; }
     public DateTime? OldestLogTime { get; set; }
     public DateTime? NewestLogTime { get; set; }
+    /// <summary>
+    /// Returns a string representation of the LogSummary.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"LogSummary {{ TotalEntries = {TotalEntries}, SuccessfulExecutions = {SuccessfulExecutions}, FailedExecutions = {FailedExecutions}, SuccessRate = {SuccessRate}, AverageDurationMs = {AverageDurationMs}, OldestLogTime = {OldestLogTime}, NewestLogTime = {NewestLogTime} }}";
+    }
 }
