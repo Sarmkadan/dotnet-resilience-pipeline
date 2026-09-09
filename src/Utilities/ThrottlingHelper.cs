@@ -356,6 +356,11 @@ public sealed class ThrottleStatistics
 
     /// <summary>Gets whether throttling is currently active.</summary>
     public bool IsThrottling => ThrottledRequests > NoThrottledRequests;
+
+    /// <summary>
+    /// Returns a string representation of the throttle statistics.
+    /// </summary>
+    public override string ToString() => $"ThrottleStatistics {{ PolicyName = {PolicyName}, MaxRate = {MaxRate}, TotalRequests = {TotalRequests}, AllowedRequests = {AllowedRequests}, ThrottledRequests = {ThrottledRequests}, ThrottleRate = {ThrottleRate}, AvailableTokens = {AvailableTokens}, BurstCapacity = {BurstCapacity}, IsThrottling = {IsThrottling} }}";
 }
 
 /// <summary>
