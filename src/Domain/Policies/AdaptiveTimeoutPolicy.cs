@@ -16,19 +16,59 @@ public sealed class AdaptiveTimeoutPolicy : ResiliencyPolicy, ITimeoutStrategy
     private readonly object _lock = new();
 
     /// <summary>
+    /// Default timeout applied before enough observations have accumulated in the window.
+    /// </summary>
+    public static readonly TimeSpan DefaultInitialTimeout = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// Default minimum allowed timeout value; acts as a safety floor.
+    /// </summary>
+    public static readonly TimeSpan DefaultMinTimeout = TimeSpan.FromMilliseconds(200);
+
+    /// <summary>
+    /// Default maximum allowed timeout value; prevents unbounded growth.
+    /// </summary>
+    public static readonly TimeSpan DefaultMaxTimeout = TimeSpan.FromSeconds(60);
+
+    /// <summary>
+    /// Default response-time percentile used to derive the new timeout (e.g. 95.0 for P95).
+    /// </summary>
+    public const double DefaultTargetPercentile = 95.0;
+
+    /// <summary>
+    /// Default multiplier applied above the target percentile to add headroom (e.g. 1.2 for 20% headroom).
+    /// </summary>
+    public const double DefaultHeadroomFactor = 1.2;
+
+    /// <summary>
+    /// Default maximum number of recent observations retained in the sliding window.
+    /// </summary>
+    public const int DefaultWindowSize = 100;
+
+    /// <summary>
+    /// Default minimum number of window observations required before the timeout may adapt.
+    /// </summary>
+    public const int DefaultMinSampleSize = 10;
+
+    /// <summary>
+    /// Default minimum time between consecutive timeout adjustments.
+    /// </summary>
+    public static readonly TimeSpan DefaultAdjustmentInterval = TimeSpan.FromSeconds(30);
+
+    /// <summary>
     /// Timeout applied before enough observations have accumulated in the window.
     /// </summary>
-    public TimeSpan InitialTimeout { get; set; } = TimeSpan.FromSeconds(10);
+    public TimeSpan InitialTimeout { get; set; } = DefaultInitialTimeout;
 
     /// <summary>
     /// Minimum allowed timeout value; acts as a safety floor.
     /// </summary>
-    public TimeSpan MinTimeout { get; set; } = TimeSpan.FromMilliseconds(200);
+    public TimeSpan MinTimeout { get; set; } = DefaultMinTimeout;
 
     /// <summary>
     /// Maximum allowed timeout value; prevents unbounded growth.
     /// </summary>
-    public TimeSpan MaxTimeout { get; set; } = TimeSpan.FromSeconds(60);
+    public TimeSpan MaxTimeout { get; set; } = DefaultMaxTimeout;
 
     /// <summary>
     /// Effective timeout applied to the next execution, updated automatically by the adaptation algorithm.
@@ -38,27 +78,27 @@ public sealed class AdaptiveTimeoutPolicy : ResiliencyPolicy, ITimeoutStrategy
     /// <summary>
     /// Response-time percentile used to derive the new timeout (e.g. 95.0 for P95).
     /// </summary>
-    public double TargetPercentile { get; set; } = 95.0;
+    public double TargetPercentile { get; set; } = DefaultTargetPercentile;
 
     /// <summary>
     /// Multiplier applied above the target percentile to add headroom (e.g. 1.2 for 20% headroom).
     /// </summary>
-    public double HeadroomFactor { get; set; } = 1.2;
+    public double HeadroomFactor { get; set; } = DefaultHeadroomFactor;
 
     /// <summary>
     /// Maximum number of recent observations retained in the sliding window.
     /// </summary>
-    public int WindowSize { get; set; } = 100;
+    public int WindowSize { get; set; } = DefaultWindowSize;
 
     /// <summary>
     /// Minimum number of window observations required before the timeout may adapt.
     /// </summary>
-    public int MinSampleSize { get; set; } = 10;
+    public int MinSampleSize { get; set; } = DefaultMinSampleSize;
 
     /// <summary>
     /// Minimum time between consecutive timeout adjustments.
     /// </summary>
-    public TimeSpan AdjustmentInterval { get; set; } = TimeSpan.FromSeconds(30);
+    public TimeSpan AdjustmentInterval { get; set; } = DefaultAdjustmentInterval;
 
     /// <summary>
     /// Total number of times the timeout value has been adjusted since creation or last reset.
