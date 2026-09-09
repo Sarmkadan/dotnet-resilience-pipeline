@@ -18,8 +18,11 @@ public sealed class CliCommandValidator
     /// <summary>
     /// Validates a complete command with all its options.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is null.</exception>
     public ValidationResult Validate(CommandOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
+
         _errors.Clear();
         _warnings.Clear();
 
