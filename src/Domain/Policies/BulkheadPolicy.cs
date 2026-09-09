@@ -23,6 +23,12 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// <seealso cref="ResiliencyPolicy"/>
 public sealed class BulkheadPolicy : ResiliencyPolicy
 {
+    // Constants
+    public const int DefaultMaxParallelization = 10;
+    public const int DefaultMaxQueueLength = 50;
+    public static readonly TimeSpan DefaultMaxQueueWaitTimeout = TimeSpan.FromSeconds(30);
+    private const double PercentageMultiplier = 100.0;
+
     private readonly SemaphoreSlim _semaphore;
     private readonly SemaphoreSlim _queueSemaphore;
     private readonly object _lockObj = new object();
@@ -30,17 +36,17 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
     /// <summary>
     /// Maximum number of concurrent executions allowed.
     /// </summary>
-    public int MaxParallelization { get; set; } = 10;
+    public int MaxParallelization { get; set; } = DefaultMaxParallelization;
 
     /// <summary>
     /// Maximum number of requests to queue when bulkhead is full.
     /// </summary>
-    public int MaxQueueLength { get; set; } = 50;
+    public int MaxQueueLength { get; set; } = DefaultMaxQueueLength;
 
     /// <summary>
     /// Maximum time to wait in the queue before being rejected.
     /// </summary>
-    public TimeSpan MaxQueueWaitTimeout { get; set; } = TimeSpan.FromSeconds(30);
+    public TimeSpan MaxQueueWaitTimeout { get; set; } = DefaultMaxQueueWaitTimeout;
 
     /// <summary>
     /// Current number of active executions.
@@ -267,7 +273,7 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
     /// </summary>
     public double GetUtilizationPercentage()
     {
-        return (ActiveExecutions * 100.0) / MaxParallelization;
+        return (ActiveExecutions * PercentageMultiplier) / MaxParallelization;
     }
 
     /// <summary>
@@ -279,7 +285,7 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
         if (totalRequests == 0)
             return 0;
 
-        return (QueuedCount * 100.0) / totalRequests;
+        return (QueuedCount * PercentageMultiplier) / totalRequests;
     }
 
     /// <summary>
@@ -291,7 +297,7 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
         if (totalRequests == 0)
             return 0;
 
-        return (RejectedCount * 100.0) / totalRequests;
+        return (RejectedCount * PercentageMultiplier) / totalRequests;
     }
 
     /// <summary>
