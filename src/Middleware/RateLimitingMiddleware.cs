@@ -48,8 +48,10 @@ public sealed class RateLimitingMiddleware
 	/// <summary>
 	/// Checks if a request is allowed under rate limit for a client.
 	/// </summary>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="clientId"/> is <c>null</c>.</exception>
 	public bool IsRequestAllowed(string clientId, int tokensRequired = 1)
 	{
+		ArgumentNullException.ThrowIfNull(clientId);
 		lock (_limitersLock)
 		{
 			var limiter = _limiters.GetOrAdd(clientId,
@@ -62,8 +64,10 @@ public sealed class RateLimitingMiddleware
 	/// <summary>
 	/// Gets the current rate limit status for a client.
 	/// </summary>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="clientId"/> is <c>null</c>.</exception>
 	public RateLimitStatus GetStatus(string clientId)
 	{
+		ArgumentNullException.ThrowIfNull(clientId);
 		lock (_limitersLock)
 		{
 			if (_limiters.TryGetValue(clientId, out var limiter))
@@ -99,8 +103,10 @@ public sealed class RateLimitingMiddleware
 	/// <summary>
 	/// Resets rate limit for a specific client.
 	/// </summary>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="clientId"/> is <c>null</c>.</exception>
 	public void ResetClient(string clientId)
 	{
+		ArgumentNullException.ThrowIfNull(clientId);
 		lock (_limitersLock)
 		{
 			_limiters.TryRemove(clientId, out _);
