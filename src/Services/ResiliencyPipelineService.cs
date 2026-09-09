@@ -73,8 +73,10 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
     /// <summary>
     /// Gets a policy by its identifier.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policyId"/> is null.</exception>
     public ResiliencyPolicy? GetPolicy(string policyId)
     {
+        ArgumentNullException.ThrowIfNull(policyId);
         lock (_lockObj)
         {
             return _policies.TryGetValue(policyId, out var policy) ? policy : null;
@@ -84,8 +86,10 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
     /// <summary>
     /// Gets a policy by name.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policyName"/> is null.</exception>
     public ResiliencyPolicy? GetPolicyByName(string policyName)
     {
+        ArgumentNullException.ThrowIfNull(policyName);
         lock (_lockObj)
         {
             return _policies.Values.FirstOrDefault(p => p.Name == policyName);
@@ -106,8 +110,10 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
     /// <summary>
     /// Removes a policy from the pipeline.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policyId"/> is null.</exception>
     public bool RemovePolicy(string policyId)
     {
+        ArgumentNullException.ThrowIfNull(policyId);
         lock (_lockObj)
         {
             return _policies.Remove(policyId);
