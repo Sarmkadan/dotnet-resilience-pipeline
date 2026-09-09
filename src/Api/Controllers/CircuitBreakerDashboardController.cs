@@ -253,4 +253,10 @@ public sealed class CircuitBreakerStatusDto
 
     /// <summary>Whether the policy is enabled.</summary>
     public bool IsEnabled { get; set; }
+
+    /// <summary>
+    /// Returns a string representation of the circuit breaker status data transfer object.
+    /// </summary>
+    public override string ToString() =>
+        $"CircuitBreakerStatusDto {{ PolicyId = {PolicyId}, Name = {Name}, State = {State}, ConsecutiveFailures = {ConsecutiveFailures}, FailureThreshold = {FailureThreshold}, TripCount = {TripCount}, SecondsUntilHalfOpen = {SecondsUntilHalfOpen}, SuccessRate = {SuccessRate}, TotalExecutions = {TotalExecutions}, IsEnabled = {IsEnabled} }}";
 }
