@@ -40,9 +40,12 @@ public sealed class CliCommandHandler
     /// <summary>
     /// Executes a parsed command and returns the result.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is null.</exception>
     /// <exception cref="ValidationException">Thrown when command validation fails.</exception>
     public async Task<CommandExecutionResult> ExecuteAsync(CommandOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
+
         // Validate command
         var validation = _validator.Validate(options);
         if (!validation.IsValid)
