@@ -17,6 +17,10 @@ namespace DotNetResiliencePipeline.Examples;
 /// </summary>
 public sealed class BasicUsageExample
 {
+    /// <summary>
+    /// Demonstrates the basic usage of the resilience pipeline including circuit breaker, retry, and timeout policies.
+    /// Shows successful operations, retry behavior when operations fail, and how to retrieve pipeline statistics.
+    /// </summary>
     public static async Task Main()
     {
         Console.WriteLine("=== DotNet Resilience Pipeline - Basic Usage Example ===\n");
@@ -104,6 +108,13 @@ public sealed class BasicUsageExample
         Console.WriteLine($"Average Duration: {stats.AverageDurationMs}ms");
     }
 
+    /// <summary>
+    /// Simulates an API call that either succeeds or fails based on the success parameter.
+    /// Used to demonstrate retry and circuit breaker behaviors in the example.
+    /// </summary>
+    /// <param name="success">If true, the call succeeds; if false, it throws an exception.</param>
+    /// <param name="ct">Cancellation token for the operation.</param>
+    /// <returns>True if the call was successful.</returns>
     private static async Task<bool> SimulateApiCallAsync(bool success, CancellationToken ct)
     {
         // Simulate network delay
