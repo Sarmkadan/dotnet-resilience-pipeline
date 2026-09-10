@@ -24,6 +24,9 @@ public class ResiliencePipelineBenchmarks
     private const string PipelineName = "full-pipeline";
 
     [GlobalSetup]
+    /// <summary>
+    /// Initializes the resiliency pipeline service and all policies (circuit breaker, retry, timeout, bulkhead, fallback) for benchmarking.
+    /// </summary>
     public void Setup()
     {
         // Create individual policies
@@ -64,6 +67,9 @@ public class ResiliencePipelineBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures the execution time of a successful operation through the resiliency pipeline with no policies applied.
+    /// </summary>
     public async Task ResiliencePipeline_Execute_Successful_Operation()
     {
         await _pipelineService.ExecuteAsync(
@@ -73,6 +79,9 @@ public class ResiliencePipelineBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures the execution time of an operation protected by a circuit breaker policy.
+    /// </summary>
     public async Task ResiliencePipeline_Execute_With_CircuitBreaker()
     {
         await _pipelineService.ExecuteAsync(
@@ -83,6 +92,9 @@ public class ResiliencePipelineBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures the execution time of an operation with a retry policy applied (exponential backoff, up to 3 retries).
+    /// </summary>
     public async Task ResiliencePipeline_Execute_With_Retry()
     {
         await _pipelineService.ExecuteAsync(
@@ -93,6 +105,9 @@ public class ResiliencePipelineBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures the execution time of an operation with a timeout policy applied (10 seconds).
+    /// </summary>
     public async Task ResiliencePipeline_Execute_With_Timeout()
     {
         await _pipelineService.ExecuteAsync(
@@ -103,6 +118,9 @@ public class ResiliencePipelineBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures the execution time of an operation with a bulkhead policy applied (limits concurrency and queue length).
+    /// </summary>
     public async Task ResiliencePipeline_Execute_With_Bulkhead()
     {
         await _pipelineService.ExecuteAsync(
@@ -113,6 +131,9 @@ public class ResiliencePipelineBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures the execution time of an operation with a fallback policy applied (executes fallback when primary throws).
+    /// </summary>
     public async Task ResiliencePipeline_Execute_With_Fallback()
     {
         await _pipelineService.ExecuteAsync(
@@ -137,6 +158,9 @@ public class ResiliencePipelineBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures the time to retrieve statistics from the resiliency pipeline service.
+    /// </summary>
     public PipelineStatistics ResiliencePipeline_Get_Statistics()
     {
         return _pipelineService.GetStatistics();
