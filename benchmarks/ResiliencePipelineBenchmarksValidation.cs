@@ -75,8 +75,7 @@ public static class ResiliencePipelineBenchmarksValidation
         if (errors.Count > 0)
         {
             throw new ArgumentException(
-                $"The ResiliencePipelineBenchmarks instance is not valid. Validation errors:{Environment.NewLine}-
-                {string.Join($"{Environment.NewLine}-", errors)}");
+                $"The ResiliencePipelineBenchmarks instance is not valid. Validation errors:{Environment.NewLine}-{string.Join($"{Environment.NewLine}-", errors)}");
         }
     }
 

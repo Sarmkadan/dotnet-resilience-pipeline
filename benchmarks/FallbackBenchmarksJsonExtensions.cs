@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace DotnetResilience.Pipeline.Benchmarks;
+namespace DotNetResiliencePipeline.Benchmarks;
 
 /// <summary>
 /// Provides JSON serialization and deserialization helpers for <see cref="FallbackBenchmarks"/>.

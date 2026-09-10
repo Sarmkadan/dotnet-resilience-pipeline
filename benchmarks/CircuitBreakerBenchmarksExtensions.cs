@@ -1,5 +1,6 @@
 using System;
 using BenchmarkDotNet.Attributes;
+using DotNetResiliencePipeline.Domain.Policies;
 
 namespace DotNetResiliencePipeline.Benchmarks
 {
