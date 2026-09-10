@@ -17,6 +17,9 @@ public class BulkheadBenchmarks
     private const string PolicyName = "test-bulkhead";
 
     [GlobalSetup]
+    /// <summary>
+    /// Initializes the BulkheadPolicy with MaxParallelization=10 and MaxQueueLength=50 for each benchmark.
+    /// </summary>
     public void Setup()
     {
         _bulkheadPolicy = new BulkheadPolicy(PolicyName)
@@ -27,12 +30,18 @@ public class BulkheadBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures the success rate of acquiring a slot when slots are available.
+    /// </summary>
     public bool BulkheadPolicy_TryAcquireSlot_Available()
     {
         return _bulkheadPolicy.TryAcquireSlot();
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures the performance of releasing a previously acquired slot back to the bulkhead.
+    /// </summary>
     public void BulkheadPolicy_ReleaseSlot()
     {
         _bulkheadPolicy.TryAcquireSlot();
@@ -40,12 +49,18 @@ public class BulkheadBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures the performance of recording a queue wait time measurement.
+    /// </summary>
     public void BulkheadPolicy_RecordQueueWaitTime()
     {
         _bulkheadPolicy.RecordQueueWaitTime(100);
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures the utilization percentage when all available slots are acquired.
+    /// </summary>
     public double BulkheadPolicy_GetUtilizationPercentage()
     {
         // Acquire all slots
@@ -57,6 +72,9 @@ public class BulkheadBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures the percentage of queued requests when bulkhead is full and queue is partially filled.
+    /// </summary>
     public double BulkheadPolicy_GetQueuedPercentage()
     {
         // Fill bulkhead and queue
@@ -72,6 +90,9 @@ public class BulkheadBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures the rejection percentage when bulkhead and queue are at capacity.
+    /// </summary>
     public double BulkheadPolicy_GetRejectionPercentage()
     {
         // Fill bulkhead and queue completely
@@ -89,18 +110,27 @@ public class BulkheadBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures the retrieval of the MaxParallelization property value.
+    /// </summary>
     public int BulkheadPolicy_Get_MaxParallelization()
     {
         return _bulkheadPolicy.MaxParallelization;
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures the retrieval of the MaxQueueLength property value.
+    /// </summary>
     public int BulkheadPolicy_Get_MaxQueueLength()
     {
         return _bulkheadPolicy.MaxQueueLength;
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures the retrieval of the ActiveExecutions property value.
+    /// </summary>
     public int BulkheadPolicy_Get_ActiveExecutions()
     {
         return _bulkheadPolicy.ActiveExecutions;
