@@ -18,6 +18,10 @@ public class CircuitBreakerBenchmarks
     private CircuitBreakerPolicy _openPolicy;
     private const string PolicyName = "test-circuit-breaker";
 
+    /// <summary>
+    /// Initializes the circuit breaker policies for benchmarking.
+    /// Sets up closed, half-open, and open state policies.
+    /// </summary>
     [GlobalSetup]
     public void Setup()
     {
@@ -46,30 +50,45 @@ public class CircuitBreakerBenchmarks
         _openPolicy.GetType().GetField("_circuitBreakerTrips", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(_openPolicy, 1L);
     }
 
+    /// <summary>
+    /// Measures the performance of recording a successful call in the closed state.
+    /// </summary>
     [Benchmark]
     public void CircuitBreaker_Closed_State()
     {
         _closedPolicy.RecordSuccess();
     }
 
+    /// <summary>
+    /// Measures the performance of recording a successful call in the half-open state.
+    /// </summary>
     [Benchmark]
     public void CircuitBreaker_HalfOpen_State()
     {
         _halfOpenPolicy.RecordSuccess();
     }
 
+    /// <summary>
+    /// Measures the performance of attempting to reset the circuit breaker in the open state.
+    /// </summary>
     [Benchmark]
     public void CircuitBreaker_Open_State()
     {
         _openPolicy.AttemptReset();
     }
 
+    /// <summary>
+    /// Measures the performance of recording a failed call in the closed state.
+    /// </summary>
     [Benchmark]
     public void CircuitBreaker_Failure_Recording()
     {
         _closedPolicy.RecordFailure();
     }
 
+    /// <summary>
+    /// Measures the performance of transitioning the circuit breaker from closed to open state by recording multiple failures.
+    /// </summary>
     [Benchmark]
     public void CircuitBreaker_State_Transition()
     {
@@ -80,12 +99,18 @@ public class CircuitBreakerBenchmarks
         }
     }
 
+    /// <summary>
+    /// Gets the current state of the circuit breaker in the closed state policy (should remain closed if no failures).
+    /// </summary>
     [Benchmark]
     public CircuitBreakerPolicy.CircuitState CircuitBreaker_Get_CurrentState()
     {
         return _closedPolicy.CurrentState;
     }
 
+    /// <summary>
+    /// Gets the number of times the circuit breaker has tripped (transitioned to open) in the closed state policy.
+    /// </summary>
     [Benchmark]
     public long CircuitBreaker_Get_CircuitBreakerTrips()
     {
