@@ -21,6 +21,9 @@ public class ConcurrencyBenchmarks
     private const string PolicyName = "concurrency-test";
 
     [GlobalSetup]
+    /// <summary>
+    /// Initializes the resilience policies (circuit breaker, retry, timeout, bulkhead, fallback) used in the benchmarks.
+    /// </summary>
     public void Setup()
     {
         _circuitBreaker = new CircuitBreakerPolicy(PolicyName + "-cb")
@@ -54,6 +57,9 @@ public class ConcurrencyBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures concurrent success recording performance of the circuit breaker policy.
+    /// </summary>
     public void CircuitBreaker_Concurrent_Success_Recording()
     {
         Parallel.For(0, 1000, i =>
@@ -63,6 +69,9 @@ public class ConcurrencyBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures concurrent failure recording performance of the circuit breaker policy.
+    /// </summary>
     public void CircuitBreaker_Concurrent_Failure_Recording()
     {
         Parallel.For(0, 1000, i =>
@@ -72,6 +81,9 @@ public class ConcurrencyBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures concurrent state access performance of the circuit breaker policy.
+    /// </summary>
     public void CircuitBreaker_Concurrent_State_Access()
     {
         Parallel.For(0, 1000, i =>
@@ -81,6 +93,9 @@ public class ConcurrencyBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures concurrent retry attempt recording performance of the retry policy.
+    /// </summary>
     public void RetryPolicy_Concurrent_Retry_Recording()
     {
         Parallel.For(0, 1000, i =>
@@ -90,6 +105,9 @@ public class ConcurrencyBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures concurrent delay calculation performance of the retry policy.
+    /// </summary>
     public void RetryPolicy_Concurrent_Delay_Calculation()
     {
         Parallel.For(0, 1000, i =>
@@ -99,6 +117,9 @@ public class ConcurrencyBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures concurrent execution time recording performance of the timeout policy.
+    /// </summary>
     public void TimeoutPolicy_Concurrent_Execution_Recording()
     {
         Parallel.For(0, 1000, i =>
@@ -108,6 +129,9 @@ public class ConcurrencyBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures concurrent timeout recording performance of the timeout policy.
+    /// </summary>
     public void TimeoutPolicy_Concurrent_Timeout_Recording()
     {
         Parallel.For(0, 1000, i =>
@@ -117,6 +141,9 @@ public class ConcurrencyBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures concurrent slot acquisition and release performance of the bulkhead policy.
+    /// </summary>
     public void BulkheadPolicy_Concurrent_Slot_Acquisition()
     {
         Parallel.For(0, 1000, i =>
@@ -127,6 +154,9 @@ public class ConcurrencyBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures concurrent queue wait time recording performance of the bulkhead policy.
+    /// </summary>
     public void BulkheadPolicy_Concurrent_Queue_Wait_Recording()
     {
         Parallel.For(0, 1000, i =>
@@ -136,6 +166,9 @@ public class ConcurrencyBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Measures concurrent successful fallback recording performance of the fallback policy.
+    /// </summary>
     public void FallbackPolicy_Concurrent_Fallback_Recording()
     {
         Parallel.For(0, 1000, i =>
