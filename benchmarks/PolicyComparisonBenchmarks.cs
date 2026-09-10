@@ -228,6 +228,9 @@ public class PolicyComparisonBenchmarks
         return _lowThresholdCircuitBreaker.CurrentState;
     }
 
+    /// <summary>
+    /// Measures the overhead of retrieving the number of circuit breaker trips for a high-threshold policy.
+    /// </summary>
     [Benchmark]
     public long CircuitBreakerComparison_GetTrips_All()
     {
@@ -238,24 +241,36 @@ public class PolicyComparisonBenchmarks
 
     #region Bulkhead Comparisons
 
+    /// <summary>
+    /// Measures the overhead of attempting to acquire a slot in a small bulkhead policy.
+    /// </summary>
     [Benchmark]
     public bool BulkheadComparison_Small_TryAcquireSlot()
     {
         return _smallBulkhead.TryAcquireSlot();
     }
 
+    /// <summary>
+    /// Measures the overhead of attempting to acquire a slot in a medium bulkhead policy.
+    /// </summary>
     [Benchmark]
     public bool BulkheadComparison_Medium_TryAcquireSlot()
     {
         return _mediumBulkhead.TryAcquireSlot();
     }
 
+    /// <summary>
+    /// Measures the overhead of attempting to acquire a slot in a large bulkhead policy.
+    /// </summary>
     [Benchmark]
     public bool BulkheadComparison_Large_TryAcquireSlot()
     {
         return _largeBulkhead.TryAcquireSlot();
     }
 
+    /// <summary>
+    /// Measures the overhead of recording queue wait times across small, medium, and large bulkhead policies.
+    /// </summary>
     [Benchmark]
     public void BulkheadComparison_RecordQueueWaitTime_All()
     {
@@ -264,6 +279,9 @@ public class PolicyComparisonBenchmarks
         _largeBulkhead.RecordQueueWaitTime(150);
     }
 
+    /// <summary>
+    /// Measures the overhead of calculating utilization percentage after filling a small bulkhead to capacity.
+    /// </summary>
     [Benchmark]
     public double BulkheadComparison_GetUtilization_All()
     {
@@ -279,6 +297,9 @@ public class PolicyComparisonBenchmarks
 
     #region Failure Scenario Benchmarks
 
+    /// <summary>
+    /// Measures the overhead of transitioning a circuit breaker from closed to open state by simulating threshold failures.
+    /// </summary>
     [Benchmark]
     public void CircuitBreakerComparison_Transition_Closed_To_Open()
     {
@@ -289,6 +310,9 @@ public class PolicyComparisonBenchmarks
         }
     }
 
+    /// <summary>
+    /// Measures the overhead of recording multiple retry attempts on an exponential retry policy.
+    /// </summary>
     [Benchmark]
     public void RetryComparison_Multiple_Retry_Attempts()
     {
@@ -298,6 +322,9 @@ public class PolicyComparisonBenchmarks
         }
     }
 
+    /// <summary>
+    /// Measures the overhead of filling a bulkhead's slots and queue, then attempting to exceed capacity to verify rejection logic.
+    /// </summary>
     [Benchmark]
     public bool BulkheadComparison_Queue_And_Reject()
     {
