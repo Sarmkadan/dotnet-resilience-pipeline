@@ -29,6 +29,7 @@ public sealed class CommandParser
     /// Parses raw command-line arguments into CommandOptions.
     /// Supports formats: cmd --flag value, --flag=value, -f value
     /// </summary>
+    /// <returns>A CommandOptions instance populated with the parsed arguments.</returns>
     public CommandOptions Parse()
     {
         var options = new CommandOptions();
@@ -128,6 +129,12 @@ public sealed class CommandParser
         }
     }
 
+    /// <summary>
+    /// Sets a specific option on the CommandOptions instance based on the key and value.
+    /// </summary>
+    /// <param name="key">The option key (flag name).</param>
+    /// <param name="value">The option value.</param>
+    /// <param name="options">The CommandOptions instance to update.</param>
     private static void SetOption(string key, string value, CommandOptions options)
     {
         key = key.ToLowerInvariant();
@@ -188,6 +195,7 @@ public sealed class CommandParser
     /// <summary>
     /// Displays help information for available commands.
     /// </summary>
+    /// <returns>A string containing the help text.</returns>
     public static string GetHelpText()
     {
         return @"
