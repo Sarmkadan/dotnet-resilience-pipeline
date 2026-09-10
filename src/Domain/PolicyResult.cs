@@ -11,17 +11,44 @@ namespace DotNetResiliencePipeline.Domain;
 
 /// <summary>
 // Encapsulates the result of a resilience policy execution with status and metadata.
-/// </summary>
+// </summary>
 public sealed class PolicyResult<T>
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether the operation was successful.
+    /// </summary>
     public bool IsSuccess { get; set; }
+    /// <summary>
+    /// Gets or sets the data resulting from the operation, if successful.
+    /// </summary>
     public T? Data { get; set; }
+    /// <summary>
+    /// Gets or sets the exception that occurred, if any.
+    /// </summary>
     public Exception? Exception { get; set; }
+    /// <summary>
+    /// Gets or sets the name of the policy that produced this result.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+    /// <summary>
+    /// Gets or sets the execution time in milliseconds.
+    /// </summary>
     public long ExecutionTimeMs { get; set; }
+    /// <summary>
+    /// Gets or sets the number of attempts made.
+    /// </summary>
     public int AttemptCount { get; set; }
+    /// <summary>
+    /// Gets or sets the date and time when the operation was executed (UTC).
+    /// </summary>
     public DateTime ExecutedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// Gets or sets a unique identifier for this execution.
+    /// </summary>
     public string ExecutionId { get; set; } = Guid.NewGuid().ToString();
+    /// <summary>
+    /// Gets or sets additional metadata associated with the execution.
+    /// </summary>
     public Dictionary<string, object> Metadata { get; set; } = new();
 
     /// <summary>
@@ -125,13 +152,37 @@ public sealed class PolicyResult<T>
 /// </summary>
 public sealed class PolicyResult
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether the operation was successful.
+    /// </summary>
     public bool IsSuccess { get; set; }
+    /// <summary>
+    /// Gets or sets the exception that occurred, if any.
+    /// </summary>
     public Exception? Exception { get; set; }
+    /// <summary>
+    /// Gets or sets the name of the policy that produced this result.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+    /// <summary>
+    /// Gets or sets the execution time in milliseconds.
+    /// </summary>
     public long ExecutionTimeMs { get; set; }
+    /// <summary>
+    /// Gets or sets the number of attempts made.
+    /// </summary>
     public int AttemptCount { get; set; }
+    /// <summary>
+    /// Gets or sets the date and time when the operation was executed (UTC).
+    /// </summary>
     public DateTime ExecutedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// Gets or sets a unique identifier for this execution.
+    /// </summary>
     public string ExecutionId { get; set; } = Guid.NewGuid().ToString();
+    /// <summary>
+    /// Gets or sets additional metadata associated with the execution.
+    /// </summary>
     public Dictionary<string, object> Metadata { get; set; } = new();
 
     public static PolicyResult Success(string policyName, long executionTimeMs, int attempts = 1)
