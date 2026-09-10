@@ -17,6 +17,9 @@ public class TimeoutBenchmarks
     private const string PolicyName = "test-timeout";
 
     [GlobalSetup]
+    /// <summary>
+    /// Initializes a new TimeoutPolicy with a 10-second timeout for each benchmark iteration.
+    /// </summary>
     public void Setup()
     {
         _timeoutPolicy = new TimeoutPolicy(PolicyName)
