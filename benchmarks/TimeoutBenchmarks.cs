@@ -29,30 +29,45 @@ public class TimeoutBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Records an execution time of 50 milliseconds to the timeout policy.
+    /// </summary>
     public void TimeoutPolicy_RecordExecutionTime()
     {
         _timeoutPolicy.RecordExecutionTime(50);
     }
 
     [Benchmark]
+    /// <summary>
+    /// Records a timeout event with a duration of 15 seconds (exceeds the 10-second timeout).
+    /// </summary>
     public void TimeoutPolicy_RecordTimeout()
     {
         _timeoutPolicy.RecordTimeout(15000); // Exceeds timeout
     }
 
     [Benchmark]
+    /// <summary>
+    /// Checks if a 50-millisecond duration is considered timed out by the policy.
+    /// </summary>
     public bool TimeoutPolicy_IsTimedOut_Within()
     {
         return _timeoutPolicy.IsTimedOut(TimeSpan.FromMilliseconds(50));
     }
 
     [Benchmark]
+    /// <summary>
+    /// Checks if a 15-second duration is considered timed out by the policy.
+    /// </summary>
     public bool TimeoutPolicy_IsTimedOut_Exceeds()
     {
         return _timeoutPolicy.IsTimedOut(TimeSpan.FromSeconds(15));
     }
 
     [Benchmark]
+    /// <summary>
+    /// Adds 100 execution times ranging from 0 to 190 ms and returns the 95th percentile execution time.
+    /// </summary>
     public long TimeoutPolicy_GetPercentile95ExecutionTime()
     {
         // Add some execution times first
@@ -64,6 +79,9 @@ public class TimeoutBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Adds 100 execution times ranging from 0 to 190 ms and returns the 99th percentile execution time.
+    /// </summary>
     public long TimeoutPolicy_GetPercentile99ExecutionTime()
     {
         // Add some execution times first
@@ -75,6 +93,9 @@ public class TimeoutBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Records two timeout events and returns the percentage of timeouts.
+    /// </summary>
     public double TimeoutPolicy_GetTimeoutPercentage()
     {
         _timeoutPolicy.RecordTimeout(15000);
@@ -83,12 +104,18 @@ public class TimeoutBenchmarks
     }
 
     [Benchmark]
+    /// <summary>
+    /// Returns the configured timeout TimeSpan.
+    /// </summary>
     public TimeSpan TimeoutPolicy_Get_Timeout()
     {
         return _timeoutPolicy.Timeout;
     }
 
     [Benchmark]
+    /// <summary>
+    /// Returns the total number of timeout events recorded.
+    /// </summary>
     public long TimeoutPolicy_Get_TimeoutCount()
     {
         return _timeoutPolicy.TimeoutCount;
