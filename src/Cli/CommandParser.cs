@@ -16,6 +16,10 @@ public sealed class CommandParser
 {
     private readonly string[] _args;
 
+    /// <summary>
+    /// Initializes a new instance of the CommandParser class with the specified command-line arguments.
+    /// </summary>
+    /// <param name="args">The command-line arguments to parse.</param>
     public CommandParser(string[] args)
     {
         _args = args;
@@ -59,6 +63,12 @@ public sealed class CommandParser
         return options;
     }
 
+    /// <summary>
+    /// Parses a long flag (starting with --) and updates the options accordingly.
+    /// </summary>
+    /// <param name="arg">The argument string including the leading --.</param>
+    /// <param name="options">The CommandOptions instance to update.</param>
+    /// <param name="index">The index of the argument in the args array; updated if a value is consumed.</param>
     private void ParseLongFlag(string arg, CommandOptions options, ref int index)
     {
         // Handle --flag=value format
@@ -87,6 +97,12 @@ public sealed class CommandParser
         }
     }
 
+    /// <summary>
+    /// Parses a short flag (starting with -) and updates the options accordingly.
+    /// </summary>
+    /// <param name="arg">The argument string including the leading -.</param>
+    /// <param name="options">The CommandOptions instance to update.</param>
+    /// <param name="index">The index of the argument in the args array; updated if a value is consumed.</param>
     private void ParseShortFlag(string arg, CommandOptions options, ref int index)
     {
         string flagName = arg[1..];
