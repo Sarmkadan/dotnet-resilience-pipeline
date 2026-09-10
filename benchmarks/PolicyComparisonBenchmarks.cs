@@ -32,6 +32,9 @@ public class PolicyComparisonBenchmarks
     private BulkheadPolicy _largeBulkhead;
     private const string BulkheadPolicyName = "bulkhead-comparison";
 
+    /// <summary>
+    /// Initializes retry, circuit breaker, and bulkhead policies for benchmarking.
+    /// </summary>
     [GlobalSetup]
     public void Setup()
     {
@@ -118,30 +121,45 @@ public class PolicyComparisonBenchmarks
 
     #region Retry Policy Comparisons
 
+    /// <summary>
+    /// Measures the delay in milliseconds for the first retry attempt using fixed backoff strategy.
+    /// </summary>
     [Benchmark]
     public long RetryComparison_Fixed_Strategy()
     {
         return _fixedRetry.GetNextDelayMs(1);
     }
 
+    /// <summary>
+    /// Measures the delay in milliseconds for the second retry attempt using linear backoff strategy.
+    /// </summary>
     [Benchmark]
     public long RetryComparison_Linear_Strategy()
     {
         return _linearRetry.GetNextDelayMs(2);
     }
 
+    /// <summary>
+    /// Measures the delay in milliseconds for the third retry attempt using exponential backoff strategy.
+    /// </summary>
     [Benchmark]
     public long RetryComparison_Exponential_Strategy()
     {
         return _exponentialRetry.GetNextDelayMs(3);
     }
 
+    /// <summary>
+    /// Measures the delay in milliseconds for the fourth retry attempt using exponential backoff with jitter strategy.
+    /// </summary>
     [Benchmark]
     public long RetryComparison_ExponentialWithJitter_Strategy()
     {
         return _exponentialWithJitterRetry.GetNextDelayMs(4);
     }
 
+    /// <summary>
+    /// Records a retry attempt for all retry policy strategies to measure the overhead of recording attempts.
+    /// </summary>
     [Benchmark]
     public void RetryComparison_RecordRetryAttempt_All_Strategies()
     {
@@ -151,6 +169,9 @@ public class PolicyComparisonBenchmarks
         _exponentialWithJitterRetry.RecordRetryAttempt();
     }
 
+    /// <summary>
+    /// Gets the total number of retry attempts recorded across all retry policy strategies.
+    /// </summary>
     [Benchmark]
     public long RetryComparison_GetTotalRetryAttempts()
     {
@@ -162,30 +183,45 @@ public class PolicyComparisonBenchmarks
 
     #region Circuit Breaker Comparisons
 
+    /// <summary>
+    /// Measures the overhead of recording a success on a circuit breaker with a low failure threshold.
+    /// </summary>
     [Benchmark]
     public void CircuitBreakerComparison_LowThreshold_RecordSuccess()
     {
         _lowThresholdCircuitBreaker.RecordSuccess();
     }
 
+    /// <summary>
+    /// Measures the overhead of recording a success on a circuit breaker with a high failure threshold.
+    /// </summary>
     [Benchmark]
     public void CircuitBreakerComparison_HighThreshold_RecordSuccess()
     {
         _highThresholdCircuitBreaker.RecordSuccess();
     }
 
+    /// <summary>
+    /// Measures the overhead of recording a failure on a circuit breaker with a short open duration.
+    /// </summary>
     [Benchmark]
     public void CircuitBreakerComparison_ShortDuration_RecordFailure()
     {
         _shortDurationCircuitBreaker.RecordFailure();
     }
 
+    /// <summary>
+    /// Measures the overhead of attempting to reset a circuit breaker with a long open duration.
+    /// </summary>
     [Benchmark]
     public void CircuitBreakerComparison_LongDuration_AttemptReset()
     {
         _longDurationCircuitBreaker.AttemptReset();
     }
 
+    /// <summary>
+    /// Gets the current state of the low threshold circuit breaker to measure state retrieval overhead.
+    /// </summary>
     [Benchmark]
     public CircuitBreakerPolicy.CircuitState CircuitBreakerComparison_GetState_All()
     {
