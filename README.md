@@ -436,6 +436,99 @@ Console.WriteLine($"Entry removed: {removed}");
 
 `src/Integration/WebhookManager.cs` manages webhook subscriptions and delivery records. `RegisterWebhook` creates an active subscription for one or more event types and returns its ID, while `UnregisterWebhook` removes it. `TriggerEventAsync` sends an event to each active matching subscription with retry handling. `SetWebhookActive` enables or disables a subscription without removing it, and `GetDeliveryHistory` returns recent delivery records, optionally filtered by webhook ID. `GetStatistics` summarizes total, successful, and failed deliveries, the success rate, and the number of active subscriptions.
 
+## Policy Utilities
+
+The library includes utility classes for policy naming and validation in the `src/Utilities/` directory.
+
+### PolicyNameGenerator
+
+`PolicyNameGenerator` creates meaningful, unique, and consistent policy names following specific rules:
+- Names must be 3-100 characters long
+- Only alphanumeric characters, dashes, and underscores are allowed
+- Supports automatic numbering to ensure uniqueness
+- Can generate names with prefixes for organizational purposes
+
+**Usage example:**
+```csharp
+using DotNetResiliencePipeline.Utilities;
+
+// Create generator
+var generator = new PolicyNameGenerator();
+
+// Generate a basic policy name
+string name = generator.GenerateName("payment-service", "circuitbreaker");
+// Returns: "payment-service-cb-1"
+
+// Generate with prefix for organizational grouping
+string prefixedName = generator.GenerateNameWithPrefix("team-alpha", "payment-service", "retry");
+// Returns: "team-alpha-payment-service-retry-1"
+
+// Generate descriptive name with purpose
+string descriptiveName = generator.GenerateDescriptiveName("order-service", "timeout", "database-query");
+// Returns: "order-service-database-query-timeout"
+
+// Validate a policy name
+bool isValid = generator.IsValidPolicyName("my-policy-name"); // Returns true
+```
+
+### PolicyValidationHelper
+
+`PolicyValidationHelper` provides comprehensive validation for resilience policies, checking configuration validity, identifying anti-patterns, and suggesting optimizations. It returns a `ValidationReport` containing:
+- **Errors**: Configuration issues that make the policy invalid
+- **Warnings**: Potential problems that don't invalidate the policy
+- **Suggestions**: Recommendations for improvement
+
+**Usage example:**
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Utilities;
+
+// Create a policy to validate
+var retryPolicy = new RetryPolicy
+{
+    MaxRetries = 3,
+    InitialDelay = TimeSpan.FromMilliseconds(100)
+};
+
+// Validate the policy
+ValidationReport report = PolicyValidationHelper.ValidatePolicy(retryPolicy);
+
+if (report.IsValid)
+{
+    Console.WriteLine("Policy configuration is valid");
+}
+else
+{
+    Console.WriteLine("Policy has errors:");
+    foreach (var error in report.Errors)
+    {
+        Console.WriteLine($"  - {error}");
+    }
+}
+
+// Check for anti-patterns
+var antiPatterns = PolicyValidationHelper.IdentifyAntiPatterns(retryPolicy);
+if (antiPatterns.Any())
+{
+    Console.WriteLine("Anti-patterns detected:");
+    foreach (var pattern in antiPatterns)
+    {
+        Console.WriteLine($"  - {pattern}");
+    }
+}
+
+// Get optimization suggestions
+var suggestions = PolicyValidationHelper.SuggestOptimizations(retryPolicy);
+if (suggestions.Any())
+{
+    Console.WriteLine("Optimization suggestions:");
+    foreach (var suggestion in suggestions)
+    {
+        Console.WriteLine($"  - {suggestion}");
+    }
+}
+```
+
 ```csharp
 using DotNetResiliencePipeline.Integration;
 
