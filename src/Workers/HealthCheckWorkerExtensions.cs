@@ -20,6 +20,21 @@ namespace DotNetResiliencePipeline.Workers;
 public static class HealthCheckWorkerExtensions
 {
     /// <summary>
+    /// Default success rate threshold for healthy status (0-1).
+    /// </summary>
+    private const double DefaultHealthyThreshold = 0.95;
+
+    /// <summary>
+    /// Default success rate threshold for degraded status (0-1).
+    /// </summary>
+    private const double DefaultDegradedThreshold = 0.80;
+
+    /// <summary>
+    /// Default interval between stability checks when waiting for a stable state.
+    /// </summary>
+    private static readonly TimeSpan DefaultStableCheckInterval = TimeSpan.FromSeconds(1);
+
+    /// <summary>
     /// Creates a new health check worker with the specified configuration.
     /// </summary>
     /// <param name="pipelineService">The pipeline service to monitor</param>
@@ -124,7 +139,7 @@ public static class HealthCheckWorkerExtensions
         if (timeout <= TimeSpan.Zero)
             throw new ArgumentOutOfRangeException(nameof(timeout), "Timeout must be greater than zero");
 
-        var checkInterval = stableCheckInterval ?? TimeSpan.FromSeconds(1);
+        var checkInterval = stableCheckInterval ?? DefaultStableCheckInterval;
         var endTime = DateTime.UtcNow.Add(timeout);
 
         while (DateTime.UtcNow < endTime)
