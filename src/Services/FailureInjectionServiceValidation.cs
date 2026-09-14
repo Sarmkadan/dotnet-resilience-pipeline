@@ -15,6 +15,20 @@ namespace DotNetResiliencePipeline.Services;
 public static class FailureInjectionServiceValidation
 {
     /// <summary>
+    /// Maximum allowed length for a rule key.
+    /// </summary>
+    private const int MaxRuleKeyLength = 100;
+
+    /// <summary>
+    /// Maximum allowed length for an exception message.
+    /// </summary>
+    private const int MaxExceptionMessageLength = 500;
+
+    /// <summary>
+    /// Maximum allowed timeout duration.
+    /// </summary>
+    private static readonly TimeSpan MaxTimeoutDuration = TimeSpan.FromHours(24);
+    /// <summary>
     /// Validates the specified <see cref="FailureInjectionService"/> instance.
     /// </summary>
     /// <param name="value">The service instance to validate.</param>
@@ -81,9 +95,9 @@ public static class FailureInjectionServiceValidation
         {
             problems.Add("Rule.Key cannot be null or whitespace.");
         }
-        else if (rule.Key.Length > 100)
+        else if (rule.Key.Length > MaxRuleKeyLength)
         {
-            problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule.Key '{rule.Key}' exceeds maximum length of 100 characters."));
+            problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule.Key '{rule.Key}' exceeds maximum length of {MaxRuleKeyLength} characters."));
         }
 
         // Validate Type
@@ -110,9 +124,9 @@ public static class FailureInjectionServiceValidation
         }
 
         // Validate ExceptionMessage
-        if (rule.ExceptionMessage is not null && rule.ExceptionMessage.Length > 500)
+        if (rule.ExceptionMessage is not null && rule.ExceptionMessage.Length > MaxExceptionMessageLength)
         {
-            problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule.ExceptionMessage for rule '{rule.Key}' exceeds maximum length of 500 characters."));
+            problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule.ExceptionMessage for rule '{rule.Key}' exceeds maximum length of {MaxExceptionMessageLength} characters."));
         }
 
         // Validate ExceptionFactory
@@ -138,9 +152,9 @@ public static class FailureInjectionServiceValidation
             {
                 problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule.TimeoutDuration for rule '{rule.Key}' cannot be negative, but was {rule.TimeoutDuration}."));
             }
-            else if (rule.TimeoutDuration.Value.TotalMilliseconds > 86400000) // 24 hours
+            else if (rule.TimeoutDuration.Value > MaxTimeoutDuration)
             {
-                problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule.TimeoutDuration for rule '{rule.Key}' exceeds reasonable maximum of 24 hours, but was {rule.TimeoutDuration}."));
+                problems.Add(string.Create(CultureInfo.InvariantCulture, $"Rule.TimeoutDuration for rule '{rule.Key}' exceeds maximum allowed duration of {MaxTimeoutDuration}, but was {rule.TimeoutDuration}."));
             }
         }
 
