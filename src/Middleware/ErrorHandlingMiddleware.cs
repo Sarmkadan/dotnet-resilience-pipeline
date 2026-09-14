@@ -18,7 +18,18 @@ public sealed class ErrorHandlingMiddleware
     private readonly ConcurrentDictionary<string, ErrorStatistics> _errorStats = new();
     private List<ErrorContext> _errorContexts = new();
     private readonly object _lockObj = new object();
-    public int MaxContexts { get; set; } = 500;
+
+    /// <summary>
+    /// Default maximum number of error contexts to store.
+    /// </summary>
+    public const int DefaultMaxContexts = 500;
+
+    /// <summary>
+    /// Default number of top errors to return when getting most common errors.
+    /// </summary>
+    public const int DefaultTopErrorsCount = 10;
+
+    public int MaxContexts { get; set; } = DefaultMaxContexts;
 
     /// <summary>
     /// Handles an exception with classification and logging.
@@ -127,7 +138,7 @@ public sealed class ErrorHandlingMiddleware
     /// <summary>
     /// Gets most common errors.
     /// </summary>
-    public List<(string Error, int Count)> GetMostCommonErrors(int top = 10)
+    public List<(string Error, int Count)> GetMostCommonErrors(int top = DefaultTopErrorsCount)
     {
         return _errorStats
             .OrderByDescending(x => x.Value.Count)
