@@ -95,6 +95,11 @@ public sealed class InvalidHttpRequestException : HttpClientException
     {
         HttpMethod = httpMethod;
     }
+
+    public override string ToString()
+    {
+        return base.ToString() + $" HttpMethod = {HttpMethod}";
+    }
 }
 
 /// <summary>
@@ -133,6 +138,11 @@ public sealed class HttpResponseException : HttpClientException
     {
         StatusCode = statusCode;
     }
+
+    public override string ToString()
+    {
+        return base.ToString() + $" StatusCode = {StatusCode}";
+    }
 }
 
 /// <summary>
@@ -170,5 +180,10 @@ public sealed class HttpTimeoutException : HttpClientException
         : base(message, innerException, clientName, requestUrl)
     {
         Timeout = timeout;
+    }
+
+    public override string ToString()
+    {
+        return base.ToString() + $" Timeout = {Timeout}";
     }
 }
