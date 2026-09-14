@@ -201,16 +201,26 @@ public static class AdaptiveTimeoutServiceExtensions
             return "0ms";
         }
 
-        if (timeout.TotalMilliseconds < 1000)
+        if (timeout.TotalMilliseconds < MillisecondsPerSecond)
         {
             return $"{timeout.TotalMilliseconds:F0}ms";
         }
 
-        if (timeout.TotalSeconds < 60)
+        if (timeout.TotalSeconds < SecondsPerMinute)
         {
             return $"{timeout.TotalSeconds:F1}s";
         }
 
         return $"{timeout.TotalMinutes:F1}m";
     }
+
+    /// <summary>
+    /// Number of milliseconds in one second.
+    /// </summary>
+    private const double MillisecondsPerSecond = 1000;
+
+    /// <summary>
+    /// Number of seconds in one minute.
+    /// </summary>
+    private const int SecondsPerMinute = 60;
 }
