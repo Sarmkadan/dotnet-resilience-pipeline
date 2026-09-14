@@ -260,6 +260,21 @@ public sealed class CircuitBreakerEffectiveness
     public CircuitBreakerPolicy.CircuitState CurrentState { get; set; }
     public string EffectivenessRating { get; set; } = string.Empty;
     public bool IsProblematic { get; set; }
+
+    public override string ToString()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"Circuit Breaker Effectiveness Analysis: {PolicyName}");
+        sb.AppendLine(new string('=', 50));
+        sb.AppendLine($"Total Executions: {TotalExecutions}");
+        sb.AppendLine($"Failed Executions: {FailedExecutions}");
+        sb.AppendLine($"Failure Rate: {FailureRate:F2}%");
+        sb.AppendLine($"Current State: {CurrentState}");
+        sb.AppendLine($"Effectiveness Rating: {EffectivenessRating}");
+        sb.AppendLine($"Is Problematic: {IsProblematic}");
+
+        return sb.ToString();
+    }
 }
 
 /// <summary>
