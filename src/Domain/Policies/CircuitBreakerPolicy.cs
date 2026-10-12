@@ -17,6 +17,7 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// then allows recovery testing in a half-open state before closing the circuit.
 /// </summary>
 /// <seealso cref="ResiliencyPolicy"/>
+[DebuggerDisplay("CircuitBreaker(state={CurrentState}, failures={ConsecutiveFailures}/{FailureThreshold}, trips={CircuitBreakerTrips})")]
 public sealed class CircuitBreakerPolicy : ResiliencyPolicy
 {
     public enum CircuitState
@@ -218,5 +219,6 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
         return baseSnapshot;
     }
 
-    public override string ToString() => $"CircuitBreakerPolicy {{ FailureThreshold = {FailureThreshold}, OpenDuration = {OpenDuration} }}";
+    public override string ToString() =>
+    $"CircuitBreaker(state={CurrentState}, failures={ConsecutiveFailures}/{FailureThreshold}, trips={CircuitBreakerTrips})";
 }

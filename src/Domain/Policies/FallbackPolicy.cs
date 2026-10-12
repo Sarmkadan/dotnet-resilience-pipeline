@@ -4,11 +4,14 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Diagnostics;
+
 namespace DotNetResiliencePipeline.Domain.Policies;
 
 /// <summary>
 /// Fallback policy that provides alternative execution paths when primary operations fail.
 /// </summary>
+[DebuggerDisplay("Fallback(triggers={TriggerSummary}, timeout={FallbackTimeout.TotalMilliseconds}ms)")]
 public sealed class FallbackPolicy : ResiliencyPolicy
 {
     // ... existing properties
@@ -78,9 +81,18 @@ public sealed class FallbackPolicy : ResiliencyPolicy
     private List<long> _fallbackExecutionTimes = new();
     private readonly object _lockObj = new object();
 
-    public FallbackPolicy(string name) : base(name)
+    /// <summary>
+    /// Initializes a new fallback policy.
+    /// </summary>
+    /// <param name="name">Optional policy name. Defaults to <c>FallbackPolicy</c>.</param>
+    public FallbackPolicy(string? name = null) : base(name)
     {
     }
+
+    /// <summary>
+    /// Short description of which exceptions trigger fallback: <c>any</c> or the number of configured trigger types.
+    /// </summary>
+    private string TriggerSummary => FallbackOnAnyException ? "any" : $"{FallbackTriggerExceptions.Count} types";
 
     /// <summary>
     /// Determines if an exception should trigger fallback execution.
@@ -246,5 +258,9 @@ public sealed class FallbackPolicy : ResiliencyPolicy
         return baseSnapshot;
     }
 
-    public override string ToString() => $"FallbackPolicy {{ FallbackTriggerExceptions = {FallbackTriggerExceptions}, FallbackOnAnyException = {FallbackOnAnyException}, FallbackTimeout = {FallbackTimeout} }}";
+    /// <summary>
+    /// Returns a concise summary of the fallback configuration, e.g. <c>Fallback(triggers=any, timeout=5000ms)</c>.
+    /// </summary>
+    public override string ToString() =>
+        $"Fallback(triggers={TriggerSummary}, timeout={FallbackTimeout.TotalMilliseconds}ms)";
 }

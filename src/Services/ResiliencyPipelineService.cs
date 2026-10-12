@@ -26,6 +26,20 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
     private readonly object _lockObj = new object();
 
     /// <summary>
+    /// Pipeline stages in execution order, outermost first. Mirrors the nesting in
+    /// <c>ExecuteAsync</c> (fallback wraps the call) and <c>_executeWithRetryTimeoutBulkhead</c>
+    /// (bulkhead, then timeout around retry).
+    /// </summary>
+    private static readonly (string Label, Func<ResiliencyPolicy, bool> Matches)[] ExecutionStages =
+    {
+        ("Fallback", p => p is FallbackPolicy),
+        ("CircuitBreaker", p => p is CircuitBreakerPolicy),
+        ("Bulkhead", p => p is BulkheadPolicy),
+        ("Timeout", p => p is TimeoutPolicy or AdaptiveTimeoutPolicy),
+        ("Retry", p => p is RetryPolicy),
+    };
+
+    /// <summary>
     /// Gets the unique identifier for this pipeline instance.
     /// </summary>
     public string PipelineId { get; } = Guid.NewGuid().ToString();
@@ -352,6 +366,54 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
                 TimeoutCount = timeoutCount,
                 PolicySnapshots = snapshots
             };
+        }
+    }
+
+    /// <summary>
+    /// Returns the enabled policies registered on this pipeline in execution order, e.g.
+    /// <c>Fallback -> Retry -> CircuitBreaker -> Bulkhead</c>. A policy whose
+    /// <see cref="ResiliencyPolicy.Name"/> is not its type name is shown as <c>Retry[orders]</c>.
+    /// Policies passed directly to <c>ExecuteAsync</c> are not registered and are not listed.
+    /// </summary>
+    public override string ToString()
+    {
+        lock (_lockObj)
+        {
+            var stages = new List<string>();
+
+            // Check for Fallback policies
+            var fallbackPolicies = _policies.Values.Where(p => p.IsEnabled && p is FallbackPolicy);
+            foreach (var policy in fallbackPolicies)
+            {
+                var isDefaultName = policy.Name == policy.GetType().Name;
+                stages.Add(isDefaultName ? "Fallback" : $"Fallback[{policy.Name}]");
+            }
+
+            // Check for Retry policies
+            var retryPolicies = _policies.Values.Where(p => p.IsEnabled && p is RetryPolicy);
+            foreach (var policy in retryPolicies)
+            {
+                var isDefaultName = policy.Name == policy.GetType().Name;
+                stages.Add(isDefaultName ? "Retry" : $"Retry[{policy.Name}]");
+            }
+
+            // Check for CircuitBreaker policies
+            var circuitBreakerPolicies = _policies.Values.Where(p => p.IsEnabled && p is CircuitBreakerPolicy);
+            foreach (var policy in circuitBreakerPolicies)
+            {
+                var isDefaultName = policy.Name == policy.GetType().Name;
+                stages.Add(isDefaultName ? "CircuitBreaker" : $"CircuitBreaker[{policy.Name}]");
+            }
+
+            // Check for Bulkhead policies
+            var bulkheadPolicies = _policies.Values.Where(p => p.IsEnabled && p is BulkheadPolicy);
+            foreach (var policy in bulkheadPolicies)
+            {
+                var isDefaultName = policy.Name == policy.GetType().Name;
+                stages.Add(isDefaultName ? "Bulkhead" : $"Bulkhead[{policy.Name}]");
+            }
+
+            return stages.Count == 0 ? "(empty pipeline)" : string.Join(" -> ", stages);
         }
     }
 

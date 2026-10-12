@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using DotNetResiliencePipeline.Utilities;
 
@@ -14,6 +15,7 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// <summary>
 /// Retry policy with exponential backoff and jitter for transient failure handling.
 /// </summary>
+[DebuggerDisplay("Retry(max={MaxRetries}, base={InitialDelay.TotalMilliseconds}ms, strategy={Strategy})")]
 public sealed class RetryPolicy : ResiliencyPolicy
 {
     public enum BackoffStrategy
@@ -74,7 +76,11 @@ public sealed class RetryPolicy : ResiliencyPolicy
     /// </summary>
     public long TotalRetryAttempts { get; private set; }
 
-    public RetryPolicy(string name) : base(name)
+    /// <summary>
+    /// Initializes a new retry policy.
+    /// </summary>
+    /// <param name="name">Optional policy name. Defaults to <c>RetryPolicy</c>.</param>
+    public RetryPolicy(string? name = null) : base(name)
     {
         RetryableExceptions = new List<Type> { typeof(TimeoutException), typeof(HttpRequestException) };
     }
@@ -224,8 +230,9 @@ public sealed class RetryPolicy : ResiliencyPolicy
         return baseSnapshot;
     }
 
-    public override string ToString()
-    {
-        return $"RetryPolicy {{ MaxRetries = {MaxRetries}, InitialDelay = {InitialDelay}, Strategy = {Strategy}, MaxDelay = {MaxDelay}, BackoffMultiplier = {BackoffMultiplier}, UseJitter = {UseJitter} }}";
-    }
+    /// <summary>
+    /// Returns a concise summary of the key retry configuration, e.g. <c>Retry(max=3, base=200ms, strategy=Exponential)</c>.
+    /// </summary>
+    public override string ToString() =>
+        $"Retry(max={MaxRetries}, base={InitialDelay.TotalMilliseconds}ms, strategy={Strategy})";
 }

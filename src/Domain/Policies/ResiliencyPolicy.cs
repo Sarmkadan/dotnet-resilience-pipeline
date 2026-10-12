@@ -17,7 +17,8 @@ public abstract class ResiliencyPolicy
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
     /// <summary>
-    /// Friendly name for the policy.
+    /// Friendly name for the policy. Used in pipeline output and exception messages.
+    /// Defaults to the policy type name when not supplied.
     /// </summary>
     public string Name { get; set; }
 
@@ -61,12 +62,16 @@ public abstract class ResiliencyPolicy
     /// </summary>
     public Dictionary<string, object> Metadata { get; set; } = new();
 
-    protected ResiliencyPolicy(string name)
+    /// <summary>
+    /// Initializes the policy. A null <paramref name="name"/> falls back to the policy type name.
+    /// </summary>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is empty or whitespace.</exception>
+    protected ResiliencyPolicy(string? name)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Policy name cannot be empty", nameof(name));
+        Name = name ?? GetType().Name;
 
-        Name = name;
+        if (string.IsNullOrWhiteSpace(Name))
+            throw new ArgumentException("Policy name cannot be empty", nameof(name));
     }
 
     /// <summary>

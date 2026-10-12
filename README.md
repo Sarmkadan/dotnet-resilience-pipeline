@@ -580,6 +580,36 @@ string csv = exporter.ExportCsv(snapshot);
 string prometheus = exporter.ExportPrometheus(snapshot);
 ```
 
+## Health Checks
+
+The library provides a health check implementation for monitoring the state of resilience policies via `Microsoft.Extensions.Diagnostics.HealthChecks`. The `ResiliencePipelineHealthCheck` class reports:
+
+- **Unhealthy** when any bulkhead is saturated (all execution slots in use and queue full, causing request rejections)
+- **Degraded** when any circuit breaker is open (failing fast to prevent cascading failures)
+- **Healthy** when all policies are operating normally
+
+Example usage with ASP.NET Core:
+
+```csharp
+using DotNetResiliencePipeline.Integration;
+using DotNetResiliencePipeline.Services;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+
+// Assume we have a ResiliencyPipelineService instance
+var pipeline = provider.GetRequiredService<ResiliencyPipelineService>();
+
+// Register the health check
+services.AddHealthChecks()
+    .AddCheck<ResiliencePipelineHealthCheck>("resilience_pipeline", failureStatus: HealthStatus.Degraded);
+
+// To use in Startup.cs or Program.cs:
+// app.MapHealthChecks("/health");
+```
+
+The health check exposes diagnostic data including:
+- `openCircuitBreakers`: List of circuit breaker policy names that are currently open
+- `saturatedBulkheads`: List of bulkhead policy names that are currently saturated
+
 ## FallbackService
 
 `src/Services/FallbackService.cs` provides the execution engine for `FallbackPolicy`. Its `ExecuteAsync` method receives the exception and execution time from a failed primary operation and, when the policy allows it, runs the configured fallback action within the fallback timeout. `ShouldTriggerFallback` exposes the policy's exception-matching decision, `GetFallbackSuccessRate` reports the percentage of successful fallback executions, and `AddFallbackTrigger` and `RemoveFallbackTrigger` manage the exception types that activate a selective fallback policy.

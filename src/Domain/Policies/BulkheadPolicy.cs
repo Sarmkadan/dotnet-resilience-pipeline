@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using DotNetResiliencePipeline.Exceptions;
@@ -21,6 +22,7 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// It limits concurrent executions to protect system resources and manages request queuing when the bulkhead is full.
 /// </summary>
 /// <seealso cref="ResiliencyPolicy"/>
+[DebuggerDisplay("Bulkhead({MaxParallelization}/{MaxQueueLength}, executing={ActiveExecutions}, queued={QueuedRequests})")]
 public sealed class BulkheadPolicy : ResiliencyPolicy
 {
     // Constants
@@ -98,7 +100,11 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
 
     private List<long> _queueWaitTimes = new();
 
-    public BulkheadPolicy(string name) : base(name)
+    /// <summary>
+    /// Initializes a new bulkhead policy.
+    /// </summary>
+    /// <param name="name">Optional policy name. Defaults to <c>BulkheadPolicy</c>.</param>
+    public BulkheadPolicy(string? name = null) : base(name)
     {
         _semaphore = new SemaphoreSlim(MaxParallelization, MaxParallelization);
         _queueSemaphore = new SemaphoreSlim(MaxQueueLength, MaxQueueLength);
@@ -367,10 +373,10 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
     }
 
     /// <summary>
-    /// Returns a concise, informative representation of the bulkhead policy.
+    /// Returns a concise summary of capacity and current load, e.g. <c>Bulkhead(10/20, executing=4, queued=2)</c>.
     /// </summary>
     public override string ToString() =>
-        $"BulkheadPolicy {{ MaxParallelization = {MaxParallelization}, MaxQueueLength = {MaxQueueLength} }}";
+        $"Bulkhead({MaxParallelization}/{MaxQueueLength}, executing={ActiveExecutions}, queued={QueuedRequests})";
 
     /// <summary>
     /// Disposes the internal SemaphoreSlim instances.
