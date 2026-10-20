@@ -31,6 +31,9 @@ public sealed class RateLimitingMiddleware
 	[JsonInclude]
 	private int _defaultRequestsPerMinute = 5000;
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="RateLimitingMiddleware"/> class with default rate limits.
+	/// </summary>
 	[JsonConstructor]
 	public RateLimitingMiddleware()
 	{
@@ -158,6 +161,15 @@ public sealed class RateLimiter
 	[JsonIgnore]
 	private object _lockObj = new object();
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="RateLimiter"/> class from serialized state.
+	/// </summary>
+	/// <param name="tokensPerSecond">Maximum tokens allowed per second.</param>
+	/// <param name="tokensPerMinute">Maximum tokens allowed per minute.</param>
+	/// <param name="tokensSecond">Current remaining tokens in the per-second bucket.</param>
+	/// <param name="tokensMinute">Current remaining tokens in the per-minute bucket.</param>
+	/// <param name="lastRefillSecond">Timestamp of the last per-second token refill.</param>
+	/// <param name="lastRefillMinute">Timestamp of the last per-minute token refill.</param>
 	[JsonConstructor]
 	public RateLimiter(int tokensPerSecond, int tokensPerMinute, long tokensSecond, long tokensMinute, DateTime lastRefillSecond, DateTime lastRefillMinute)
 	{
@@ -170,6 +182,11 @@ public sealed class RateLimiter
 		_lockObj = new object();
 	}
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="RateLimiter"/> class with the specified token limits and full buckets.
+	/// </summary>
+	/// <param name="tokensPerSecond">Maximum tokens allowed per second.</param>
+	/// <param name="tokensPerMinute">Maximum tokens allowed per minute.</param>
 	public RateLimiter(int tokensPerSecond, int tokensPerMinute)
 	{
 		_tokensPerSecond = tokensPerSecond;
@@ -260,6 +277,9 @@ public sealed class RateLimitStatus
 	[JsonIgnore]
 	public bool IsLimited => RemainingTokensPerSecond <= 0 || RemainingTokensPerMinute <= 0;
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="RateLimitStatus"/> class with default values.
+	/// </summary>
 	[JsonConstructor]
 	public RateLimitStatus()
 	{
