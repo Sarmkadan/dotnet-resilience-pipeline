@@ -760,6 +760,61 @@ long timeoutMilliseconds = timeoutService.GetTimeoutMilliseconds(policy);
 Console.WriteLine($"Exceeded: {exceeded}; timeout: {timeoutMilliseconds} ms");
 ```
 
+## HealthCheckWorker
+
+`src/Workers/HealthCheckWorker.cs` provides a background worker that periodically monitors pipeline health, detects degradation and publishes `PolicyHealthChangedEvent` notifications.
+
+### Lifecycle
+
+| Method | Description |
+|--------|-------------|
+| `Start()` | Begins periodic health checks in a background task. No-op if already running. |
+| `StopAsync()` | Cancels the loop and awaits the background task. Safe to call when stopped. |
+| `IsRunning` | `true` while the worker loop is active. |
+
+### Configuration
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `CheckInterval` | 30 s | Delay between consecutive health checks. |
+| `HealthyThreshold` | 0.95 | Success-rate ratio at or above which a policy is "Healthy". |
+| `DegradedThreshold` | 0.80 | Success-rate ratio at or above which a policy is "Degraded" (below = "Unhealthy"). |
+
+### Health reporting
+
+- **`GetStatus()`** returns a `HealthCheckStatus` snapshot (running state, last check time, pipeline success rate, overall health, policy/execution counts).
+- **`GenerateHealthReport()`** returns a `HealthReport` aggregating per-policy `PolicyHealthStatus` entries (id, name, type, enabled flag, health status, success rate, execution counts, last check time) plus pipeline-wide metrics and a breakdown of healthy/degraded/unhealthy policy counts.
+
+### Events
+
+Each check iteration evaluates every registered policy and publishes a `PolicyHealthChangedEvent` containing:
+
+- `PolicyName` - the policy that was evaluated
+- `NewHealth` - computed health string ("Healthy", "Degraded" or "Unhealthy")
+- `SuccessRate` - the current pipeline success rate
+
+Subscribe via `ResiliencyEventPublisher.Subscribe<PolicyHealthChangedEvent>(...)`.
+
+### Usage
+
+```csharp
+var worker = new HealthCheckWorker(pipelineService, eventPublisher)
+{
+    CheckInterval = TimeSpan.FromSeconds(15),
+    HealthyThreshold = 0.99,
+    DegradedThreshold = 0.90
+};
+
+worker.Start();
+
+// Later: generate a full report
+HealthReport report = worker.GenerateHealthReport();
+Console.WriteLine($"Overall: {report.OverallStatus}, policies: {report.TotalPolicies}");
+
+// Shut down
+await worker.StopAsync();
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
