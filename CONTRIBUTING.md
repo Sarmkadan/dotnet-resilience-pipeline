@@ -1,82 +1,69 @@
 # Contributing to DotNet Resilience Pipeline
 
-Thank you for your interest in contributing!
+Thanks for contributing! This guide covers setup, conventions, and the PR process.
 
-## Requirements
+## Prerequisites
 
-- [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) or later
+- **.NET 10 SDK** (`net10.0`, set by `TargetFramework` in `DotNetResiliencePipeline.csproj`). There is no `global.json`; CI uses `10.0.x`.
+- Git.
 
-## Building Locally
+## Build
 
-```bash
-# Clone your fork
-git clone https://github.com/your-username/dotnet-resilience-pipeline.git
-cd dotnet-resilience-pipeline
-
-# Restore dependencies
-dotnet restore
-
-# Build in release configuration
-dotnet build --configuration Release
-
-# Build in debug (default)
-dotnet build
-```
-
-## Running Tests
+The repo root contains both `dotnet-resilience-pipeline.sln` and `DotNetResiliencePipeline.csproj`, so always pass the solution explicitly. A bare `dotnet build` or `dotnet test` fails with `MSB1011`.
 
 ```bash
-# Run the full test suite
-dotnet test
-
-# Run with verbose output
-dotnet test --verbosity normal
-
-# Run a specific test project
-dotnet test tests/dotnet-resilience-pipeline.Tests/
-
-# Run with code coverage
-dotnet test --collect:"XPlat Code Coverage"
+dotnet restore dotnet-resilience-pipeline.sln
+dotnet build dotnet-resilience-pipeline.sln                 # Debug
+dotnet build dotnet-resilience-pipeline.sln -c Release      # what CI runs
 ```
 
-## Workflow
+## Test
 
-1. **Fork** the repository on GitHub.
-2. **Create a branch**: `git checkout -b feature/your-feature-name`
-3. **Make your changes** with tests and documentation.
-4. **Ensure all tests pass**: `dotnet test`
-5. **Push** your branch and open a Pull Request against `main`.
+```bash
+dotnet test dotnet-resilience-pipeline.sln                  # full suite
+dotnet test tests/dotnet-resilience-pipeline.Tests/dotnet-resilience-pipeline.Tests.csproj
+dotnet test tests/dotnet-resilience-pipeline.Tests/dotnet-resilience-pipeline.Tests.csproj \
+    --filter "FullyQualifiedName~CircuitBreaker"           # subset
+```
 
-## Pull Request Guidelines
+- The test project is `tests/dotnet-resilience-pipeline.Tests/` (xUnit, FluentAssertions, Moq).
+- Benchmarks live in `benchmarks/dotnet-resilience-pipeline.Benchmarks.csproj` (BenchmarkDotNet). Run them with `dotnet run -c Release --project benchmarks/dotnet-resilience-pipeline.Benchmarks.csproj`.
 
-- Keep PRs focused — one feature or fix per PR.
-- Provide a clear description of what changed and why.
-- Reference any related issues with `Fixes #N` or `Closes #N`.
-- Ensure CI passes before requesting review.
-- All public API changes require XML documentation comments.
+## Coding Conventions
 
-## Code Style
+- Follow `.editorconfig`: 4-space indentation, Allman braces, and `var` only when the type is apparent from the right-hand side.
+- Every `.cs` file starts with `#nullable enable` and the author header block. Keep the header intact.
+- Nullable reference types and implicit usings are enabled. Don't add new compiler warnings.
+- Public types and members need XML doc comments (`GenerateDocumentationFile` is on).
+- Async methods end in `Async`.
+- Services are `sealed`. Put magic numbers in `const`/`static readonly` fields or `src/Constants/ResiliencyConstants.cs`.
+- Thread safety: use `lock`, `Interlocked`, or `SemaphoreSlim`, and document guarantees on public types.
+- Policies are paired by name: `XPolicy` in `src/Domain/Policies/` with `XService` in `src/Services/`.
+- A new public type needs a matching `docs/<Type>.md`.
 
-- Follow the `.editorconfig` settings in the repository root.
-- Use 4 spaces for indentation in C# files.
-- Place opening braces on new lines (Allman style).
-- Prefer `var` only when the type is apparent from the right-hand side.
-- Write self-documenting code; add comments only where logic needs clarification.
-- Keep all existing author and copyright headers intact.
+## Tests
 
-## Thread Safety
+- One `<Type>Tests.cs` per type in the flat `tests/dotnet-resilience-pipeline.Tests/` folder.
+- Name methods `Method_Scenario_ExpectedResult` and assert with FluentAssertions `.Should()`.
+- New policies need concurrency tests.
 
-- Use proper synchronization primitives (`lock`, `Interlocked`, `SemaphoreSlim`).
-- Document any thread-safety guarantees or assumptions on public types.
-- Add concurrency tests for new policy implementations.
+## Pull Requests
+
+1. **Fork** the repository if you don't have push access, then **branch from an up-to-date `main`**: `git switch -c feat/short-description`.
+2. **Keep PRs small and focused**: one feature or fix per PR.
+3. **Add tests for behavior changes.** A bug fix should include a test that fails without the fix.
+4. **Use conventional commit prefixes**: `feat:`, `fix:`, `docs:`.
+5. **Build and test locally** before pushing. **CI (`.github/workflows/ci.yml`) must be green** before review.
+6. **Describe the change in the PR body**: what changed, why, and how you tested it. Link issues with `Fixes #N`.
 
 ## Reporting Issues
 
-Open an issue using GitHub Issues. For bugs, include:
-- .NET version (`dotnet --version`)
+Open a GitHub issue. For bugs, include:
+
+- Output of `dotnet --version`
 - Minimal reproduction steps
-- Expected vs actual behavior
+- Expected vs. actual behavior
 
-## License
+## Code of Conduct and License
 
-By contributing, you agree that your contributions will be licensed under the [MIT License](LICENSE).
+Please follow the [Code of Conduct](CODE_OF_CONDUCT.md). By contributing, you agree that your contributions are licensed under the [MIT License](LICENSE).
