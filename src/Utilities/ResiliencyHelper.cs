@@ -170,9 +170,16 @@ public static class ResiliencyHelper
 /// </summary>
 public enum HealthStatus
 {
+    /// <summary>The pipeline is operating normally.</summary>
     Healthy,
+
+    /// <summary>The pipeline is operating with reduced reliability.</summary>
     Degraded,
+
+    /// <summary>The pipeline is failing most of its executions.</summary>
     Unhealthy,
+
+    /// <summary>The pipeline has failed and requires immediate attention.</summary>
     Critical
 }
 
@@ -181,13 +188,44 @@ public enum HealthStatus
 /// </summary>
 public sealed class PipelineHealthReport
 {
+    /// <summary>
+    /// Gets or sets the identifier of the reported pipeline.
+    /// </summary>
     public string PipelineId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the UTC time at which the report was generated.
+    /// </summary>
     public DateTime ReportGeneratedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total number of executions across the pipeline.
+    /// </summary>
     public long TotalExecutions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the overall success rate, as a percentage.
+    /// </summary>
     public double SuccessRate { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of policies in the pipeline.
+    /// </summary>
     public int PolicyCount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the overall health status of the pipeline.
+    /// </summary>
     public HealthStatus HealthStatus { get; set; }
+
+    /// <summary>
+    /// Gets or sets the snapshots of the individual policies in the pipeline.
+    /// </summary>
     public List<PolicySnapshot> Policies { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets additional statistics derived from execution history.
+    /// </summary>
     public Dictionary<string, object> HistoryStatistics { get; set; } = new();
 
     /// <summary>

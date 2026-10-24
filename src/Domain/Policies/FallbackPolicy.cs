@@ -16,7 +16,7 @@ public sealed class FallbackPolicy : ResiliencyPolicy
 {
     // ... existing properties
 
-    private Func<CancellationToken, Task<object>>? _fallbackActionInternal;
+    private Func<CancellationToken, Task<object?>>? _fallbackActionInternal;
 
     /// <summary>
     /// Sets the asynchronous fallback action.
@@ -32,7 +32,7 @@ public sealed class FallbackPolicy : ResiliencyPolicy
             _fallbackActionInternal = async (cancellationToken) =>
             {
                 T result = await fallbackAction(cancellationToken);
-                return result; // Autoboxes to object
+                return result; // Autoboxes to object; T may itself be nullable, hence Task<object?>
             };
         }
         ModifiedAt = DateTime.UtcNow;
@@ -41,7 +41,7 @@ public sealed class FallbackPolicy : ResiliencyPolicy
     /// <summary>
     /// Gets the asynchronous fallback action (internal use).
     /// </summary>
-    internal Func<CancellationToken, Task<object>>? GetFallbackAction() => _fallbackActionInternal;
+    internal Func<CancellationToken, Task<object?>>? GetFallbackAction() => _fallbackActionInternal;
 
     /// <summary>
     /// Number of times fallback was invoked.

@@ -24,7 +24,7 @@ public class ResiliencyExceptionExtensionsTests
     public void ToDetailedErrorMessage_NullException_ThrowsArgumentNullException()
     {
         // Act and Assert
-        Assert.Throws<ArgumentNullException>(() => ResiliencyExceptionExtensions.ToDetailedErrorMessage(null));
+        Assert.Throws<ArgumentNullException>(() => ResiliencyExceptionExtensions.ToDetailedErrorMessage(null!));
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public class ResiliencyExceptionExtensionsTests
     public void IsRetryable_NullException_ThrowsArgumentNullException()
     {
         // Act and Assert
-        Assert.Throws<ArgumentNullException>(() => ResiliencyExceptionExtensions.IsRetryable(null));
+        Assert.Throws<ArgumentNullException>(() => ResiliencyExceptionExtensions.IsRetryable(null!));
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public class ResiliencyExceptionExtensionsTests
     public void GetFriendlyName_NullException_ThrowsArgumentNullException()
     {
         // Act and Assert
-        Assert.Throws<ArgumentNullException>(() => ResiliencyExceptionExtensions.GetFriendlyName(null));
+        Assert.Throws<ArgumentNullException>(() => ResiliencyExceptionExtensions.GetFriendlyName(null!));
     }
 
     [Fact]
@@ -84,6 +84,6 @@ public class ResiliencyExceptionExtensionsTests
     public void GetSeverityLevel_NullException_ThrowsArgumentNullException()
     {
         // Act and Assert
-        Assert.Throws<ArgumentNullException>(() => ResiliencyExceptionExtensions.GetSeverityLevel(null));
+        Assert.Throws<ArgumentNullException>(() => ResiliencyExceptionExtensions.GetSeverityLevel(null!));
     }
 }

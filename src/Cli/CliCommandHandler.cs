@@ -24,6 +24,13 @@ public sealed class CliCommandHandler
     private readonly CliCommandValidator _validator;
     private readonly CircuitBreakerService _circuitBreakerService;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CliCommandHandler"/> class.
+    /// </summary>
+    /// <param name="pipelineService">Pipeline service used to run and inspect resilience policies.</param>
+    /// <param name="policyRepository">Repository holding the configured policies.</param>
+    /// <param name="historyRepository">Repository holding execution history.</param>
+    /// <param name="circuitBreakerService">Optional circuit breaker service; a new instance is created when null.</param>
     public CliCommandHandler(
         ResiliencyPipelineService pipelineService,
         PolicyRepository policyRepository,
@@ -250,7 +257,7 @@ public sealed class CliCommandHandler
 
     /// <summary>
     /// Displays the circuit breaker dashboard for all registered breakers.
-    /// Usage: dashboard [--name <policyName>] [--reset]
+    /// Usage: dashboard [--name &lt;policyName&gt;] [--reset]
     /// </summary>
     private async Task<CommandExecutionResult> HandleDashboardCommandAsync(CommandOptions options)
     {
@@ -313,7 +320,7 @@ public sealed class CliCommandHandler
 
     /// <summary>
     /// Provides information about the failure injection feature.
-    /// Usage: inject --rule <key> --type <exception|latency|timeout> [--rate <0.0-1.0>]
+    /// Usage: inject --rule &lt;key&gt; --type &lt;exception|latency|timeout&gt; [--rate &lt;0.0-1.0&gt;]
     /// </summary>
     private CommandExecutionResult HandleInjectCommand(CommandOptions options)
     {
@@ -344,7 +351,7 @@ public sealed class CliCommandHandler
 
     /// <summary>
     /// Exports resilience metrics.
-    /// Usage: export [--format json|csv|prometheus] [--output <file>]
+    /// Usage: export [--format json|csv|prometheus] [--output &lt;file&gt;]
     /// </summary>
     private async Task<CommandExecutionResult> HandleExportCommandAsync(CommandOptions options)
     {
@@ -387,8 +394,23 @@ public sealed class CliCommandHandler
 /// </summary>
 public sealed class CommandExecutionResult
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether the command completed successfully.
+    /// </summary>
     public bool Success { get; set; }
+
+    /// <summary>
+    /// Gets or sets the human-readable output message for the command.
+    /// </summary>
     public string Message { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the exception raised by the command, if any.
+    /// </summary>
     public Exception? Error { get; set; }
+
+    /// <summary>
+    /// Gets or sets the process exit code for the command.
+    /// </summary>
     public int ExitCode { get; set; }
 }

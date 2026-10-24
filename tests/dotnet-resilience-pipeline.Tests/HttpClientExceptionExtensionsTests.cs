@@ -13,7 +13,7 @@ public class HttpClientExceptionExtensionsTests
         var exception = null as HttpClientException;
 
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => HttpClientExceptionExtensions.GetFullErrorMessage(exception));
+        Assert.Throws<ArgumentNullException>(() => HttpClientExceptionExtensions.GetFullErrorMessage(exception!));
     }
 
     [Fact]

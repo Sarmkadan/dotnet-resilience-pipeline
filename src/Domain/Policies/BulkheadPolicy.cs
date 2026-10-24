@@ -25,10 +25,21 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 [DebuggerDisplay("Bulkhead({MaxParallelization}/{MaxQueueLength}, executing={ActiveExecutions}, queued={QueuedRequests})")]
 public sealed class BulkheadPolicy : ResiliencyPolicy
 {
-    // Constants
+    /// <summary>
+    /// Default maximum number of concurrent executions.
+    /// </summary>
     public const int DefaultMaxParallelization = 10;
+
+    /// <summary>
+    /// Default maximum number of queued requests.
+    /// </summary>
     public const int DefaultMaxQueueLength = 50;
+
+    /// <summary>
+    /// Default maximum time a request waits in the queue before it is rejected.
+    /// </summary>
     public static readonly TimeSpan DefaultMaxQueueWaitTimeout = TimeSpan.FromSeconds(30);
+
     private const double PercentageMultiplier = 100.0;
 
     // Semaphores are created lazily on first use so that the object initializer
@@ -285,7 +296,7 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
     {
         lock (_lockObj)
         {
-            if (ActiveExecutions == 0)
+            if (_semaphore is null || ActiveExecutions == 0)
             {
                 // Nothing is held, so there is nothing to release
                 return;
@@ -314,7 +325,7 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
     {
         lock (_lockObj)
         {
-            if (QueuedRequests == 0)
+            if (_queueSemaphore is null || QueuedRequests == 0)
             {
                 // Nothing is queued, so there is nothing to dequeue
                 return;

@@ -29,7 +29,8 @@ public static class AdaptiveTimeoutPolicyExtensions
             throw new ArgumentOutOfRangeException(nameof(min), "Minimum sample size must be at least 1.");
 
         var snapshot = policy.GetSnapshot();
-        if (snapshot.Metadata.TryGetValue("WindowSampleCount", out var obj) && obj is int count)
+        if (snapshot.Metadata is not null &&
+            snapshot.Metadata.TryGetValue("WindowSampleCount", out var obj) && obj is int count)
             return count >= min;
 
         return false;

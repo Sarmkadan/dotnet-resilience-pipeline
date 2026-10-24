@@ -223,9 +223,24 @@ public sealed class PolicyNameGenerator
 /// </summary>
 public sealed class NamingTemplate
 {
+    /// <summary>
+    /// Gets or sets the service name segment of the policy name.
+    /// </summary>
     public string Service { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the operation name segment of the policy name.
+    /// </summary>
     public string Operation { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the policy type segment of the policy name.
+    /// </summary>
     public string PolicyType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the environment segment of the policy name (for example, prod or dev).
+    /// </summary>
     public string Environment { get; set; } = string.Empty;
 
     /// <summary>

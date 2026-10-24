@@ -10,8 +10,8 @@ using System.Diagnostics;
 namespace DotNetResiliencePipeline.Domain;
 
 /// <summary>
-// Encapsulates the result of a resilience policy execution with status and metadata.
-// </summary>
+/// Encapsulates the result of a resilience policy execution with status and metadata.
+/// </summary>
 public sealed class PolicyResult<T>
 {
     /// <summary>
@@ -185,6 +185,9 @@ public sealed class PolicyResult
     /// </summary>
     public Dictionary<string, object> Metadata { get; set; } = new();
 
+    /// <summary>
+    /// Creates a successful result without data.
+    /// </summary>
     public static PolicyResult Success(string policyName, long executionTimeMs, int attempts = 1)
     {
         if (string.IsNullOrEmpty(policyName))
@@ -200,6 +203,9 @@ public sealed class PolicyResult
         };
     }
 
+    /// <summary>
+    /// Creates a failure result with exception details.
+    /// </summary>
     public static PolicyResult Failure(Exception exception, string policyName, long executionTimeMs, int attempts = 1)
     {
         if (exception == null)

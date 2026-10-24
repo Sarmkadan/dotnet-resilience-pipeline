@@ -179,29 +179,78 @@ public sealed class PerformanceMonitor
 /// </summary>
 public sealed class PerformanceMetrics
 {
+    /// <summary>
+    /// Gets or sets the name of the policy these metrics describe.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the total number of executions recorded.
+    /// </summary>
     public long TotalExecutions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the sum of all execution durations, in milliseconds.
+    /// </summary>
     public long TotalDurationMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of successful executions.
+    /// </summary>
     public long SuccessfulExecutions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of failed executions.
+    /// </summary>
     public long FailedExecutions { get; set; }
 
+    /// <summary>
+    /// Gets the average execution duration, in milliseconds.
+    /// </summary>
     public double AverageDurationMs =>
         TotalExecutions > 0 ? (double)TotalDurationMs / TotalExecutions : 0;
 
+    /// <summary>
+    /// Gets the success rate, as a percentage.
+    /// </summary>
     public double SuccessRate =>
         TotalExecutions > 0 ? (SuccessfulExecutions * 100.0) / TotalExecutions : 0;
 
+    /// <summary>
+    /// Gets the failure rate, as a percentage.
+    /// </summary>
     public double FailureRate =>
         TotalExecutions > 0 ? (FailedExecutions * 100.0) / TotalExecutions : 0;
 
+    /// <summary>
+    /// Gets the throughput, in executions per second.
+    /// </summary>
     public double ThroughputPerSecond =>
         TotalDurationMs > 0 ? (TotalExecutions * 1000.0) / TotalDurationMs : 0;
 
+    /// <summary>
+    /// Gets or sets every recorded execution duration, in milliseconds, used for percentile calculations.
+    /// </summary>
     public List<long> AllDurations { get; set; } = new();
 
+    /// <summary>
+    /// Gets the 50th percentile (median) execution duration, in milliseconds.
+    /// </summary>
     public long P50 => CalculatePercentile(50);
+
+    /// <summary>
+    /// Gets the 90th percentile execution duration, in milliseconds.
+    /// </summary>
     public long P90 => CalculatePercentile(90);
+
+    /// <summary>
+    /// Gets the 95th percentile execution duration, in milliseconds.
+    /// </summary>
     public long P95 => CalculatePercentile(95);
+
+    /// <summary>
+    /// Gets the 99th percentile execution duration, in milliseconds.
+    /// </summary>
     public long P99 => CalculatePercentile(99);
 
     private long CalculatePercentile(int percentile)
@@ -220,10 +269,29 @@ public sealed class PerformanceMetrics
 /// </summary>
 public sealed class PerformanceIssue
 {
+    /// <summary>
+    /// Gets or sets the name of the policy with the issue.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the category of the issue (for example, slow execution or high failure rate).
+    /// </summary>
     public string IssueType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the average execution duration of the policy, in milliseconds.
+    /// </summary>
     public double AverageDurationMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the failure rate of the policy, as a percentage.
+    /// </summary>
     public double FailureRate { get; set; }
+
+    /// <summary>
+    /// Gets or sets the severity of the issue.
+    /// </summary>
     public string Severity { get; set; } = string.Empty;
 }
 
@@ -232,8 +300,23 @@ public sealed class PerformanceIssue
 /// </summary>
 public sealed class PerformanceComparison
 {
+    /// <summary>
+    /// Gets or sets the name of the policy being compared.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the average execution duration of the policy, in milliseconds.
+    /// </summary>
     public double AverageDurationMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the policy's average duration as a percentage of the slowest policy's duration.
+    /// </summary>
     public double PercentageOfSlowest { get; set; }
+
+    /// <summary>
+    /// Gets or sets the success rate of the policy, as a percentage.
+    /// </summary>
     public double SuccessRate { get; set; }
 }

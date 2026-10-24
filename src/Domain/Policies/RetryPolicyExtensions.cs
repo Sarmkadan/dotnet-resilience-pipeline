@@ -15,7 +15,7 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 /// for retry policy configuration, monitoring, and execution.
 /// </summary>
 /// <remarks>
-/// All extension methods validate their parameters using <see cref="ArgumentNullException.ThrowIfNull"/>
+/// All extension methods validate their parameters using <see cref="ArgumentNullException.ThrowIfNull(object, string)"/>
 /// and follow the fluent interface pattern by returning the policy instance for method chaining.
 /// </remarks>
 public static class RetryPolicyExtensions
@@ -144,7 +144,7 @@ public static class RetryPolicyExtensions
             }
         }
 
-        throw new AggregateException(
+        throw CreateRetriesExhaustedException(
             $"Action failed after {policy.TotalRetryAttempts} retry attempt(s)",
             lastException);
     }
@@ -187,7 +187,7 @@ public static class RetryPolicyExtensions
             }
         }
 
-        throw new AggregateException(
+        throw CreateRetriesExhaustedException(
             $"Function failed after {policy.TotalRetryAttempts} retry attempt(s)",
             lastException);
     }
@@ -234,7 +234,7 @@ public static class RetryPolicyExtensions
 
         return cancellationToken.IsCancellationRequested
             ? throw new OperationCanceledException(cancellationToken)
-            : throw new AggregateException(
+            : throw CreateRetriesExhaustedException(
                 $"Async action failed after {policy.TotalRetryAttempts} retry attempt(s)",
                 lastException);
     }
@@ -281,7 +281,7 @@ public static class RetryPolicyExtensions
 
         return cancellationToken.IsCancellationRequested
             ? throw new OperationCanceledException(cancellationToken)
-            : throw new AggregateException(
+            : throw CreateRetriesExhaustedException(
                 $"Async function failed after {policy.TotalRetryAttempts} retry attempt(s)",
                 lastException);
     }
@@ -356,4 +356,13 @@ Valid Configuration: {{policy.IsValidConfiguration(out _)}}
         policy.ModifiedAt = DateTime.UtcNow;
         return policy;
     }
+
+    /// <summary>
+    /// Creates the exception thrown when all retry attempts have failed.
+    /// The inner exception is omitted when no attempt recorded one, which only happens when <c>MaxRetries</c> is negative.
+    /// </summary>
+    private static AggregateException CreateRetriesExhaustedException(string message, Exception? lastException) =>
+        lastException is null
+            ? new AggregateException(message)
+            : new AggregateException(message, lastException);
 }

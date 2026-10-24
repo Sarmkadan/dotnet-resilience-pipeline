@@ -256,6 +256,11 @@ public sealed class Throttle
     private long _throttledRequests;
     private readonly object _lockObj = new object();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Throttle"/> class.
+    /// </summary>
+    /// <param name="maxRequestsPerSecond">The sustained rate limit, in requests per second.</param>
+    /// <param name="burstSize">The maximum number of tokens that can accumulate for bursts.</param>
     public Throttle(int maxRequestsPerSecond, int burstSize = DefaultBurstSize)
     {
         _maxRate = maxRequestsPerSecond;

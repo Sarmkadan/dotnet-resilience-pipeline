@@ -29,6 +29,9 @@ public sealed class ErrorHandlingMiddleware
     /// </summary>
     public const int DefaultTopErrorsCount = 10;
 
+    /// <summary>
+    /// Maximum number of error contexts retained in memory.
+    /// </summary>
     public int MaxContexts { get; set; } = DefaultMaxContexts;
 
     /// <summary>
@@ -165,15 +168,49 @@ public sealed class ErrorHandlingMiddleware
 /// </summary>
 public sealed class ErrorContext
 {
+    /// <summary>
+    /// Unique identifier of this error occurrence.
+    /// </summary>
     public string Id { get; set; } = string.Empty;
+
+    /// <summary>
+    /// UTC time at which the error was handled.
+    /// </summary>
     public DateTime Timestamp { get; set; }
+
+    /// <summary>
+    /// Full name of the exception type.
+    /// </summary>
     public string ExceptionType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Message of the handled exception.
+    /// </summary>
     public string ExceptionMessage { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Name of the policy in which the error occurred.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Name of the operation in which the error occurred.
+    /// </summary>
     public string OperationName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether the error is classified as recoverable.
+    /// </summary>
     public bool IsRecoverable { get; set; }
+
+    /// <summary>
+    /// Suggested recovery action for the error.
+    /// </summary>
     public string RecoveryRecommendation { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Returns a one-line summary of the error: timestamp, exception type, message and policy.
+    /// </summary>
     public override string ToString()
     {
         return $"[{Timestamp:O}] {ExceptionType}: {ExceptionMessage} (Policy: {PolicyName})";
@@ -185,8 +222,19 @@ public sealed class ErrorContext
 /// </summary>
 public sealed class ErrorStatistics
 {
+    /// <summary>
+    /// Number of times this error type has occurred.
+    /// </summary>
     public int Count { get; set; }
+
+    /// <summary>
+    /// UTC time of the most recent occurrence of this error type.
+    /// </summary>
     public DateTime LastOccurrence { get; set; }
+
+    /// <summary>
+    /// Relative frequency of this error type, derived from <see cref="Count"/>.
+    /// </summary>
     public double Frequency => Count > 0 ? 100.0 / Count : 0;
 
     /// <summary>

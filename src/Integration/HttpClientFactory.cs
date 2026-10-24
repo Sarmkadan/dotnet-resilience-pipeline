@@ -22,6 +22,9 @@ public sealed class HttpClientFactory : IDisposable
     private readonly object _lockObj = new object();
     private bool _disposed;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HttpClientFactory"/> class.
+    /// </summary>
     public HttpClientFactory(ResiliencyPipelineService pipelineService)
     {
         _pipelineService = pipelineService ?? throw new ArgumentNullException(nameof(pipelineService));
@@ -263,13 +266,43 @@ public sealed class HttpClientFactory : IDisposable
 /// </summary>
 public sealed class ResilientHttpResponse
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether the request succeeded.
+    /// </summary>
     public bool Success { get; set; }
+
+    /// <summary>
+    /// Gets or sets the HTTP status code, if a response was received.
+    /// </summary>
     public System.Net.HttpStatusCode? StatusCode { get; set; }
+
+    /// <summary>
+    /// Gets or sets the response body as a string, if available.
+    /// </summary>
     public string? Content { get; set; }
+
+    /// <summary>
+    /// Gets or sets the response headers, if available.
+    /// </summary>
     public Dictionary<string, string>? Headers { get; set; }
+
+    /// <summary>
+    /// Gets or sets a message describing the outcome of the request.
+    /// </summary>
     public string? Message { get; set; }
+
+    /// <summary>
+    /// Gets or sets the exception raised while executing the request, if any.
+    /// </summary>
     public Exception? Exception { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC time at which the response was created.
+    /// </summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
+    /// <summary>
+    /// Returns a string representation of the response.
+    /// </summary>
     public override string ToString() => $"ResilientHttpResponse {{ Success = {Success}, Content = {Content}, Headers = {Headers}, Message = {Message}, Exception = {Exception}, Timestamp = {Timestamp} }}";
 }

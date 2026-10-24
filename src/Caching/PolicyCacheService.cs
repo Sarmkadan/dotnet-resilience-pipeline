@@ -19,6 +19,9 @@ public sealed class PolicyCacheService
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
     private readonly object _globalLockObj = new object();
 
+    /// <summary>
+    /// Gets or sets the time-to-live applied to entries stored without an explicit TTL.
+    /// </summary>
     public TimeSpan DefaultTtl { get; set; } = TimeSpan.FromMinutes(5);
 
     /// <summary>
@@ -28,6 +31,10 @@ public sealed class PolicyCacheService
     {
         return _locks.GetOrAdd(policyName, _ => new SemaphoreSlim(1, 1));
     }
+
+    /// <summary>
+    /// Gets or sets the maximum number of entries kept before the least recently used entry is evicted.
+    /// </summary>
     public int MaxCacheSize { get; set; } = 1000;
 
     /// <summary>
@@ -210,6 +217,9 @@ public sealed class PolicyCacheService
             _cache.TryRemove(lru.PolicyName, out _);
     }
 
+    /// <summary>
+    /// Returns a string representation of the cache service, including settings and one sample entry.
+    /// </summary>
     public override string ToString()
     {
         var firstEntry = _cache.FirstOrDefault();
@@ -230,14 +240,44 @@ public sealed class PolicyCacheService
 /// </summary>
 public sealed class CachedPolicy
 {
+    /// <summary>
+    /// Gets or sets the name of the cached policy, used as the cache key.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the cached policy configuration object.
+    /// </summary>
     public object Config { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the UTC time at which the entry was created.
+    /// </summary>
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC time after which the entry is considered expired.
+    /// </summary>
     public DateTime ExpiresAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC time at which the entry was last read through the cache.
+    /// </summary>
     public DateTime LastAccessTime { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of times the entry has been read through the cache.
+    /// </summary>
     public long AccessCount { get; set; }
 
+    /// <summary>
+    /// Gets a value indicating whether the entry has passed its expiration time.
+    /// </summary>
     public bool IsExpired => DateTime.UtcNow > ExpiresAt;
+
+    /// <summary>
+    /// Gets the time remaining until the entry expires; negative once it has expired.
+    /// </summary>
     public TimeSpan RemainingTtl => ExpiresAt - DateTime.UtcNow;
 }
 
@@ -246,10 +286,29 @@ public sealed class CachedPolicy
 /// </summary>
 public sealed class CacheStatistics
 {
+    /// <summary>
+    /// Gets or sets the total number of entries in the cache, including expired ones.
+    /// </summary>
     public int TotalEntries { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of entries that have not expired.
+    /// </summary>
     public int ValidEntries { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of entries that have expired but are still stored.
+    /// </summary>
     public int ExpiredEntries { get; set; }
+
+    /// <summary>
+    /// Gets or sets the hit rate, as a percentage of accesses across valid entries.
+    /// </summary>
     public double HitRate { get; set; }
+
+    /// <summary>
+    /// Gets or sets the average time-to-live of valid entries.
+    /// </summary>
     public TimeSpan AverageTtl { get; set; }
 
     /// <summary>

@@ -60,6 +60,9 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
     /// </summary>
     public long FailedExecutions { get; private set; }
 
+    /// <summary>
+    /// Initializes a new pipeline service with its own policy registry and execution services.
+    /// </summary>
     public ResiliencyPipelineService()
     {
         _policies = new Dictionary<string, ResiliencyPolicy>();
@@ -485,12 +488,43 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
 /// </summary>
 public sealed class PipelineStatistics
 {
+    /// <summary>
+    /// Identifier of the pipeline the statistics belong to.
+    /// </summary>
     public string PipelineId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// UTC time at which the pipeline was created.
+    /// </summary>
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Total executions performed by the pipeline.
+    /// </summary>
     public long TotalExecutions { get; set; }
+
+    /// <summary>
+    /// Successful executions performed by the pipeline.
+    /// </summary>
     public long SuccessfulExecutions { get; set; }
+
+    /// <summary>
+    /// Failed executions performed by the pipeline.
+    /// </summary>
     public long FailedExecutions { get; set; }
+
+    /// <summary>
+    /// Success rate as a percentage (0-100).
+    /// </summary>
     public double SuccessRate { get; set; }
+
+    /// <summary>
+    /// Number of policies registered with the pipeline.
+    /// </summary>
     public int PolicyCount { get; set; }
+
+    /// <summary>
+    /// Snapshots of the policies registered with the pipeline.
+    /// </summary>
     public List<PolicySnapshot> RegisteredPolicies { get; set; } = new();
 }

@@ -44,15 +44,15 @@ public static class HttpClientFactoryExtensions
         return response switch
         {
             { Success: true } => response.Content ?? string.Empty,
-            { StatusCode: var statusCode } when statusCode.HasValue => throw new HttpResponseException(
+            { StatusCode: var statusCode } when statusCode.HasValue => throw CreateResponseException(
                 $"GET request failed with status {(int)statusCode}: {response.Content}",
                 (int)statusCode,
-                response.Exception,
+                response,
                 clientName,
                 url),
-            _ => throw new HttpClientException(
+            _ => throw CreateClientException(
                 $"GET request failed: {response.Message}",
-                response.Exception,
+                response,
                 clientName,
                 url)
         };
@@ -72,7 +72,7 @@ public static class HttpClientFactoryExtensions
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="clientName"/> or <paramref name="url"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="clientName"/> or <paramref name="url"/> is empty or whitespace.</exception>
     /// <exception cref="HttpClientException">Thrown when client is not found or request fails.</exception>
-    /// <exception cref="JsonException">Thrown when response cannot be deserialized.</exception>
+    /// <exception cref="System.Text.Json.JsonException">Thrown when response cannot be deserialized.</exception>
     public static async Task<T> GetFromJsonAsync<T>(
         this HttpClientFactory factory,
         string clientName,
@@ -88,15 +88,15 @@ public static class HttpClientFactoryExtensions
         return response switch
         {
             { Success: true } => DeserializeResponse<T>(response, clientName, url),
-            { StatusCode: var statusCode } when statusCode.HasValue => throw new HttpResponseException(
+            { StatusCode: var statusCode } when statusCode.HasValue => throw CreateResponseException(
                 $"GET request failed with status {(int)statusCode}: {response.Content}",
                 (int)statusCode,
-                response.Exception,
+                response,
                 clientName,
                 url),
-            _ => throw new HttpClientException(
+            _ => throw CreateClientException(
                 $"GET request failed: {response.Message}",
-                response.Exception,
+                response,
                 clientName,
                 url)
         };
@@ -137,15 +137,15 @@ public static class HttpClientFactoryExtensions
         return response switch
         {
             { Success: true } => response.Content ?? string.Empty,
-            { StatusCode: var statusCode } when statusCode.HasValue => throw new HttpResponseException(
+            { StatusCode: var statusCode } when statusCode.HasValue => throw CreateResponseException(
                 $"POST request failed with status {(int)statusCode}: {response.Content}",
                 (int)statusCode,
-                response.Exception,
+                response,
                 clientName,
                 url),
-            _ => throw new HttpClientException(
+            _ => throw CreateClientException(
                 $"POST request failed: {response.Message}",
-                response.Exception,
+                response,
                 clientName,
                 url)
         };
@@ -167,7 +167,7 @@ public static class HttpClientFactoryExtensions
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="clientName"/>, <paramref name="url"/>, or <paramref name="request"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="clientName"/> or <paramref name="url"/> is empty or whitespace.</exception>
     /// <exception cref="HttpClientException">Thrown when client is not found or request fails.</exception>
-    /// <exception cref="JsonException">Thrown when response cannot be deserialized.</exception>
+    /// <exception cref="System.Text.Json.JsonException">Thrown when response cannot be deserialized.</exception>
     public static async Task<TResponse> PostAsJsonAndGetAsync<TRequest, TResponse>(
         this HttpClientFactory factory,
         string clientName,
@@ -188,15 +188,15 @@ public static class HttpClientFactoryExtensions
         return response switch
         {
             { Success: true } => DeserializeResponse<TResponse>(response, clientName, url),
-            { StatusCode: var statusCode } when statusCode.HasValue => throw new HttpResponseException(
+            { StatusCode: var statusCode } when statusCode.HasValue => throw CreateResponseException(
                 $"POST request failed with status {(int)statusCode}: {response.Content}",
                 (int)statusCode,
-                response.Exception,
+                response,
                 clientName,
                 url),
-            _ => throw new HttpClientException(
+            _ => throw CreateClientException(
                 $"POST request failed: {response.Message}",
-                response.Exception,
+                response,
                 clientName,
                 url)
         };
@@ -248,6 +248,35 @@ public static class HttpClientFactoryExtensions
         return response.StatusCode.HasValue
             ? (HttpStatusCode)response.StatusCode.Value
             : HttpStatusCode.InternalServerError;
+    }
+
+    /// <summary>
+    /// Builds an <see cref="HttpResponseException"/>, attaching the response's exception as the inner exception when present.
+    /// </summary>
+    private static HttpResponseException CreateResponseException(
+        string message,
+        int statusCode,
+        ResilientHttpResponse response,
+        string clientName,
+        string url)
+    {
+        return response.Exception is null
+            ? new HttpResponseException(message, statusCode, clientName, url)
+            : new HttpResponseException(message, statusCode, response.Exception, clientName, url);
+    }
+
+    /// <summary>
+    /// Builds an <see cref="HttpClientException"/>, attaching the response's exception as the inner exception when present.
+    /// </summary>
+    private static HttpClientException CreateClientException(
+        string message,
+        ResilientHttpResponse response,
+        string clientName,
+        string url)
+    {
+        return response.Exception is null
+            ? new HttpClientException(message, clientName, url)
+            : new HttpClientException(message, response.Exception, clientName, url);
     }
 
     private static T DeserializeResponse<T>(

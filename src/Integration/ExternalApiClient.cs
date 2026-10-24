@@ -21,6 +21,9 @@ public sealed class ExternalApiClient
     private readonly ResiliencyPipelineService _pipelineService;
     private readonly Dictionary<string, ApiConfiguration> _apiConfigs = new();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ExternalApiClient"/> class.
+    /// </summary>
     public ExternalApiClient(HttpClientFactory httpClientFactory, ResiliencyPipelineService pipelineService)
     {
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
@@ -309,14 +312,44 @@ public sealed class ExternalApiClient
 /// </summary>
 public sealed class ApiConfiguration
 {
+    /// <summary>
+    /// Gets or sets the base URL that request paths are resolved against.
+    /// </summary>
     public string BaseUrl { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the API key sent in the <c>X-API-Key</c> header, if any.
+    /// </summary>
     public string? ApiKey { get; set; }
+
+    /// <summary>
+    /// Gets or sets the bearer token sent in the <c>Authorization</c> header, if any.
+    /// </summary>
     public string? BearerToken { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timeout applied to each request. The default is 30 seconds.
+    /// </summary>
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Gets or sets headers that are added to every request.
+    /// </summary>
     public Dictionary<string, string> DefaultHeaders { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the maximum number of retry attempts for a failed request. The default is 3.
+    /// </summary>
     public int MaxRetries { get; set; } = 3;
+
+    /// <summary>
+    /// Gets or sets the delay between retry attempts. The default is 100 milliseconds.
+    /// </summary>
     public TimeSpan RetryDelay { get; set; } = TimeSpan.FromMilliseconds(100);
 
+    /// <summary>
+    /// Returns a string representation of the API configuration.
+    /// </summary>
     public override string ToString() => $"ApiConfiguration {{ BaseUrl = {BaseUrl}, ApiKey = {ApiKey}, BearerToken = {BearerToken}, Timeout = {Timeout}, DefaultHeaders = {DefaultHeaders}, MaxRetries = {MaxRetries} }}";
 }
 
@@ -325,9 +358,24 @@ public sealed class ApiConfiguration
 /// </summary>
 public sealed class ApiResponse<T>
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether the call succeeded.
+    /// </summary>
     public bool Success { get; set; }
+
+    /// <summary>
+    /// Gets or sets the deserialized response body, if any.
+    /// </summary>
     public T? Data { get; set; }
+
+    /// <summary>
+    /// Gets or sets an informational or error message describing the outcome.
+    /// </summary>
     public string? Message { get; set; }
+
+    /// <summary>
+    /// Gets or sets the response headers, if available.
+    /// </summary>
     public Dictionary<string, string>? Headers { get; set; }
 
     /// <summary>

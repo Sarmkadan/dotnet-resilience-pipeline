@@ -16,8 +16,16 @@ namespace DotNetResiliencePipeline.Integration;
 /// </summary>
 public sealed class WebhookManager
 {
+    /// <summary>
+    /// Default maximum number of entries kept in the overall delivery history.
+    /// </summary>
     public const int DefaultMaxHistoryEntries = 1000;
+
+    /// <summary>
+    /// Default maximum number of deliveries returned by <see cref="GetDeliveryHistory"/>.
+    /// </summary>
     public const int DefaultDeliveryHistoryLimit = 100;
+
     private const double PercentageMultiplier = 100.0;
     private static readonly TimeSpan DeliveryTimeout = TimeSpan.FromSeconds(10);
 
@@ -26,6 +34,9 @@ public sealed class WebhookManager
     private readonly object _lockObj = new object();
     private readonly HttpMessageHandler? _messageHandler;
 
+    /// <summary>
+    /// Gets or sets the maximum number of entries kept in the delivery history. The default is <see cref="DefaultMaxHistoryEntries"/>.
+    /// </summary>
     public int MaxHistoryEntries { get; set; } = DefaultMaxHistoryEntries;
 
     /// <summary>
@@ -311,11 +322,34 @@ public sealed class WebhookManager
 /// </summary>
 public sealed class WebhookSubscription
 {
+    /// <summary>
+    /// Gets or sets the unique identifier of the subscription.
+    /// </summary>
     public string Id { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the URL that webhook payloads are posted to.
+    /// </summary>
     public string Url { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the event types this subscription receives.
+    /// </summary>
     public List<string> Events { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets additional headers sent with each delivery.
+    /// </summary>
     public Dictionary<string, string> CustomHeaders { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the UTC time at which the subscription was created.
+    /// </summary>
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the subscription is active and receives events.
+    /// </summary>
     public bool IsActive { get; set; }
 }
 
@@ -324,14 +358,49 @@ public sealed class WebhookSubscription
 /// </summary>
 public sealed class WebhookDelivery
 {
+    /// <summary>
+    /// Gets or sets the unique identifier of the delivery.
+    /// </summary>
     public string Id { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the identifier of the subscription this delivery belongs to.
+    /// </summary>
     public string WebhookId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the event type that triggered the delivery.
+    /// </summary>
     public string EventType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the URL the delivery was sent to.
+    /// </summary>
     public string Url { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the UTC time of the delivery attempt.
+    /// </summary>
     public DateTime Timestamp { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the delivery succeeded.
+    /// </summary>
     public bool Success { get; set; }
+
+    /// <summary>
+    /// Gets or sets the HTTP status code returned by the endpoint, if a response was received.
+    /// </summary>
     public System.Net.HttpStatusCode? StatusCode { get; set; }
+
+    /// <summary>
+    /// Gets or sets the error message for a failed delivery, if any.
+    /// </summary>
     public string? ErrorMessage { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of attempts made to deliver the payload.
+    /// </summary>
     public int AttemptCount { get; set; }
 }
 
@@ -340,9 +409,28 @@ public sealed class WebhookDelivery
 /// </summary>
 public sealed class WebhookStatistics
 {
+    /// <summary>
+    /// Gets or sets the total number of delivery attempts recorded.
+    /// </summary>
     public int TotalDeliveries { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of deliveries that succeeded.
+    /// </summary>
     public int SuccessfulDeliveries { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of deliveries that failed.
+    /// </summary>
     public int FailedDeliveries { get; set; }
+
+    /// <summary>
+    /// Gets or sets the percentage of deliveries that succeeded (0 to 100).
+    /// </summary>
     public double SuccessRate { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of currently active subscriptions.
+    /// </summary>
     public int ActiveSubscriptions { get; set; }
 }

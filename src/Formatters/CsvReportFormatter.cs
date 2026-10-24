@@ -207,8 +207,23 @@ public sealed class CsvReportFormatter
 /// </summary>
 public sealed class ExecutionRecord
 {
+    /// <summary>
+    /// Gets or sets the UTC time at which the execution occurred.
+    /// </summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Gets or sets the name of the policy that was executed.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the execution succeeded.
+    /// </summary>
     public bool IsSuccess { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total execution time, in milliseconds.
+    /// </summary>
     public long ExecutionTimeMs { get; set; }
 }

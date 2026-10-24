@@ -141,15 +141,54 @@ public abstract class ResiliencyPolicy
 /// </summary>
 public sealed class PolicySnapshot
 {
+    /// <summary>
+    /// Identifier of the policy at the time of the snapshot.
+    /// </summary>
     public string PolicyId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Friendly name of the policy.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Name of the policy's concrete type (e.g. <c>RetryPolicy</c>).
+    /// </summary>
     public string PolicyType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether the policy was enabled when the snapshot was taken.
+    /// </summary>
     public bool IsEnabled { get; set; }
+
+    /// <summary>
+    /// Total executions tracked by the policy.
+    /// </summary>
     public long TotalExecutions { get; set; }
+
+    /// <summary>
+    /// Total successful executions tracked by the policy.
+    /// </summary>
     public long SuccessfulExecutions { get; set; }
+
+    /// <summary>
+    /// Total failed executions tracked by the policy.
+    /// </summary>
     public long FailedExecutions { get; set; }
+
+    /// <summary>
+    /// Success rate as a percentage (0-100).
+    /// </summary>
     public double SuccessRate { get; set; }
+
+    /// <summary>
+    /// UTC time at which the snapshot was taken.
+    /// </summary>
     public DateTime SnapshotTime { get; set; }
+
+    /// <summary>
+    /// Policy-specific metadata captured in the snapshot, or <see langword="null"/> if none.
+    /// </summary>
     public Dictionary<string, object>? Metadata { get; set; }
 
     /// <summary>

@@ -18,8 +18,15 @@ public sealed class ResiliencyLoggingMiddleware
     private readonly ResiliencyPipelineService _pipelineService;
     private List<LogEntry> _logs = new();
     private readonly object _lockObj = new object();
+    /// <summary>
+    /// Maximum number of log entries retained in memory.
+    /// </summary>
     public int MaxLogEntries { get; set; } = 1000;
 
+    /// <summary>
+    /// Initializes a new logging middleware that wraps the given pipeline service.
+    /// </summary>
+    /// <param name="pipelineService">The pipeline service whose executions are logged.</param>
     public ResiliencyLoggingMiddleware(ResiliencyPipelineService pipelineService)
     {
         _pipelineService = pipelineService;
@@ -132,15 +139,49 @@ public sealed class ResiliencyLoggingMiddleware
 /// </summary>
 public sealed class LogEntry
 {
+    /// <summary>
+    /// Unique identifier of this log entry.
+    /// </summary>
     public string Id { get; set; } = string.Empty;
+
+    /// <summary>
+    /// UTC time at which the operation was logged.
+    /// </summary>
     public DateTime Timestamp { get; set; }
+
+    /// <summary>
+    /// Name of the policy that executed the operation.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Name of the logged operation.
+    /// </summary>
     public string OperationName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether the operation succeeded.
+    /// </summary>
     public bool Success { get; set; }
+
+    /// <summary>
+    /// Execution duration in milliseconds.
+    /// </summary>
     public long DurationMs { get; set; }
+
+    /// <summary>
+    /// Exception type name if the operation failed, otherwise <see langword="null"/>.
+    /// </summary>
     public string? Exception { get; set; }
+
+    /// <summary>
+    /// Additional message describing the entry, if any.
+    /// </summary>
     public string? Message { get; set; }
 
+    /// <summary>
+    /// Returns a one-line summary of the entry: timestamp, outcome, policy, operation and duration.
+    /// </summary>
     public override string ToString()
     {
         var status = Success ? "✓" : "✗";
@@ -153,12 +194,39 @@ public sealed class LogEntry
 /// </summary>
 public sealed class LogSummary
 {
+    /// <summary>
+    /// Total number of log entries.
+    /// </summary>
     public int TotalEntries { get; set; }
+
+    /// <summary>
+    /// Number of successful executions among the entries.
+    /// </summary>
     public int SuccessfulExecutions { get; set; }
+
+    /// <summary>
+    /// Number of failed executions among the entries.
+    /// </summary>
     public int FailedExecutions { get; set; }
+
+    /// <summary>
+    /// Success rate as a percentage (0-100).
+    /// </summary>
     public double SuccessRate { get; set; }
+
+    /// <summary>
+    /// Average execution duration in milliseconds.
+    /// </summary>
     public double AverageDurationMs { get; set; }
+
+    /// <summary>
+    /// Timestamp of the oldest entry, or <see langword="null"/> if there are none.
+    /// </summary>
     public DateTime? OldestLogTime { get; set; }
+
+    /// <summary>
+    /// Timestamp of the newest entry, or <see langword="null"/> if there are none.
+    /// </summary>
     public DateTime? NewestLogTime { get; set; }
     /// <summary>
     /// Returns a string representation of the LogSummary.

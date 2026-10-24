@@ -26,6 +26,9 @@ public sealed class ResiliencyEventPublisher
     private long _timeouts;
     private long _fallbacksTriggered;
     private long _policyHealthChanged;
+    /// <summary>
+    /// Gets or sets the maximum number of events retained in the in-memory history.
+    /// </summary>
     public int MaxHistorySize { get; set; } = 1000;
 
     /// <summary>
@@ -253,8 +256,19 @@ public sealed class ResiliencyEventPublisher
 /// </summary>
 public abstract class ResiliencyEvent
 {
+    /// <summary>
+    /// Gets or sets the unique identifier of the event.
+    /// </summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();
+
+    /// <summary>
+    /// Gets or sets the UTC time at which the event was created.
+    /// </summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Gets or sets the name of the policy that produced the event.
+    /// </summary>
     public string SourcePolicy { get; set; } = string.Empty;
 }
 
@@ -263,8 +277,19 @@ public abstract class ResiliencyEvent
 /// </summary>
 public sealed class PolicyExecutedSuccessfullyEvent : ResiliencyEvent
 {
+    /// <summary>
+    /// Gets or sets the name of the policy that executed successfully.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the execution duration, in milliseconds.
+    /// </summary>
     public long DurationMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the attempt number on which the execution succeeded.
+    /// </summary>
     public int AttemptNumber { get; set; }
 }
 
@@ -273,9 +298,24 @@ public sealed class PolicyExecutedSuccessfullyEvent : ResiliencyEvent
 /// </summary>
 public sealed class PolicyExecutionFailedEvent : ResiliencyEvent
 {
+    /// <summary>
+    /// Gets or sets the name of the policy whose execution failed.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the full type name of the exception that caused the failure.
+    /// </summary>
     public string ExceptionType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the message of the exception that caused the failure.
+    /// </summary>
     public string ExceptionMessage { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the duration of the failed execution, in milliseconds.
+    /// </summary>
     public long DurationMs { get; set; }
 }
 
@@ -284,9 +324,24 @@ public sealed class PolicyExecutionFailedEvent : ResiliencyEvent
 /// </summary>
 public sealed class CircuitBreakerStateChangedEvent : ResiliencyEvent
 {
+    /// <summary>
+    /// Gets or sets the name of the circuit breaker policy.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the circuit state before the change.
+    /// </summary>
     public string PreviousState { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the circuit state after the change.
+    /// </summary>
     public string NewState { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the number of consecutive failures recorded at the time of the change.
+    /// </summary>
     public int ConsecutiveFailures { get; set; }
 
     /// <summary>
@@ -304,9 +359,24 @@ public sealed class CircuitBreakerStateChangedEvent : ResiliencyEvent
 /// </summary>
 public sealed class BulkheadRejectedEvent : ResiliencyEvent
 {
+    /// <summary>
+    /// Gets or sets the name of the bulkhead policy that rejected the request.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the number of executions active when the request was rejected.
+    /// </summary>
     public int ActiveExecutions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of concurrent executions allowed.
+    /// </summary>
     public int MaxCapacity { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of requests waiting in the queue when the request was rejected.
+    /// </summary>
     public int QueuedRequests { get; set; }
 }
 
@@ -315,8 +385,19 @@ public sealed class BulkheadRejectedEvent : ResiliencyEvent
 /// </summary>
 public sealed class TimeoutOccurredEvent : ResiliencyEvent
 {
+    /// <summary>
+    /// Gets or sets the name of the timeout policy that fired.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the configured timeout, in milliseconds.
+    /// </summary>
     public long TimeoutMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the actual duration of the operation, in milliseconds.
+    /// </summary>
     public long ActualDurationMs { get; set; }
 }
 
@@ -325,8 +406,19 @@ public sealed class TimeoutOccurredEvent : ResiliencyEvent
 /// </summary>
 public sealed class FallbackTriggeredEvent : ResiliencyEvent
 {
+    /// <summary>
+    /// Gets or sets the name of the fallback policy that was triggered.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the reason the fallback was triggered.
+    /// </summary>
     public string Reason { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the fallback produced a result successfully.
+    /// </summary>
     public bool FallbackSucceeded { get; set; }
 }
 
@@ -335,8 +427,23 @@ public sealed class FallbackTriggeredEvent : ResiliencyEvent
 /// </summary>
 public sealed class PolicyHealthChangedEvent : ResiliencyEvent
 {
+    /// <summary>
+    /// Gets or sets the name of the policy whose health changed.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the health status before the change.
+    /// </summary>
     public string PreviousHealth { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the health status after the change.
+    /// </summary>
     public string NewHealth { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the success rate, as a percentage, at the time of the change.
+    /// </summary>
     public double SuccessRate { get; set; }
 }

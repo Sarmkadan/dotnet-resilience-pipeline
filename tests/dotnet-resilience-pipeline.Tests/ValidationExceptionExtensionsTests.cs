@@ -25,7 +25,7 @@ public class ValidationExceptionExtensionsTests
 
     [Theory]
     [InlineData(null)]
-    public void HasErrorFor_NullFieldName_ThrowsArgumentNullException(string fieldName)
+    public void HasErrorFor_NullFieldName_ThrowsArgumentNullException(string? fieldName)
     {
         Assert.Throws<ArgumentNullException>(() => _exception.HasErrorFor(fieldName!));
     }
@@ -59,7 +59,7 @@ public class ValidationExceptionExtensionsTests
 
     [Theory]
     [InlineData(null)]
-    public void GetErrorMessage_NullFieldName_ThrowsArgumentNullException(string fieldName)
+    public void GetErrorMessage_NullFieldName_ThrowsArgumentNullException(string? fieldName)
     {
         Assert.Throws<ArgumentNullException>(() => _exception.GetErrorMessage(fieldName!));
     }

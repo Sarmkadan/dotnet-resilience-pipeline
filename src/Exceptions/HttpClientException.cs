@@ -47,6 +47,9 @@ public class HttpClientException : ResiliencyException
         RequestUrl = requestUrl;
     }
 
+    /// <summary>
+    /// Returns a string representation of the exception, including the client name and request URL.
+    /// </summary>
     public override string ToString()
     {
         return this switch
@@ -96,6 +99,9 @@ public sealed class InvalidHttpRequestException : HttpClientException
         HttpMethod = httpMethod;
     }
 
+    /// <summary>
+    /// Returns a string representation of the exception, including the HTTP method.
+    /// </summary>
     public override string ToString()
     {
         return base.ToString() + $" HttpMethod = {HttpMethod}";
@@ -139,6 +145,9 @@ public sealed class HttpResponseException : HttpClientException
         StatusCode = statusCode;
     }
 
+    /// <summary>
+    /// Returns a string representation of the exception, including the HTTP status code.
+    /// </summary>
     public override string ToString()
     {
         return base.ToString() + $" StatusCode = {StatusCode}";
@@ -182,6 +191,9 @@ public sealed class HttpTimeoutException : HttpClientException
         Timeout = timeout;
     }
 
+    /// <summary>
+    /// Returns a string representation of the exception, including the timeout duration.
+    /// </summary>
     public override string ToString()
     {
         return base.ToString() + $" Timeout = {Timeout}";

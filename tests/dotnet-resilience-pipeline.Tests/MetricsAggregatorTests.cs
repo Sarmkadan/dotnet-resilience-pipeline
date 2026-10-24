@@ -241,7 +241,7 @@ public sealed class MetricsAggregatorTests
     /// Verifies that concurrent recording from multiple threads doesn't corrupt the snapshots.
     /// </summary>
     [Fact]
-    public void RecordSnapshot_ConcurrentRecording_DoesNotCorruptData()
+    public async Task RecordSnapshot_ConcurrentRecording_DoesNotCorruptData()
     {
         var aggregator = new MetricsAggregator();
         var tasks = new Task[10];
@@ -260,7 +260,7 @@ public sealed class MetricsAggregatorTests
             });
         }
 
-        Task.WaitAll(tasks);
+        await Task.WhenAll(tasks);
 
         // Verify all snapshots were recorded
         var metrics = aggregator.GetAggregatedMetrics(TimeSpan.FromHours(1));
@@ -345,7 +345,7 @@ public sealed class MetricsAggregatorTests
     /// Verifies that GetLatencyPercentiles handles concurrent calls correctly.
     /// </summary>
     [Fact]
-    public void GetLatencyPercentiles_ConcurrentAccess_DoesNotThrow()
+    public async Task GetLatencyPercentiles_ConcurrentAccess_DoesNotThrow()
     {
         var aggregator = new MetricsAggregator();
 
@@ -368,6 +368,6 @@ public sealed class MetricsAggregatorTests
             });
         }
 
-        Task.WaitAll(tasks);
+        await Task.WhenAll(tasks);
     }
 }

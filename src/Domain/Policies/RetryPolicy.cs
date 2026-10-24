@@ -18,13 +18,35 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 [DebuggerDisplay("Retry(max={MaxRetries}, base={InitialDelay.TotalMilliseconds}ms, strategy={Strategy})")]
 public sealed class RetryPolicy : ResiliencyPolicy
 {
+    /// <summary>
+    /// Strategies for calculating the delay between retry attempts.
+    /// </summary>
     public enum BackoffStrategy
     {
+        /// <summary>
+        /// Every retry waits the same <see cref="InitialDelay"/>.
+        /// </summary>
         Fixed,
+
+        /// <summary>
+        /// Delay grows linearly with the attempt number.
+        /// </summary>
         Linear,
-        Exponential,            // Multiplies BaseDelay by BackoffMultiplier
-        ExponentialWithJitter, // AWS 'full jitter' algorithm
-        DecorrelatedJitter      // Decorrelated jitter algorithm: delay = min(maxDelay, random(baseDelay, previousDelay*3))
+
+        /// <summary>
+        /// Delay is multiplied by <see cref="BackoffMultiplier"/> on each attempt.
+        /// </summary>
+        Exponential,
+
+        /// <summary>
+        /// Exponential delay with AWS 'full jitter' (random between zero and the exponential value).
+        /// </summary>
+        ExponentialWithJitter,
+
+        /// <summary>
+        /// Decorrelated jitter: delay = min(maxDelay, random(baseDelay, previousDelay*3)).
+        /// </summary>
+        DecorrelatedJitter
     }
 
     /// <summary>
@@ -69,6 +91,9 @@ public sealed class RetryPolicy : ResiliencyPolicy
     /// </summary>
     public bool UseDecorrelatedJitter { get; set; }
 
+    /// <summary>
+    /// Exception types that trigger a retry. An empty list makes every exception retryable.
+    /// </summary>
     public List<Type> RetryableExceptions { get; set; } = new();
 
     /// <summary>

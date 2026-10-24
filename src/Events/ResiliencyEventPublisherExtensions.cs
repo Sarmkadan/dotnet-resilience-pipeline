@@ -11,6 +11,9 @@ using System.Threading.Tasks;
 
 namespace DotNetResiliencePipeline.Events;
 
+/// <summary>
+/// Extension methods for <see cref="ResiliencyEventPublisher"/> that add history-aware publishing, lookup, and reset helpers.
+/// </summary>
 public static class ResiliencyEventPublisherExtensions
 {
     /// <summary>

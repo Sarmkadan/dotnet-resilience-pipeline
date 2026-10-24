@@ -58,7 +58,7 @@ public sealed class AdaptiveTimeoutService
 
         // Log additional adaptive-specific information
         _logger.LogDebug(
-            "AdaptiveTimeout '{PolicyName}' completed in {{ElapsedMs}}ms (limit={{TimeoutMs}}ms)",
+            "AdaptiveTimeout '{PolicyName}' completed (limit={TimeoutMs}ms)",
             policy.Name, _timeoutService.GetTimeoutMilliseconds(policy));
 
         // Log end of execution

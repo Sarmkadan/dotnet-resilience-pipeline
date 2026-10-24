@@ -208,18 +208,59 @@ public static class CircuitBreakerDiagnostics
 /// </summary>
 public sealed class CircuitBreakerDiagnosticReport
 {
+    /// <summary>
+    /// Gets or sets the identifier of the diagnosed circuit breaker policy.
+    /// </summary>
     public string PolicyId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the name of the diagnosed circuit breaker policy.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the circuit state at the time of diagnosis.
+    /// </summary>
     public CircuitBreakerPolicy.CircuitState CurrentState { get; set; }
+
+    /// <summary>
+    /// Gets or sets the configured number of failures that opens the circuit.
+    /// </summary>
     public int FailureThreshold { get; set; }
+
+    /// <summary>
+    /// Gets or sets the configured duration the circuit remains open.
+    /// </summary>
     public TimeSpan OpenDuration { get; set; }
+
+    /// <summary>
+    /// Gets or sets the configured number of successes required in the half-open state.
+    /// </summary>
     public int SuccessThreshold { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC time at which the report was generated.
+    /// </summary>
     public DateTime GeneratedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the configuration or runtime issues detected for the circuit breaker.
+    /// </summary>
     public List<string> Issues { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the suggested actions for resolving the detected issues.
+    /// </summary>
     public List<string> Recommendations { get; set; } = new();
 
+    /// <summary>
+    /// Gets a value indicating whether any issues were detected.
+    /// </summary>
     public bool HasIssues => Issues.Count > 0;
 
+    /// <summary>
+    /// Returns a human-readable, multi-line diagnostic report.
+    /// </summary>
     public override string ToString()
     {
         var sb = new StringBuilder();
@@ -253,14 +294,44 @@ public sealed class CircuitBreakerDiagnosticReport
 /// </summary>
 public sealed class CircuitBreakerEffectiveness
 {
+    /// <summary>
+    /// Gets or sets the name of the analyzed circuit breaker policy.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the total number of executions guarded by the circuit breaker.
+    /// </summary>
     public long TotalExecutions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of executions that failed.
+    /// </summary>
     public long FailedExecutions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the failure rate, as a percentage.
+    /// </summary>
     public double FailureRate { get; set; }
+
+    /// <summary>
+    /// Gets or sets the circuit state at the time of analysis.
+    /// </summary>
     public CircuitBreakerPolicy.CircuitState CurrentState { get; set; }
+
+    /// <summary>
+    /// Gets or sets the qualitative effectiveness rating of the circuit breaker.
+    /// </summary>
     public string EffectivenessRating { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the circuit breaker is considered problematic.
+    /// </summary>
     public bool IsProblematic { get; set; }
 
+    /// <summary>
+    /// Returns a human-readable, multi-line effectiveness analysis.
+    /// </summary>
     public override string ToString()
     {
         var sb = new StringBuilder();
@@ -282,11 +353,29 @@ public sealed class CircuitBreakerEffectiveness
 /// </summary>
 public sealed class CircuitBreakerConfiguration
 {
+    /// <summary>
+    /// Gets or sets the name of the policy the suggestion applies to.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the suggested number of failures that opens the circuit.
+    /// </summary>
     public int SuggestedFailureThreshold { get; set; }
+
+    /// <summary>
+    /// Gets or sets the suggested duration the circuit remains open.
+    /// </summary>
     public TimeSpan SuggestedOpenDuration { get; set; }
+
+    /// <summary>
+    /// Gets or sets the suggested number of successes required in the half-open state.
+    /// </summary>
     public int SuggestedSuccessThreshold { get; set; }
 
+    /// <summary>
+    /// Returns a human-readable summary of the suggested configuration.
+    /// </summary>
     public override string ToString()
     {
         return $"Suggested Configuration for {PolicyName}:\n" +

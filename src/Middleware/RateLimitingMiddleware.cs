@@ -14,9 +14,6 @@ namespace DotNetResiliencePipeline.Middleware;
 /// Middleware for rate limiting API requests and policy executions.
 /// Implements token bucket algorithm with configurable limits per client/policy.
 /// </summary>
-[JsonSerializable(typeof(RateLimitingMiddleware))]
-[JsonSerializable(typeof(RateLimiter))]
-[JsonSerializable(typeof(RateLimitStatus))]
 public sealed class RateLimitingMiddleware
 {
     [JsonInclude]
@@ -137,7 +134,6 @@ public sealed class RateLimitingMiddleware
 /// <summary>
 /// Individual rate limiter using token bucket algorithm.
 /// </summary>
-[JsonSerializable(typeof(RateLimiter))]
 public sealed class RateLimiter
 {
     [JsonInclude]
@@ -264,16 +260,46 @@ public sealed class RateLimiter
 /// <summary>
 /// Rate limit status for a client.
 /// </summary>
-[JsonSerializable(typeof(RateLimitStatus))]
 public sealed class RateLimitStatus
 {
+    /// <summary>
+    /// Identifier of the client the status applies to.
+    /// </summary>
     public string? ClientId { get; set; }
+
+    /// <summary>
+    /// Configured requests allowed per second.
+    /// </summary>
     public int RequestsPerSecond { get; set; }
+
+    /// <summary>
+    /// Configured requests allowed per minute.
+    /// </summary>
     public int RequestsPerMinute { get; set; }
+
+    /// <summary>
+    /// Tokens still available in the current one-second window.
+    /// </summary>
     public int RemainingTokensPerSecond { get; set; }
+
+    /// <summary>
+    /// Tokens still available in the current one-minute window.
+    /// </summary>
     public int RemainingTokensPerMinute { get; set; }
+
+    /// <summary>
+    /// Time at which the one-second window resets.
+    /// </summary>
     public DateTime NextResetSecond { get; set; }
+
+    /// <summary>
+    /// Time at which the one-minute window resets.
+    /// </summary>
     public DateTime NextResetMinute { get; set; }
+
+    /// <summary>
+    /// Whether the client is currently rate limited (either window has no tokens left).
+    /// </summary>
     [JsonIgnore]
     public bool IsLimited => RemainingTokensPerSecond <= 0 || RemainingTokensPerMinute <= 0;
 

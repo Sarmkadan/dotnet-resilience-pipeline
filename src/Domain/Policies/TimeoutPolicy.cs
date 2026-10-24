@@ -38,6 +38,10 @@ public sealed class TimeoutPolicy : ResiliencyPolicy, ITimeoutStrategy
 
     private List<long> _executionTimes = new();
 
+    /// <summary>
+    /// Initializes a new timeout policy with the given name.
+    /// </summary>
+    /// <param name="name">The policy name.</param>
     public TimeoutPolicy(string name) : base(name)
     {
     }

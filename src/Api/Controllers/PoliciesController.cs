@@ -21,6 +21,11 @@ public sealed class PoliciesController
     private readonly ResiliencyPipelineService _pipelineService;
     private readonly PolicyRepository _policyRepository;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PoliciesController"/> class.
+    /// </summary>
+    /// <param name="pipelineService">The pipeline service used to execute and validate policies.</param>
+    /// <param name="policyRepository">The repository that stores policies.</param>
     public PoliciesController(ResiliencyPipelineService pipelineService, PolicyRepository policyRepository)
     {
         _pipelineService = pipelineService;
@@ -354,14 +359,49 @@ public sealed class PoliciesController
 /// </summary>
 public sealed class CreatePolicyRequest
 {
+    /// <summary>
+    /// Gets or sets the name of the policy to create.
+    /// </summary>
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the policy type, such as CircuitBreaker, Retry, Timeout, or Bulkhead.
+    /// </summary>
     public string Type { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the circuit breaker failure threshold.
+    /// </summary>
     public int? FailureThreshold { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of retry attempts.
+    /// </summary>
     public int? MaxRetries { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of concurrent executions for a bulkhead.
+    /// </summary>
     public int? MaxParallelization { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum queue length for a bulkhead.
+    /// </summary>
     public int? MaxQueueLength { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timeout, in seconds.
+    /// </summary>
     public int? TimeoutSeconds { get; set; }
+
+    /// <summary>
+    /// Gets or sets the duration, in seconds, that a circuit breaker remains open.
+    /// </summary>
     public int? OpenDurationSeconds { get; set; }
+
+    /// <summary>
+    /// Gets or sets the initial retry delay, in milliseconds.
+    /// </summary>
     public int? InitialDelayMs { get; set; }
 }
 
@@ -370,8 +410,19 @@ public sealed class CreatePolicyRequest
 /// </summary>
 public sealed class UpdatePolicyRequest
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether the policy is enabled.
+    /// </summary>
     public bool IsEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the optional circuit breaker configuration to apply.
+    /// </summary>
     public CircuitBreakerConfigDto? CircuitBreakerConfig { get; set; }
+
+    /// <summary>
+    /// Gets or sets the optional retry configuration to apply.
+    /// </summary>
     public RetryConfigDto? RetryConfig { get; set; }
 }
 
@@ -380,7 +431,14 @@ public sealed class UpdatePolicyRequest
 /// </summary>
 public sealed class CircuitBreakerConfigDto
 {
+    /// <summary>
+    /// Gets or sets the number of consecutive failures that opens the circuit.
+    /// </summary>
     public int FailureThreshold { get; set; }
+
+    /// <summary>
+    /// Gets or sets the duration, in seconds, the circuit remains open.
+    /// </summary>
     public int OpenDurationSeconds { get; set; }
 }
 
@@ -389,7 +447,14 @@ public sealed class CircuitBreakerConfigDto
 /// </summary>
 public sealed class RetryConfigDto
 {
+    /// <summary>
+    /// Gets or sets the maximum number of retry attempts.
+    /// </summary>
     public int MaxRetries { get; set; }
+
+    /// <summary>
+    /// Gets or sets the initial retry delay, in milliseconds.
+    /// </summary>
     public int InitialDelayMs { get; set; }
 }
 
@@ -398,11 +463,34 @@ public sealed class RetryConfigDto
 /// </summary>
 public sealed class ValidatePolicyRequest
 {
+    /// <summary>
+    /// Gets or sets the name of the policy to validate.
+    /// </summary>
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the policy type to validate.
+    /// </summary>
     public string Type { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the circuit breaker failure threshold to validate.
+    /// </summary>
     public int? FailureThreshold { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of retry attempts to validate.
+    /// </summary>
     public int? MaxRetries { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of concurrent executions to validate.
+    /// </summary>
     public int? MaxParallelization { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timeout, in seconds, to validate.
+    /// </summary>
     public int? TimeoutSeconds { get; set; }
 }
 
@@ -411,7 +499,14 @@ public sealed class ValidatePolicyRequest
 /// </summary>
 public sealed class ValidationResultDto
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether the policy configuration is valid.
+    /// </summary>
     public bool IsValid { get; set; }
+
+    /// <summary>
+    /// Gets or sets the validation error messages, if any.
+    /// </summary>
     public List<string> Errors { get; set; } = new();
 }
 
@@ -420,10 +515,29 @@ public sealed class ValidationResultDto
 /// </summary>
 public sealed class PolicyDto
 {
+    /// <summary>
+    /// Gets or sets the identifier of the policy.
+    /// </summary>
     public string Id { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the name of the policy.
+    /// </summary>
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the policy type name.
+    /// </summary>
     public string Type { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the policy is enabled.
+    /// </summary>
     public bool IsEnabled { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC time at which the policy was created.
+    /// </summary>
     public DateTime CreatedAt { get; set; }
 
     /// <summary>
@@ -438,9 +552,28 @@ public sealed class PolicyDto
 /// </summary>
 public sealed class ApiResponse<T>
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether the request succeeded.
+    /// </summary>
     public bool Success { get; set; }
+
+    /// <summary>
+    /// Gets or sets the response payload, if any.
+    /// </summary>
     public T? Data { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional human-readable message.
+    /// </summary>
     public string? Message { get; set; }
+
+    /// <summary>
+    /// Gets or sets the HTTP-style status code of the response.
+    /// </summary>
     public int StatusCode { get; set; } = 200;
+
+    /// <summary>
+    /// Gets or sets the UTC time at which the response was created.
+    /// </summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }

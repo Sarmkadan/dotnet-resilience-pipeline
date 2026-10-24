@@ -32,10 +32,10 @@ public class ResiliencyPolicyTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Constructor_WithInvalidName_ThrowsArgumentException(string invalidName)
+    public void Constructor_WithInvalidName_ThrowsArgumentException(string? invalidName)
     {
         // Act
-        Action act = () => new TestResiliencyPolicy(invalidName);
+        Action act = () => new TestResiliencyPolicy(invalidName!);
 
         // Assert
         act.Should().Throw<ArgumentException>()

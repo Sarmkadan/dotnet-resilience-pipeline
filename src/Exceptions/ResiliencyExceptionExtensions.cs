@@ -13,7 +13,6 @@ namespace DotNetResiliencePipeline.Exceptions;
 /// Extension methods for <see cref="ResiliencyException"/> and its derived types.
 /// Provides utility methods for formatting, analyzing, and working with resilience exceptions.
 /// </summary>
-/// <exception cref="ArgumentNullException">Thrown when the <paramref name="exception"/> parameter is <see langword="null"/>.</exception>
 public static class ResiliencyExceptionExtensions
 {
     /// <summary>

@@ -16,7 +16,6 @@ namespace DotNetResiliencePipeline.Workers;
 /// Extension methods for <see cref="HealthCheckWorker"/> providing additional functionality
 /// for health monitoring, logging, and integration scenarios.
 /// </summary>
-/// <exception cref="ArgumentNullException"><paramref name="worker"/> is <see langword="null"/></exception>
 public static class HealthCheckWorkerExtensions
 {
     /// <summary>
@@ -81,7 +80,7 @@ public static class HealthCheckWorkerExtensions
     }
 
     /// <summary>
-    /// Checks if the pipeline is in a degraded state (DegradedThreshold <= success rate < HealthyThreshold).
+    /// Checks if the pipeline is in a degraded state (DegradedThreshold &lt;= success rate &lt; HealthyThreshold).
     /// </summary>
     /// <param name="worker">The health check worker</param>
     /// <returns>True if the pipeline is degraded, false otherwise</returns>
@@ -94,7 +93,7 @@ public static class HealthCheckWorkerExtensions
     }
 
     /// <summary>
-    /// Checks if the pipeline is in an unhealthy state (success rate < DegradedThreshold).
+    /// Checks if the pipeline is in an unhealthy state (success rate &lt; DegradedThreshold).
     /// </summary>
     /// <param name="worker">The health check worker</param>
     /// <returns>True if the pipeline is unhealthy, false otherwise</returns>

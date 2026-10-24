@@ -24,10 +24,27 @@ public sealed partial class MetricsCollectorWorker
     private CancellationTokenSource? _cancellationTokenSource;
     private Task? _workerTask;
 
+    /// <summary>
+    /// Interval between metrics collections.
+    /// </summary>
     public TimeSpan CollectionInterval { get; set; } = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// Whether the collection loop is currently running.
+    /// </summary>
     public bool IsRunning { get; private set; }
+
+    /// <summary>
+    /// Number of collections performed since the worker started.
+    /// </summary>
     public int TotalCollections { get; private set; }
 
+    /// <summary>
+    /// Initializes a new metrics collector worker.
+    /// </summary>
+    /// <param name="pipelineService">The pipeline service whose metrics are collected.</param>
+    /// <param name="aggregator">The aggregator that receives the collected metrics.</param>
+    /// <param name="logger">Optional logger.</param>
     public MetricsCollectorWorker(
         ResiliencyPipelineService pipelineService,
         MetricsAggregator aggregator,
@@ -231,9 +248,24 @@ public sealed partial class MetricsCollectorWorker
 /// </summary>
 public sealed class MetricsCollectorStatus
 {
+    /// <summary>
+    /// Whether the collection loop is running.
+    /// </summary>
     public bool IsRunning { get; set; }
+
+    /// <summary>
+    /// Number of collections performed.
+    /// </summary>
     public int TotalCollections { get; set; }
+
+    /// <summary>
+    /// UTC time of the most recent collection.
+    /// </summary>
     public DateTime LastCollectionTime { get; set; }
+
+    /// <summary>
+    /// Metrics from the most recent collection.
+    /// </summary>
     public AggregatedMetrics RecentMetrics { get; set; } = new();
 
     /// <summary>

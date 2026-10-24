@@ -22,11 +22,25 @@ namespace DotNetResiliencePipeline.Domain.Policies;
 [DebuggerDisplay("CircuitBreaker(state={CurrentState}, failures={ConsecutiveFailures}/{FailureThreshold}, trips={CircuitBreakerTrips})")]
 public sealed class CircuitBreakerPolicy : ResiliencyPolicy
 {
+    /// <summary>
+    /// The states of the circuit breaker.
+    /// </summary>
     public enum CircuitState
     {
-        Closed,      // Normal operation
-        Open,        // Rejecting requests
-        HalfOpen     // Testing recovery
+        /// <summary>
+        /// Normal operation; requests are passed through.
+        /// </summary>
+        Closed,
+
+        /// <summary>
+        /// Requests are rejected without being executed.
+        /// </summary>
+        Open,
+
+        /// <summary>
+        /// Recovery testing; a limited number of requests are allowed through.
+        /// </summary>
+        HalfOpen
     }
 
     private CircuitState _state = CircuitState.Closed;
@@ -101,6 +115,10 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
         }
     }
 
+    /// <summary>
+    /// Initializes a new circuit breaker policy with the given name.
+    /// </summary>
+    /// <param name="name">The policy name.</param>
     public CircuitBreakerPolicy(string name) : base(name)
     {
         Metadata["CircuitState"] = CurrentState;
@@ -221,6 +239,9 @@ public sealed class CircuitBreakerPolicy : ResiliencyPolicy
         return baseSnapshot;
     }
 
+    /// <summary>
+    /// Returns a concise summary of the circuit state, failure count and trip count.
+    /// </summary>
     public override string ToString() =>
     $"CircuitBreaker(state={CurrentState}, failures={ConsecutiveFailures}/{FailureThreshold}, trips={CircuitBreakerTrips})";
 }

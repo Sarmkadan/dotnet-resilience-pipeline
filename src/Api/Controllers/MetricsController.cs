@@ -18,17 +18,29 @@ public sealed class MetricsController
 {
     private const double HealthySuccessRateThreshold = 95;
     private const double DegradedSuccessRateThreshold = 80;
+    /// <summary>
+    /// The default number of execution records returned when no limit is specified.
+    /// </summary>
     public const int DefaultHistoryLimit = 100;
 
     private readonly ResiliencyPipelineService _pipelineService;
     private readonly ExecutionHistoryRepository _historyRepository;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MetricsController"/> class.
+    /// </summary>
+    /// <param name="pipelineService">The pipeline service whose statistics are reported.</param>
+    /// <param name="historyRepository">The repository that stores execution history.</param>
     public MetricsController(ResiliencyPipelineService pipelineService, ExecutionHistoryRepository historyRepository)
     {
         _pipelineService = pipelineService;
         _historyRepository = historyRepository;
     }
 
+    /// <summary>
+    /// Returns a string representation of the controller, including current pipeline statistics.
+    /// </summary>
+    /// <returns>A summary string of the controller and its pipeline statistics.</returns>
     public override string ToString()
     {
         var stats = _pipelineService.GetStatistics();
@@ -287,13 +299,44 @@ public sealed class MetricsController
 /// </summary>
 public sealed class PipelineMetricsDto
 {
+    /// <summary>
+    /// Gets or sets the identifier of the pipeline.
+    /// </summary>
     public string PipelineId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the UTC time at which the pipeline was created.
+    /// </summary>
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total number of executions performed by the pipeline.
+    /// </summary>
     public long TotalExecutions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of successful executions.
+    /// </summary>
     public long SuccessfulExecutions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of failed executions.
+    /// </summary>
     public long FailedExecutions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the success rate, as a percentage.
+    /// </summary>
     public double SuccessRate { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of policies registered in the pipeline.
+    /// </summary>
     public int PolicyCount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the average execution time, in milliseconds.
+    /// </summary>
     public double AverageExecutionTimeMs { get; set; }
 }
 
@@ -302,13 +345,44 @@ public sealed class PipelineMetricsDto
 /// </summary>
 public sealed class PolicyMetricsDto
 {
+    /// <summary>
+    /// Gets or sets the identifier of the policy.
+    /// </summary>
     public string PolicyId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the name of the policy.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the policy type name.
+    /// </summary>
     public string Type { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the policy is enabled.
+    /// </summary>
     public bool IsEnabled { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total number of executions of the policy.
+    /// </summary>
     public long ExecutionCount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of successful executions of the policy.
+    /// </summary>
     public long SuccessCount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of failed executions of the policy.
+    /// </summary>
     public long FailureCount { get; set; }
+
+    /// <summary>
+    /// Gets the success rate of the policy, as a percentage.
+    /// </summary>
     public double SuccessRate => ExecutionCount > 0 ? (SuccessCount * 100.0) / ExecutionCount : 0;
 }
 
@@ -317,11 +391,34 @@ public sealed class PolicyMetricsDto
 /// </summary>
 public sealed class HealthStatusDto
 {
+    /// <summary>
+    /// Gets or sets the overall health status, such as Healthy, Degraded, or Unhealthy.
+    /// </summary>
     public string Status { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the success rate, as a percentage.
+    /// </summary>
     public double SuccessRate { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total number of executions evaluated.
+    /// </summary>
     public long TotalExecutions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of failed executions evaluated.
+    /// </summary>
     public long FailedExecutions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC time of the most recent health check.
+    /// </summary>
     public DateTime LastCheckTime { get; set; }
+
+    /// <summary>
+    /// Gets or sets additional diagnostic details keyed by name.
+    /// </summary>
     public Dictionary<string, string> Details { get; set; } = new();
 }
 
@@ -330,11 +427,34 @@ public sealed class HealthStatusDto
 /// </summary>
 public sealed class ExecutionRecordDto
 {
+    /// <summary>
+    /// Gets or sets the identifier of the execution record.
+    /// </summary>
     public string Id { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the name of the policy that was executed.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the execution succeeded.
+    /// </summary>
     public bool IsSuccess { get; set; }
+
+    /// <summary>
+    /// Gets or sets the execution time, in milliseconds.
+    /// </summary>
     public long ExecutionTimeMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC time at which the execution occurred.
+    /// </summary>
     public DateTime ExecutedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the error message for a failed execution, or <c>null</c> if it succeeded.
+    /// </summary>
     public string? ErrorMessage { get; set; }
 }
 
@@ -343,7 +463,18 @@ public sealed class ExecutionRecordDto
 /// </summary>
 public sealed class LatencyPercentilesDto
 {
+    /// <summary>
+    /// Gets or sets the 50th percentile latency, in milliseconds.
+    /// </summary>
     public double P50 { get; set; }
+
+    /// <summary>
+    /// Gets or sets the 90th percentile latency, in milliseconds.
+    /// </summary>
     public double P90 { get; set; }
+
+    /// <summary>
+    /// Gets or sets the 99th percentile latency, in milliseconds.
+    /// </summary>
     public double P99 { get; set; }
 }

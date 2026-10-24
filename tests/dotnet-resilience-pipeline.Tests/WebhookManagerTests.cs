@@ -555,13 +555,13 @@ public class WebhookManagerTests
     }
 
     [Fact]
-    public void GetDeliveryHistory_WithNullWebhookId_ReturnsAllDeliveries()
+    public async Task GetDeliveryHistory_WithNullWebhookId_ReturnsAllDeliveries()
     {
         // Arrange
         var url = "https://example.com/webhooks/test";
         var events = new[] { "test.event" };
         var webhookId = _manager.RegisterWebhook(url, events);
-        _manager.TriggerEventAsync("test.event", new { test = "data" }).Wait();
+        await _manager.TriggerEventAsync("test.event", new { test = "data" });
 
         // Act
         var history = _manager.GetDeliveryHistory(webhookId: null);

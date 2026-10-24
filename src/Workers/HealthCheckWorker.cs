@@ -26,11 +26,31 @@ public sealed class HealthCheckWorker
     private const double DefaultDegradedThreshold = 0.80;
     private const int PercentageMultiplier = 100;
 
+    /// <summary>
+    /// Interval between health checks.
+    /// </summary>
     public TimeSpan CheckInterval { get; set; } = TimeSpan.FromSeconds(DefaultCheckIntervalSeconds);
+
+    /// <summary>
+    /// Success rate (0-1) at or above which the pipeline is considered healthy.
+    /// </summary>
     public double HealthyThreshold { get; set; } = DefaultHealthyThreshold;
+
+    /// <summary>
+    /// Success rate (0-1) at or above which the pipeline is considered degraded rather than unhealthy.
+    /// </summary>
     public double DegradedThreshold { get; set; } = DefaultDegradedThreshold;
+
+    /// <summary>
+    /// Whether the health check loop is currently running.
+    /// </summary>
     public bool IsRunning { get; private set; }
 
+    /// <summary>
+    /// Initializes a new health check worker.
+    /// </summary>
+    /// <param name="pipelineService">The pipeline service to monitor.</param>
+    /// <param name="eventPublisher">The publisher used to emit health events.</param>
     public HealthCheckWorker(ResiliencyPipelineService pipelineService, ResiliencyEventPublisher eventPublisher)
     {
         _pipelineService = pipelineService;
@@ -221,11 +241,34 @@ public sealed class HealthCheckWorker
 /// </summary>
 public sealed class HealthCheckStatus
 {
+    /// <summary>
+    /// Whether the health check worker is running.
+    /// </summary>
     public bool IsRunning { get; set; }
+
+    /// <summary>
+    /// UTC time of the most recent health check.
+    /// </summary>
     public DateTime LastCheckTime { get; set; }
+
+    /// <summary>
+    /// Pipeline success rate as a percentage (0-100).
+    /// </summary>
     public double PipelineSuccessRate { get; set; }
+
+    /// <summary>
+    /// Overall health label: Healthy, Degraded or Unhealthy.
+    /// </summary>
     public string OverallHealth { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Number of policies registered with the pipeline.
+    /// </summary>
     public int TotalPolicies { get; set; }
+
+    /// <summary>
+    /// Total executions performed by the pipeline.
+    /// </summary>
     public long TotalExecutions { get; set; }
 }
 
@@ -234,18 +277,69 @@ public sealed class HealthCheckStatus
 /// </summary>
 public sealed class HealthReport
 {
+    /// <summary>
+    /// Whether the health check worker is running.
+    /// </summary>
     public bool IsRunning { get; set; }
+
+    /// <summary>
+    /// UTC time at which the report was generated.
+    /// </summary>
     public DateTime GeneratedAt { get; set; }
+
+    /// <summary>
+    /// Overall health label: Healthy, Degraded or Unhealthy.
+    /// </summary>
     public string OverallStatus { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Pipeline success rate as a percentage (0-100).
+    /// </summary>
     public double PipelineSuccessRate { get; set; }
+
+    /// <summary>
+    /// Total executions performed by the pipeline.
+    /// </summary>
     public long TotalExecutions { get; set; }
+
+    /// <summary>
+    /// Successful executions performed by the pipeline.
+    /// </summary>
     public long SuccessfulExecutions { get; set; }
+
+    /// <summary>
+    /// Failed executions performed by the pipeline.
+    /// </summary>
     public long FailedExecutions { get; set; }
+
+    /// <summary>
+    /// Number of policies registered with the pipeline.
+    /// </summary>
     public int TotalPolicies { get; set; }
+
+    /// <summary>
+    /// Number of policies classified as healthy.
+    /// </summary>
     public int HealthyPolicies { get; set; }
+
+    /// <summary>
+    /// Number of policies classified as degraded.
+    /// </summary>
     public int DegradedPolicies { get; set; }
+
+    /// <summary>
+    /// Number of policies classified as unhealthy.
+    /// </summary>
     public int UnhealthyPolicies { get; set; }
+
+    /// <summary>
+    /// Per-policy health status entries.
+    /// </summary>
     public List<PolicyHealthStatus> PolicyStatuses { get; set; } = new();
+
+    /// <summary>
+    /// Additional metrics attached to the report, keyed by name.
+    /// </summary>
     public Dictionary<string, object> AdditionalMetrics { get; set; } = new();
 }
 
@@ -254,14 +348,53 @@ public sealed class HealthReport
 /// </summary>
 public sealed class PolicyHealthStatus
 {
+    /// <summary>
+    /// Identifier of the policy.
+    /// </summary>
     public string PolicyId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Friendly name of the policy.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Name of the policy's concrete type.
+    /// </summary>
     public string PolicyType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether the policy is enabled.
+    /// </summary>
     public bool IsEnabled { get; set; }
+
+    /// <summary>
+    /// Health label for the policy: Healthy, Degraded or Unhealthy.
+    /// </summary>
     public string HealthStatus { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Success rate as a percentage (0-100).
+    /// </summary>
     public double SuccessRate { get; set; }
+
+    /// <summary>
+    /// Total executions tracked by the policy.
+    /// </summary>
     public long TotalExecutions { get; set; }
+
+    /// <summary>
+    /// Successful executions tracked by the policy.
+    /// </summary>
     public long SuccessfulExecutions { get; set; }
+
+    /// <summary>
+    /// Failed executions tracked by the policy.
+    /// </summary>
     public long FailedExecutions { get; set; }
+
+    /// <summary>
+    /// UTC time of the health check that produced this status.
+    /// </summary>
     public DateTime LastCheckTime { get; set; }
 }

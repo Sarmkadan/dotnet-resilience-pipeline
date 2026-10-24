@@ -17,6 +17,9 @@ public sealed class PolicyRepository : IRepository<ResiliencyPolicy>
     private readonly Dictionary<string, ResiliencyPolicy> _storage;
     private readonly object _lockObj = new object();
 
+    /// <summary>
+    /// Initializes a new, empty instance of the <see cref="PolicyRepository"/> class.
+    /// </summary>
     public PolicyRepository()
     {
         _storage = new Dictionary<string, ResiliencyPolicy>();

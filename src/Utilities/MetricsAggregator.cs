@@ -20,6 +20,10 @@ public sealed class MetricsAggregator
 
     private readonly List<MetricsSnapshot> _snapshots = new();
     private readonly object _lockObj = new object();
+
+    /// <summary>
+    /// Gets or sets the maximum number of snapshots retained; the oldest is dropped when exceeded.
+    /// </summary>
     public int MaxSnapshots { get; set; } = DefaultMaxSnapshots;
 
     /// <summary>
@@ -247,8 +251,19 @@ public sealed class MetricsAggregator
 /// </summary>
 public readonly struct LatencyPercentiles
 {
+    /// <summary>
+    /// Gets the 50th percentile (median) execution time, in milliseconds.
+    /// </summary>
     public double P50 { get; init; }
+
+    /// <summary>
+    /// Gets the 90th percentile execution time, in milliseconds.
+    /// </summary>
     public double P90 { get; init; }
+
+    /// <summary>
+    /// Gets the 99th percentile execution time, in milliseconds.
+    /// </summary>
     public double P99 { get; init; }
 }
 
@@ -257,12 +272,39 @@ public readonly struct LatencyPercentiles
 /// </summary>
 public sealed class MetricsSnapshot
 {
+    /// <summary>
+    /// Gets or sets the UTC time at which the snapshot was taken.
+    /// </summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Gets or sets the total number of executions at snapshot time.
+    /// </summary>
     public long TotalExecutions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of successful executions at snapshot time.
+    /// </summary>
     public long SuccessfulExecutions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of failed executions at snapshot time.
+    /// </summary>
     public long FailedExecutions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the success rate, as a percentage.
+    /// </summary>
     public double SuccessRate { get; set; }
+
+    /// <summary>
+    /// Gets or sets the average execution time, in milliseconds.
+    /// </summary>
     public double AverageExecutionTimeMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of policies active at snapshot time.
+    /// </summary>
     public int ActivePolicies { get; set; }
 }
 
@@ -271,13 +313,44 @@ public sealed class MetricsSnapshot
 /// </summary>
 public sealed class AggregatedMetrics
 {
+    /// <summary>
+    /// Gets or sets the time window covered by the aggregation.
+    /// </summary>
     public TimeSpan TimeWindow { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of snapshots included in the aggregation.
+    /// </summary>
     public int SnapshotCount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the average success rate, as a percentage.
+    /// </summary>
     public double AverageSuccessRate { get; set; }
+
+    /// <summary>
+    /// Gets or sets the average execution time, in milliseconds.
+    /// </summary>
     public double AverageExecutionTimeMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total number of executions in the window.
+    /// </summary>
     public long TotalExecutions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the highest execution count observed in a single snapshot.
+    /// </summary>
     public long PeakExecutions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the lowest success rate observed, as a percentage.
+    /// </summary>
     public double MinSuccessRate { get; set; }
+
+    /// <summary>
+    /// Gets or sets the highest success rate observed, as a percentage.
+    /// </summary>
     public double MaxSuccessRate { get; set; }
 }
 
@@ -286,13 +359,44 @@ public sealed class AggregatedMetrics
 /// </summary>
 public sealed class MetricsTrend
 {
+    /// <summary>
+    /// Gets or sets the name of the metric being analyzed.
+    /// </summary>
     public string MetricType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the time window covered by the trend.
+    /// </summary>
     public TimeSpan TimeWindow { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of data points used in the trend.
+    /// </summary>
     public int DataPoints { get; set; }
+
+    /// <summary>
+    /// Gets or sets the direction of the trend (for example, increasing or decreasing).
+    /// </summary>
     public string Direction { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the percentage change between the previous and current values.
+    /// </summary>
     public double ChangePercentage { get; set; }
+
+    /// <summary>
+    /// Gets or sets the current value of the metric.
+    /// </summary>
     public double Current { get; set; }
+
+    /// <summary>
+    /// Gets or sets the previous value of the metric.
+    /// </summary>
     public double Previous { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the change is considered anomalous.
+    /// </summary>
     public bool IsAnomaly { get; set; }
 }
 
@@ -301,12 +405,39 @@ public sealed class MetricsTrend
 /// </summary>
 public sealed class PeriodComparison
 {
+    /// <summary>
+    /// Gets or sets the length of the first period.
+    /// </summary>
     public TimeSpan Period1 { get; set; }
+
+    /// <summary>
+    /// Gets or sets the length of the second period.
+    /// </summary>
     public TimeSpan Period2 { get; set; }
+
+    /// <summary>
+    /// Gets or sets the aggregated metrics for the first period.
+    /// </summary>
     public AggregatedMetrics Metrics1 { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the aggregated metrics for the second period.
+    /// </summary>
     public AggregatedMetrics Metrics2 { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the difference in success rate between the two periods.
+    /// </summary>
     public double SuccessRateDifference { get; set; }
+
+    /// <summary>
+    /// Gets or sets the difference in average execution time between the two periods, in milliseconds.
+    /// </summary>
     public double ExecutionTimeDifference { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the second period shows improvement over the first.
+    /// </summary>
     public bool IsImproving { get; set; }
 }
 
@@ -315,10 +446,33 @@ public sealed class PeriodComparison
 /// </summary>
 public sealed class PerformanceReport
 {
+    /// <summary>
+    /// Gets or sets the time window covered by the report.
+    /// </summary>
     public TimeSpan TimeWindow { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC time at which the report was generated.
+    /// </summary>
     public DateTime GeneratedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the aggregated metrics for the report's time window.
+    /// </summary>
     public AggregatedMetrics AggregatedMetrics { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the trend analysis included in the report.
+    /// </summary>
     public MetricsTrend Trend { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the overall health status summary.
+    /// </summary>
     public string HealthStatus { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the suggested actions derived from the report.
+    /// </summary>
     public List<string> Recommendations { get; set; } = new();
 }

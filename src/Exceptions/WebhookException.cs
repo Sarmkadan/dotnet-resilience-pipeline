@@ -40,13 +40,16 @@ public class WebhookException : ResiliencyException
     /// <param name="innerException">The exception that is the cause of the current exception, or a null reference if no inner exception is specified.</param>
     /// <param name="webhookId">The webhook identifier.</param>
     /// <param name="webhookUrl">The webhook URL.</param>
-    public WebhookException(string message, Exception innerException, string? webhookId = null, string? webhookUrl = null)
+    public WebhookException(string message, Exception? innerException, string? webhookId = null, string? webhookUrl = null)
         : base(message, innerException)
     {
         WebhookId = webhookId;
         WebhookUrl = webhookUrl;
     }
 
+    /// <summary>
+    /// Returns a string representation of the exception, including the webhook identifier and URL.
+    /// </summary>
     public override string ToString() =>
         $"WebhookException {{ WebhookId = {WebhookId}, WebhookUrl = {WebhookUrl}, AttemptCount = {(this as WebhookDeliveryFailedException)?.AttemptCount}, EventType = {(this as WebhookDeliveryFailedException)?.EventType} }}";
 }
@@ -73,7 +76,7 @@ public sealed class WebhookDeliveryFailedException : WebhookException
     /// <param name="eventType">The event type that triggered the webhook delivery.</param>
     /// <param name="attemptCount">The number of delivery attempts made.</param>
     /// <param name="innerException">The exception that is the cause of the current exception.</param>
-    public WebhookDeliveryFailedException(string webhookId, string webhookUrl, string eventType, int attemptCount, Exception innerException)
+    public WebhookDeliveryFailedException(string webhookId, string webhookUrl, string eventType, int attemptCount, Exception? innerException)
         : base($"Webhook delivery failed after {attemptCount} attempt(s) for event '{eventType}' to {webhookUrl}",
               innerException, webhookId, webhookUrl)
     {

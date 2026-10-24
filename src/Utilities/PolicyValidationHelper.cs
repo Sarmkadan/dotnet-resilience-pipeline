@@ -162,14 +162,39 @@ public static class PolicyValidationHelper
 /// </summary>
 public sealed class ValidationReport
 {
+    /// <summary>
+    /// Gets or sets the identifier of the validated policy.
+    /// </summary>
     public string PolicyId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the name of the validated policy.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the validation errors. Any error makes the policy invalid.
+    /// </summary>
     public List<string> Errors { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the validation warnings, which do not make the policy invalid.
+    /// </summary>
     public List<string> Warnings { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the suggested improvements to the policy configuration.
+    /// </summary>
     public List<string> Suggestions { get; set; } = new();
 
+    /// <summary>
+    /// Gets a value indicating whether the policy passed validation (no errors).
+    /// </summary>
     public bool IsValid => Errors.Count == 0;
 
+    /// <summary>
+    /// Returns a human-readable, multi-line validation report.
+    /// </summary>
     public override string ToString()
     {
         var sb = new StringBuilder();

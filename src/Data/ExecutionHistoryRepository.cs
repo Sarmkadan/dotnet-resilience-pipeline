@@ -13,15 +13,54 @@ namespace DotNetResiliencePipeline.Data;
 /// </summary>
 public sealed class ExecutionRecord
 {
+    /// <summary>
+    /// Gets or sets the unique identifier of this execution. Defaults to a new GUID.
+    /// </summary>
     public string ExecutionId { get; set; } = Guid.NewGuid().ToString();
+
+    /// <summary>
+    /// Gets or sets the name of the policy that was executed.
+    /// </summary>
     public string PolicyName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the identifier of the policy that was executed.
+    /// </summary>
     public string PolicyId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the execution succeeded.
+    /// </summary>
     public bool IsSuccess { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total execution time, in milliseconds.
+    /// </summary>
     public long ExecutionTimeMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of attempts made during the execution.
+    /// </summary>
     public int AttemptCount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the error message if the execution failed; otherwise <c>null</c>.
+    /// </summary>
     public string? ErrorMessage { get; set; }
+
+    /// <summary>
+    /// Gets or sets the error type name if the execution failed; otherwise <c>null</c>.
+    /// </summary>
     public string? ErrorType { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC time at which the execution occurred. Defaults to the time of creation.
+    /// </summary>
     public DateTime ExecutedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Gets or sets additional key-value metadata associated with the execution.
+    /// </summary>
     public Dictionary<string, object> Metadata { get; set; } = new();
 }
 
@@ -34,12 +73,20 @@ public sealed class ExecutionHistoryRepository
     private readonly object _lockObj = new object();
     private readonly int _maxRetentionMinutes;
     private DateTime _lastCleanup = DateTime.UtcNow;
+
+    /// <summary>
+    /// The default number of minutes execution records are retained.
+    /// </summary>
     public const int DefaultRetentionMinutes = 60;
     private const int P50Rank = 50;
     private const int P90Rank = 90;
     private const int P99Rank = 99;
     private const double PercentageFactor = 100.0;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ExecutionHistoryRepository"/> class.
+    /// </summary>
+    /// <param name="maxRetentionMinutes">How long, in minutes, records are kept before cleanup removes them.</param>
     public ExecutionHistoryRepository(int maxRetentionMinutes = DefaultRetentionMinutes)
     {
         _history = new List<ExecutionRecord>();
@@ -313,7 +360,18 @@ public sealed class ExecutionHistoryRepository
 /// </summary>
 public readonly struct LatencyPercentiles
 {
+    /// <summary>
+    /// Gets the 50th percentile (median) execution time, in milliseconds.
+    /// </summary>
     public double P50 { get; init; }
+
+    /// <summary>
+    /// Gets the 90th percentile execution time, in milliseconds.
+    /// </summary>
     public double P90 { get; init; }
+
+    /// <summary>
+    /// Gets the 99th percentile execution time, in milliseconds.
+    /// </summary>
     public double P99 { get; init; }
 }

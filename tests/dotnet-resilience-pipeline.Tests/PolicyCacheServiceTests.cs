@@ -50,7 +50,7 @@ public class PolicyCacheServiceTests
     {
         var policyName = "policy-3";
         var config = new { Data = "X" };
-        CachedPolicy? loader(string name) => new CachedPolicy
+        CachedPolicy loader(string name) => new CachedPolicy
         {
             PolicyName = name,
             Config = config,

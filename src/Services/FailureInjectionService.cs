@@ -33,6 +33,9 @@ public sealed class FailureInjectionService
         _logger = logger ?? NullLogger<FailureInjectionService>.Instance;
     }
 
+    /// <summary>
+    /// Returns a concise summary of the service: total injections and number of rules.
+    /// </summary>
     public override string ToString() => $"FailureInjectionService {{ TotalInjections = {TotalInjections}, RulesCount = {_rules.Count} }}";
 
     // ─── rule management ──────────────────────────────────────────────────────
@@ -333,6 +336,9 @@ public sealed class InjectionRule
         ErrorMessage = "EndTime must be in HH:mm format (24-hour clock)")]
     public string? EndTime { get; set; }
 
+    /// <summary>
+    /// Returns a concise summary of the rule: key, type, enabled state, rate and exception details.
+    /// </summary>
     public override string ToString() => $"InjectionRule {{ Key = {Key}, Type = {Type}, IsEnabled = {IsEnabled}, InjectionRate = {InjectionRate}, ExceptionMessage = {ExceptionMessage}, ExceptionFactory = {ExceptionFactory} }}";
 }
 

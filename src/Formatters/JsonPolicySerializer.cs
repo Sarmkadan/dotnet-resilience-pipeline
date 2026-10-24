@@ -17,6 +17,9 @@ public sealed class JsonPolicySerializer
 {
     private readonly JsonSerializerOptions _options;
 
+    /// <summary>
+    /// Initializes a new serializer configured with indented, camel-cased JSON output that omits null values.
+    /// </summary>
     public JsonPolicySerializer()
     {
         _options = new JsonSerializerOptions
@@ -32,7 +35,7 @@ public sealed class JsonPolicySerializer
     /// </summary>
     public string Serialize(ResiliencyPolicy policy)
     {
-        ArgumentNullException.ThrowIfNull(nameof(policy));
+        ArgumentNullException.ThrowIfNull(policy);
         var dto = MapToDto(policy);
         return JsonSerializer.Serialize(dto, _options);
     }
@@ -42,7 +45,7 @@ public sealed class JsonPolicySerializer
     /// </summary>
     public string SerializeMultiple(IEnumerable<ResiliencyPolicy> policies)
     {
-        ArgumentNullException.ThrowIfNull(nameof(policies));
+        ArgumentNullException.ThrowIfNull(policies);
         var dtos = policies.Select(MapToDto).ToList();
         return JsonSerializer.Serialize(dtos, _options);
     }
@@ -52,7 +55,7 @@ public sealed class JsonPolicySerializer
     /// </summary>
     public ResiliencyPolicy? Deserialize(string json)
     {
-        ArgumentException.ThrowIfNullOrEmpty(nameof(json));
+        ArgumentException.ThrowIfNullOrEmpty(json);
         var dto = JsonSerializer.Deserialize<PolicyJson>(json, _options);
         return dto?.ToPolicy();
     }
@@ -62,7 +65,7 @@ public sealed class JsonPolicySerializer
     /// </summary>
     public string SerializeMetrics(object metrics)
     {
-        ArgumentNullException.ThrowIfNull(nameof(metrics));
+        ArgumentNullException.ThrowIfNull(metrics);
         return JsonSerializer.Serialize(metrics, _options);
     }
 
@@ -71,8 +74,8 @@ public sealed class JsonPolicySerializer
     /// </summary>
     public async Task ExportToFileAsync(List<ResiliencyPolicy> policies, string filePath)
     {
-        ArgumentNullException.ThrowIfNull(nameof(policies));
-        ArgumentException.ThrowIfNullOrEmpty(nameof(filePath));
+        ArgumentNullException.ThrowIfNull(policies);
+        ArgumentException.ThrowIfNullOrEmpty(filePath);
         var json = SerializeMultiple(policies);
         await File.WriteAllTextAsync(filePath, json);
     }
@@ -82,7 +85,7 @@ public sealed class JsonPolicySerializer
     /// </summary>
     public async Task<List<ResiliencyPolicy>> ImportFromFileAsync(string filePath)
     {
-        ArgumentException.ThrowIfNullOrEmpty(nameof(filePath));
+        ArgumentException.ThrowIfNullOrEmpty(filePath);
         var json = await File.ReadAllTextAsync(filePath);
         var dtos = JsonSerializer.Deserialize<List<PolicyJson>>(json, _options);
         return dtos?.Select(dto => dto.ToPolicy()).OfType<ResiliencyPolicy>().ToList() ?? new();
@@ -140,30 +143,93 @@ public sealed class PolicyJson
     private const int DefaultMaxParallelization = 10;
     private const int DefaultMaxQueueLength = 50;
 
+    /// <summary>
+    /// Gets or sets the policy identifier.
+    /// </summary>
     public string Id { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the policy name.
+    /// </summary>
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the policy type name, such as <c>CircuitBreakerPolicy</c> or <c>RetryPolicy</c>.
+    /// </summary>
     public string Type { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the policy is enabled.
+    /// </summary>
     public bool IsEnabled { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC creation timestamp of the policy.
+    /// </summary>
     public DateTime CreatedAt { get; set; }
 
     // CircuitBreaker
+
+    /// <summary>
+    /// Gets or sets the number of consecutive failures that opens the circuit breaker.
+    /// </summary>
     public int? FailureThreshold { get; set; }
+
+    /// <summary>
+    /// Gets or sets the duration, in seconds, the circuit stays open before a trial call.
+    /// </summary>
     public int? OpenDurationSeconds { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of successful trial calls required to close the circuit.
+    /// </summary>
     public int? SuccessThreshold { get; set; }
 
     // Retry
+
+    /// <summary>
+    /// Gets or sets the maximum number of retry attempts.
+    /// </summary>
     public int? MaxRetries { get; set; }
+
+    /// <summary>
+    /// Gets or sets the delay, in milliseconds, before the first retry.
+    /// </summary>
     public int? InitialDelayMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the name of the retry backoff strategy.
+    /// </summary>
     public string? Strategy { get; set; }
+
+    /// <summary>
+    /// Gets or sets the multiplier applied to the delay between successive retries.
+    /// </summary>
     public double? BackoffMultiplier { get; set; }
 
     // Timeout
+
+    /// <summary>
+    /// Gets or sets the operation timeout, in seconds.
+    /// </summary>
     public int? TimeoutSeconds { get; set; }
 
     // Bulkhead
+
+    /// <summary>
+    /// Gets or sets the maximum number of concurrent executions allowed.
+    /// </summary>
     public int? MaxParallelization { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of queued executions waiting for a slot.
+    /// </summary>
     public int? MaxQueueLength { get; set; }
 
+    /// <summary>
+    /// Converts this JSON representation into a concrete <see cref="ResiliencyPolicy"/>.
+    /// </summary>
+    /// <returns>The policy matching <see cref="Type"/>, or <c>null</c> if the type is not recognized.</returns>
     public ResiliencyPolicy? ToPolicy()
     {
         return Type switch

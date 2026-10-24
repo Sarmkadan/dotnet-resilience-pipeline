@@ -150,10 +150,25 @@ public sealed class CliCommandValidator
 /// </summary>
 public sealed class ValidationResult
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether the command passed validation.
+    /// </summary>
     public bool IsValid { get; set; }
+
+    /// <summary>
+    /// Gets or sets the validation errors that prevent the command from running.
+    /// </summary>
     public List<string> Errors { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the non-blocking validation warnings.
+    /// </summary>
     public List<string> Warnings { get; set; } = new();
 
+    /// <summary>
+    /// Returns a multi-line, human-readable summary of the validation outcome.
+    /// </summary>
+    /// <returns>A formatted string listing the errors when validation failed, or a pass message otherwise.</returns>
     public override string ToString()
     {
         var output = new System.Text.StringBuilder();
