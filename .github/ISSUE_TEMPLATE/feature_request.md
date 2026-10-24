@@ -1,19 +1,19 @@
 ---
-name: Feature Request
+name: Feature request
 about: Suggest a feature for dotnet-resilience-pipeline
-title: '[FEATURE] '
+title: '[Feature] '
 labels: enhancement
 assignees: ''
 ---
 
-## Problem Statement
-A clear description of the problem or limitation.
+## Problem
+A clear description of the problem or limitation you are running into.
 
-## Proposed Solution
-Describe the solution you'd like to see.
+## Proposed solution
+Describe the solution you would like to see.
 
-## Alternatives Considered
-List any alternative solutions or workarounds you've considered.
+## Alternatives considered
+List any alternative solutions or workarounds you have considered.
 
-## Additional Context
+## Additional context
 Any other context, mockups, or examples.
