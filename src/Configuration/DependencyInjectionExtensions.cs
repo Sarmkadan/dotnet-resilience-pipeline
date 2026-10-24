@@ -115,7 +115,14 @@ public static class DependencyInjectionExtensions
             var options = provider.GetRequiredService<IOptions<DotnetResiliencePipelineOptions>>().Value;
             var builder = new ResiliencyPipelineBuilder();
 
-            // Add policies from options
+            // Add policies from options, in canonical order (Fallback > Circuit Breaker > Retry > Bulkhead > Timeout)
+            builder.WithFallback("default-fallback", policy =>
+            {
+                var configured = options.Fallback.ToPolicy(policy.Name);
+                policy.FallbackOnAnyException = configured.FallbackOnAnyException;
+                policy.FallbackTimeout = configured.FallbackTimeout;
+            });
+
             builder.WithCircuitBreaker("default-circuit-breaker", policy =>
             {
                 var configured = options.CircuitBreaker.ToPolicy(policy.Name);
@@ -136,15 +143,8 @@ public static class DependencyInjectionExtensions
                 policy.JitterFactor = configured.JitterFactor;
             });
 
-            builder.WithTimeout("default-timeout", TimeSpan.FromSeconds(options.Timeout.TimeoutSeconds));
             builder.WithBulkhead("default-bulkhead", options.Bulkhead.MaxParallelization, options.Bulkhead.MaxQueueLength);
-
-            builder.WithFallback("default-fallback", policy =>
-            {
-                var configured = options.Fallback.ToPolicy(policy.Name);
-                policy.FallbackOnAnyException = configured.FallbackOnAnyException;
-                policy.FallbackTimeout = configured.FallbackTimeout;
-            });
+            builder.WithTimeout("default-timeout", TimeSpan.FromSeconds(options.Timeout.TimeoutSeconds));
 
             return builder.Build();
         });

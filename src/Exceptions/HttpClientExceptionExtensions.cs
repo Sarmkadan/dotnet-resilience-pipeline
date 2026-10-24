@@ -46,7 +46,7 @@ public static class HttpClientExceptionExtensions
 
         if (exception is HttpResponseException responseException)
         {
-            messageBuilder.Append(" | Status: ").Append((int)responseException.StatusCode).Append(" (").Append(responseException.StatusCode).Append(')');
+            messageBuilder.Append(" | Status: ").Append((int)responseException.StatusCode).Append(" (").Append((HttpStatusCode)responseException.StatusCode).Append(')');
         }
 
         if (exception is HttpTimeoutException timeoutException)

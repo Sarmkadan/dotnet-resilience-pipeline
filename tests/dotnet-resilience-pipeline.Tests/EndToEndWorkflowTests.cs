@@ -21,6 +21,11 @@ public sealed class EndToEndWorkflowTests
     public async Task ReadmeMainUseCase_RetryThenCircuitBreaker_FailsOverToFallback()
     {
         var pipeline = new ResiliencyPipelineBuilder()
+            .WithFallback("order-fallback", p =>
+            {
+                p.FallbackOnAnyException = true;
+                p.SetFallbackAction<string>(async ct => "fallback-order-data");
+            })
             .WithCircuitBreaker("order-cb", p =>
             {
                 p.FailureThreshold = 3;
@@ -32,11 +37,6 @@ public sealed class EndToEndWorkflowTests
                 p.InitialDelay = TimeSpan.FromMilliseconds(1);
                 p.Strategy = RetryPolicy.BackoffStrategy.Fixed;
                 p.UseJitter = false;
-            })
-            .WithFallback("order-fallback", p =>
-            {
-                p.FallbackOnAnyException = true;
-                p.SetFallbackAction<string>(async ct => "fallback-order-data");
             })
             .Build();
 
@@ -260,6 +260,7 @@ public sealed class EndToEndWorkflowTests
     public void PipelineBuilder_CircuitBreakerOnly_BuildsSuccessfully()
     {
         var pipeline = new ResiliencyPipelineBuilder()
+            .AllowCustomOrder()
             .WithCircuitBreaker("solo-cb", p => p.FailureThreshold = 10)
             .Build();
 
@@ -271,6 +272,7 @@ public sealed class EndToEndWorkflowTests
     public void PipelineBuilder_TimeoutWithCustomConfiguration_ConfiguresCorrectly()
     {
         var pipeline = new ResiliencyPipelineBuilder()
+            .AllowCustomOrder()
             .WithTimeout("custom-timeout", TimeSpan.FromSeconds(45))
             .Build();
 
@@ -283,6 +285,7 @@ public sealed class EndToEndWorkflowTests
     public void PipelineBuilder_BulkheadWithCustomLimits_ConfiguresCorrectly()
     {
         var pipeline = new ResiliencyPipelineBuilder()
+            .AllowCustomOrder()
             .WithBulkhead("custom-bulkhead", maxParallelization: 5, maxQueueLength: 25)
             .Build();
 

@@ -56,8 +56,8 @@ public class CommandOptionsValidationTests
         // Assert
         errors.Should().Contain("Policy name is required for policy operations");
         errors.Should().Contain("Invalid policy type: unknown");
-        errors.Should().Contain("MaxRetries cannot be negative");
-        errors.Should().Contain("FailureThreshold cannot be negative");
+        errors.Should().Contain("MaxRetries cannot be negative.");
+        errors.Should().Contain("FailureThreshold cannot be negative.");
         errors.Should().HaveCount(4);
     }
 

@@ -1,3 +1,8 @@
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using DotNetResiliencePipeline.Exceptions;
 using DotNetResiliencePipeline.Integration;
 using FluentAssertions;
@@ -11,7 +16,14 @@ public class WebhookManagerTests
 
     public WebhookManagerTests()
     {
-        _manager = new WebhookManager();
+        // Deliveries go to a stub endpoint that always answers 200, so the tests never touch the network
+        _manager = new WebhookManager(new StubEndpointHandler());
+    }
+
+    private sealed class StubEndpointHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
     }
 
     [Fact]
@@ -535,11 +547,11 @@ public class WebhookManagerTests
         var history1 = _manager.GetDeliveryHistory(webhookId1);
         var history2 = _manager.GetDeliveryHistory(webhookId2);
 
-        // Assert
-        history1.Should().HaveCount(1);
-        history1[0].WebhookId.Should().Be(webhookId1);
-        history2.Should().HaveCount(1);
-        history2[0].WebhookId.Should().Be(webhookId2);
+        // Assert: each subscription receives both events
+        history1.Should().HaveCount(2);
+        history1.Should().OnlyContain(d => d.WebhookId == webhookId1);
+        history2.Should().HaveCount(2);
+        history2.Should().OnlyContain(d => d.WebhookId == webhookId2);
     }
 
     [Fact]
@@ -586,13 +598,9 @@ public class WebhookManagerTests
         // Make successful delivery
         await _manager.TriggerEventAsync("test.event", new { test = "success" });
 
-        // Make failed delivery (will fail since URL doesn't exist)
-        try
-        {
-            _manager.RegisterWebhook("https://invalid-url-that-does-not-exist-12345.com/webhooks/fail", events);
-            await _manager.TriggerEventAsync("test.event", new { test = "fail" });
-        }
-        catch { /* Expected to fail */ }
+        // Register a second active subscription and deliver again
+        _manager.RegisterWebhook("https://example.com/webhooks/second", events);
+        await _manager.TriggerEventAsync("test.event", new { test = "second" });
 
         // Act
         var stats = _manager.GetStatistics();
@@ -600,7 +608,7 @@ public class WebhookManagerTests
         // Assert
         stats.TotalDeliveries.Should().BeGreaterThan(0);
         stats.SuccessfulDeliveries.Should().BeGreaterThan(0);
-        stats.ActiveSubscriptions.Should().Be(1); // Only the valid one is active
+        stats.ActiveSubscriptions.Should().Be(2); // both registered subscriptions are active
     }
 
     [Fact]

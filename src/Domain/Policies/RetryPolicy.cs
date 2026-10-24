@@ -80,7 +80,7 @@ public sealed class RetryPolicy : ResiliencyPolicy
     /// Initializes a new retry policy.
     /// </summary>
     /// <param name="name">Optional policy name. Defaults to <c>RetryPolicy</c>.</param>
-    public RetryPolicy(string? name = null) : base(name)
+    public RetryPolicy(string? name = null) : base(name ?? nameof(RetryPolicy))
     {
         RetryableExceptions = new List<Type> { typeof(TimeoutException), typeof(HttpRequestException) };
     }

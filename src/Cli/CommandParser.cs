@@ -20,9 +20,10 @@ public sealed class CommandParser
     /// Initializes a new instance of the CommandParser class with the specified command-line arguments.
     /// </summary>
     /// <param name="args">The command-line arguments to parse.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="args"/> is null.</exception>
     public CommandParser(string[] args)
     {
-        _args = args;
+        _args = args ?? throw new ArgumentNullException(nameof(args));
     }
 
     /// <summary>

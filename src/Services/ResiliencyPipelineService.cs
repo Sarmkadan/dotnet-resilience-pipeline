@@ -154,9 +154,9 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
             // Circuit breaker check
             if (circuitBreaker?.IsEnabled == true)
             {
-                var cbResult = await _circuitBreakerService.ExecuteAsync(
+                var cbResult = await _executeThroughCircuitBreakerAsync(
                     circuitBreaker,
-                    _ => _executeWithRetryTimeoutBulkhead(operation, cancellationToken, retry, timeout, bulkhead),
+                    ct => _executeWithRetryTimeoutBulkhead(operation, ct, retry, timeout, bulkhead),
                     cancellationToken);
 
                 stopwatch.Stop();
@@ -248,7 +248,7 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
         {
             if (circuitBreaker?.IsEnabled == true)
             {
-                await _circuitBreakerService.ExecuteAsync(
+                await _executeThroughCircuitBreakerAsync(
                     circuitBreaker,
                     async _ => { await operation(CancellationToken.None); return (object)null!; },
                     cancellationToken);
@@ -414,6 +414,32 @@ public sealed class ResiliencyPipelineService : IPipelineMetrics
             }
 
             return stages.Count == 0 ? "(empty pipeline)" : string.Join(" -> ", stages);
+        }
+    }
+
+    /// <summary>
+    /// Runs the operation through the circuit breaker. When the failure itself trips the breaker, the caller
+    /// receives a <see cref="CircuitBreakerOpenException"/> carrying that failure as its inner exception, so the
+    /// cause stays visible. Calls made while the breaker is already open are rejected by the breaker unchanged.
+    /// </summary>
+    private async Task<TResult> _executeThroughCircuitBreakerAsync<TResult>(
+        CircuitBreakerPolicy circuitBreaker,
+        Func<CancellationToken, Task<TResult>> operation,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _circuitBreakerService.ExecuteAsync(circuitBreaker, operation, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not ResiliencyException
+                                   && ex is not OperationCanceledException
+                                   && circuitBreaker.CurrentState == CircuitBreakerPolicy.CircuitState.Open)
+        {
+            throw new CircuitBreakerOpenException(
+                circuitBreaker.Name,
+                circuitBreaker.TimeUntilHalfOpen ?? TimeSpan.Zero,
+                circuitBreaker.ConsecutiveFailures,
+                ex);
         }
     }
 

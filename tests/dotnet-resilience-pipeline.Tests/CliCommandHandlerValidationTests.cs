@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using FluentAssertions;
-using Moq;
 using Xunit;
 using DotNetResiliencePipeline.Cli;
 using DotNetResiliencePipeline.Services;
@@ -12,20 +11,15 @@ namespace DotNetResiliencePipeline.Tests;
 public class CliCommandHandlerValidationTests
 {
     private static CliCommandHandler CreateHandler(
-        Mock<ResiliencyPipelineService>? pipelineMock = null,
-        Mock<PolicyRepository>? policyRepoMock = null,
-        Mock<ExecutionHistoryRepository>? historyRepoMock = null)
+        ResiliencyPipelineService? pipelineService = null,
+        PolicyRepository? policyRepository = null,
+        ExecutionHistoryRepository? historyRepository = null)
     {
-        // Use simple mocks if none supplied
-        pipelineMock ??= new Mock<ResiliencyPipelineService>();
-        policyRepoMock ??= new Mock<PolicyRepository>();
-        historyRepoMock ??= new Mock<ExecutionHistoryRepository>();
-
-        // The constructor requires non-null arguments; the optional circuit-breaker service can be omitted.
+        // Sealed services are used directly; they cannot be mocked. The optional circuit-breaker service can be omitted.
         return new CliCommandHandler(
-            pipelineMock.Object,
-            policyRepoMock.Object,
-            historyRepoMock.Object,
+            pipelineService ?? new ResiliencyPipelineService(),
+            policyRepository ?? new PolicyRepository(),
+            historyRepository ?? new ExecutionHistoryRepository(),
             null);
     }
 

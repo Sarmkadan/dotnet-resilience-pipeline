@@ -31,8 +31,12 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
     public static readonly TimeSpan DefaultMaxQueueWaitTimeout = TimeSpan.FromSeconds(30);
     private const double PercentageMultiplier = 100.0;
 
-    private readonly SemaphoreSlim _semaphore;
-    private readonly SemaphoreSlim _queueSemaphore;
+    // Semaphores are created lazily on first use so that the object initializer
+    // (e.g. new BulkheadPolicy("x") { MaxParallelization = 5 }) takes effect before capacity is fixed.
+    private SemaphoreSlim? _semaphore;
+    private SemaphoreSlim? _queueSemaphore;
+    private int _slotCapacity;
+    private int _queueCapacity;
     private readonly object _lockObj = new object();
 
     /// <summary>
@@ -59,7 +63,7 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
         {
             lock (_lockObj)
             {
-                return MaxParallelization - _semaphore.CurrentCount;
+                return _semaphore is null ? 0 : _slotCapacity - _semaphore.CurrentCount;
             }
         }
     }
@@ -73,7 +77,7 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
         {
             lock (_lockObj)
             {
-                return MaxQueueLength - _queueSemaphore.CurrentCount;
+                return _queueSemaphore is null ? 0 : _queueCapacity - _queueSemaphore.CurrentCount;
             }
         }
     }
@@ -104,26 +108,75 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
     /// Initializes a new bulkhead policy.
     /// </summary>
     /// <param name="name">Optional policy name. Defaults to <c>BulkheadPolicy</c>.</param>
-    public BulkheadPolicy(string? name = null) : base(name)
+    public BulkheadPolicy(string? name = null) : base(name ?? nameof(BulkheadPolicy))
     {
-        _semaphore = new SemaphoreSlim(MaxParallelization, MaxParallelization);
-        _queueSemaphore = new SemaphoreSlim(MaxQueueLength, MaxQueueLength);
+    }
+
+    /// <summary>
+    /// Returns the execution semaphore, creating it with the current <see cref="MaxParallelization"/> on first use.
+    /// Must be called while holding <c>_lockObj</c>.
+    /// </summary>
+    private SemaphoreSlim GetSlotSemaphoreLocked()
+    {
+        if (_semaphore is null)
+        {
+            // SemaphoreSlim requires a maximum of at least 1; the real limit is tracked by _slotCapacity
+            _slotCapacity = MaxParallelization;
+            _semaphore = new SemaphoreSlim(_slotCapacity, Math.Max(1, _slotCapacity));
+        }
+
+        return _semaphore;
+    }
+
+    /// <summary>
+    /// Returns the queue semaphore, creating it with the current <see cref="MaxQueueLength"/> on first use.
+    /// Must be called while holding <c>_lockObj</c>.
+    /// </summary>
+    private SemaphoreSlim GetQueueSemaphoreLocked()
+    {
+        if (_queueSemaphore is null)
+        {
+            // A zero-length queue is valid, but SemaphoreSlim requires a maximum of at least 1
+            _queueCapacity = MaxQueueLength;
+            _queueSemaphore = new SemaphoreSlim(_queueCapacity, Math.Max(1, _queueCapacity));
+        }
+
+        return _queueSemaphore;
+    }
+
+    /// <summary>
+    /// Attempts to take an execution slot without waiting and without touching the queue.
+    /// </summary>
+    private bool TryTakeSlot()
+    {
+        lock (_lockObj)
+        {
+            return GetSlotSemaphoreLocked().Wait(0);
+        }
     }
 
     /// <summary>
     /// Attempts to acquire a slot for execution without waiting.
-    /// Returns true if acquired immediately, false if bulkhead is full.
+    /// Returns true if acquired immediately. Otherwise the request is queued (if there is room)
+    /// and false is returned, or it is rejected (if the queue is also full) and <see cref="RejectedCount"/> is incremented.
     /// </summary>
     public bool TryAcquireSlot()
     {
-        if (_semaphore.CurrentCount > 0)
+        if (TryTakeSlot())
         {
-            lock (_lockObj)
+            return true;
+        }
+
+        lock (_lockObj)
+        {
+            if (GetQueueSemaphoreLocked().Wait(0))
             {
-                if (_semaphore.Wait(0))
-                {
-                    return true;
-                }
+                QueuedCount++;
+            }
+            else
+            {
+                RejectedCount++;
+                RecordFailure();
             }
         }
 
@@ -131,20 +184,23 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
     }
 
     /// <summary>
-    /// Attempts to acquire a slot for execution with a timeout.
+    /// Attempts to acquire a slot for execution, waiting up to <paramref name="timeout"/>.
     /// Returns true if acquired within timeout, false if timeout expires.
     /// </summary>
     public async Task<bool> TryAcquireSlotAsync(TimeSpan timeout)
     {
-        if (_semaphore.CurrentCount > 0)
+        if (TryTakeSlot())
         {
-            if (await _semaphore.WaitAsync(0).ConfigureAwait(false))
-            {
-                return true;
-            }
+            return true;
         }
 
-        return false;
+        SemaphoreSlim slots;
+        lock (_lockObj)
+        {
+            slots = GetSlotSemaphoreLocked();
+        }
+
+        return await slots.WaitAsync(timeout).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -154,13 +210,21 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
     public async Task AcquireSlotAsync(CancellationToken cancellationToken = default)
     {
         // First try to get a slot immediately
-        if (TryAcquireSlot())
+        if (TryTakeSlot())
         {
             return;
         }
 
-        // If all slots are taken, try to queue
-        if (await _queueSemaphore.WaitAsync(MaxQueueWaitTimeout, cancellationToken).ConfigureAwait(false))
+        SemaphoreSlim queue;
+        SemaphoreSlim slots;
+        lock (_lockObj)
+        {
+            queue = GetQueueSemaphoreLocked();
+            slots = GetSlotSemaphoreLocked();
+        }
+
+        // If all slots are taken, take a queue position. A full queue rejects immediately (no wait).
+        if (await queue.WaitAsync(0, cancellationToken).ConfigureAwait(false))
         {
             // Record queue entry time
             var queueEntryTime = DateTime.UtcNow;
@@ -168,7 +232,7 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
             try
             {
                 // Wait for a slot with timeout
-                if (await _semaphore.WaitAsync(MaxQueueWaitTimeout, cancellationToken).ConfigureAwait(false))
+                if (await slots.WaitAsync(MaxQueueWaitTimeout, cancellationToken).ConfigureAwait(false))
                 {
                     // Successfully acquired a slot
                     lock (_lockObj)
@@ -195,7 +259,7 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
             finally
             {
                 // Release the queue slot regardless of success or failure
-                _queueSemaphore.Release();
+                queue.Release();
             }
         }
 
@@ -219,19 +283,26 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
     /// </summary>
     public void ReleaseSlot()
     {
-        ArgumentNullException.ThrowIfNull(_semaphore, nameof(_semaphore));
+        lock (_lockObj)
+        {
+            if (ActiveExecutions == 0)
+            {
+                // Nothing is held, so there is nothing to release
+                return;
+            }
 
-        try
-        {
-            _semaphore.Release();
-        }
-        catch (SemaphoreFullException)
-        {
-            // Semaphore was already at max capacity, ignore
-        }
-        catch (ObjectDisposedException)
-        {
-            // Semaphore was disposed, ignore
+            try
+            {
+                _semaphore.Release();
+            }
+            catch (SemaphoreFullException)
+            {
+                // Semaphore was already at max capacity, ignore
+            }
+            catch (ObjectDisposedException)
+            {
+                // Semaphore was disposed, ignore
+            }
         }
     }
 
@@ -241,19 +312,26 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
     /// </summary>
     public void DequeueRequest()
     {
-        ArgumentNullException.ThrowIfNull(_queueSemaphore, nameof(_queueSemaphore));
+        lock (_lockObj)
+        {
+            if (QueuedRequests == 0)
+            {
+                // Nothing is queued, so there is nothing to dequeue
+                return;
+            }
 
-        try
-        {
-            _queueSemaphore.Release();
-        }
-        catch (SemaphoreFullException)
-        {
-            // Queue semaphore was already at max capacity, ignore
-        }
-        catch (ObjectDisposedException)
-        {
-            // Queue semaphore was disposed, ignore
+            try
+            {
+                _queueSemaphore.Release();
+            }
+            catch (SemaphoreFullException)
+            {
+                // Queue semaphore was already at max capacity, ignore
+            }
+            catch (ObjectDisposedException)
+            {
+                // Queue semaphore was disposed, ignore
+            }
         }
     }
 
@@ -335,6 +413,10 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
         lock (_lockObj)
         {
             base.ResetStatistics();
+            // Drop the semaphores so that slot and queue occupancy restart from zero.
+            // They are recreated lazily with the current configuration on next use.
+            _semaphore = null;
+            _queueSemaphore = null;
             _queueWaitTimes.Clear();
             AverageQueueTimeMs = 0;
             LongestQueueTimeMs = 0;

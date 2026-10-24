@@ -41,7 +41,11 @@ public static class CommandOptionsValidation
         }
 
         // Validate PolicyName
-        if (value.PolicyName is not null && string.IsNullOrWhiteSpace(value.PolicyName))
+        if (value.Command == "policy" && string.IsNullOrWhiteSpace(value.PolicyName))
+        {
+            errors.Add("Policy name is required for policy operations");
+        }
+        else if (value.PolicyName is not null && string.IsNullOrWhiteSpace(value.PolicyName))
         {
             errors.Add("PolicyName cannot be empty or whitespace.");
         }
@@ -53,7 +57,7 @@ public static class CommandOptionsValidation
         }
         else if (value.PolicyType is not null && !IsValidPolicyType(value.PolicyType))
         {
-            errors.Add($"Invalid policy type: '{value.PolicyType}'. Valid types are: circuitbreaker, retry, timeout, bulkhead, fallback.");
+            errors.Add($"Invalid policy type: {value.PolicyType}");
         }
 
         // Validate MaxRetries

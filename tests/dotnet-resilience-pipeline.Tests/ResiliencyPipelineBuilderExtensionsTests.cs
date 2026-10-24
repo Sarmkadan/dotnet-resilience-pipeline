@@ -24,7 +24,7 @@ public class ResiliencyPipelineBuilderExtensionsTests
     public void WithDefaultCircuitBreaker_ReturnsSameBuilderInstance()
     {
         // Arrange
-        var builder = new ResiliencyPipelineBuilder();
+        var builder = new ResiliencyPipelineBuilder().AllowCustomOrder();
 
         // Act
         var result = builder.WithDefaultCircuitBreaker();
@@ -50,7 +50,7 @@ public class ResiliencyPipelineBuilderExtensionsTests
     public void WithExponentialBackoffRetry_ReturnsSameBuilderInstance()
     {
         // Arrange
-        var builder = new ResiliencyPipelineBuilder();
+        var builder = new ResiliencyPipelineBuilder().AllowCustomOrder();
 
         // Act
         var result = builder.WithExponentialBackoffRetry();
@@ -76,7 +76,7 @@ public class ResiliencyPipelineBuilderExtensionsTests
     public void WithIsolatedBulkhead_ReturnsSameBuilderInstance()
     {
         // Arrange
-        var builder = new ResiliencyPipelineBuilder();
+        var builder = new ResiliencyPipelineBuilder().AllowCustomOrder();
 
         // Act
         var result = builder.WithIsolatedBulkhead();
@@ -102,7 +102,7 @@ public class ResiliencyPipelineBuilderExtensionsTests
     public void WithDefaultTimeout_ReturnsSameBuilderInstance()
     {
         // Arrange
-        var builder = new ResiliencyPipelineBuilder();
+        var builder = new ResiliencyPipelineBuilder().AllowCustomOrder();
 
         // Act
         var result = builder.WithDefaultTimeout();

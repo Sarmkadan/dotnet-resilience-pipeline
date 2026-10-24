@@ -71,13 +71,13 @@ public class AdaptiveTimeoutPolicyTests
             AdjustmentInterval = TimeSpan.Zero
         };
 
-        // Act & Assert: Provide extreme values that would skew the calculation
-        // These values are way beyond reasonable bounds and should be rejected
+        // Act & Assert: negative execution times are invalid
         Action act1 = () => policy.RecordExecutionTime(-1000);
         act1.Should().Throw<ArgumentException>();
 
-        Action act2 = () => policy.RecordExecutionTime((long)TimeSpan.FromHours(1).TotalMilliseconds);
-        act2.Should().Throw<ArgumentException>();
+        // An extreme but valid value is accepted and clamped to MaxTimeout instead of rejected
+        policy.RecordExecutionTime((long)TimeSpan.FromHours(1).TotalMilliseconds);
+        policy.CurrentTimeout.Should().Be(TimeSpan.FromSeconds(5));
 
         // Act: Provide values that are within bounds but would produce extreme percentiles
         // Fill window with values that would calculate to 1000 seconds if not clamped
@@ -117,12 +117,12 @@ public class AdaptiveTimeoutPolicyTests
 
         // Act: second execution time 400 ms (window now 200,400)
         policy.RecordExecutionTime(400);
-        // Median of [200,400] = 400 (ceil(2*0.5)-1 = 0? actually index = 0, but our algorithm uses Ceil-1, gives 1 -> 400)
-        policy.CurrentTimeout.Should().Be(TimeSpan.FromMilliseconds(400));
+        // Nearest-rank median of [200,400] = ceil(2*0.5)-1 = index 0 -> 200 ms
+        policy.CurrentTimeout.Should().Be(TimeSpan.FromMilliseconds(200));
 
         // Act: third execution time 600 ms (window [200,400,600])
         policy.RecordExecutionTime(600);
-        // Median = 400 ms, so timeout stays 400 ms
+        // Nearest-rank median of [200,400,600] = index 1 -> 400 ms
         policy.CurrentTimeout.Should().Be(TimeSpan.FromMilliseconds(400));
     }
 

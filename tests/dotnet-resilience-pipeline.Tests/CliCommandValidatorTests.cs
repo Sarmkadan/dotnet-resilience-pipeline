@@ -102,13 +102,13 @@ public class CliCommandValidatorTests
     }
 
     [Fact]
-    public void Validate_NullOptions_ThrowsNullReferenceException()
+    public void Validate_NullOptions_ThrowsArgumentNullException()
     {
         // Act
         Action act = () => _validator.Validate(null!);
 
         // Assert
-        act.Should().Throw<NullReferenceException>();
+        act.Should().Throw<ArgumentNullException>();
     }
 
     [Fact]

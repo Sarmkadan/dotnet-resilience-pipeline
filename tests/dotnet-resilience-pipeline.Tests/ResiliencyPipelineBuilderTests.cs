@@ -79,7 +79,7 @@ public class ResiliencyPipelineBuilderTests
 
         Assert.Throws<ArgumentException>(() => builder.WithCircuitBreaker(""));
         Assert.Throws<ArgumentException>(() => builder.WithCircuitBreaker("   "));
-        Assert.Throws<ArgumentException>(() => builder.WithCircuitBreaker(null!));
+        Assert.Throws<ArgumentNullException>(() => builder.WithCircuitBreaker(null!));
     }
 
     [Fact]

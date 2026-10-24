@@ -7,16 +7,13 @@ namespace DotNetResiliencePipeline.Tests
     public class HttpClientExceptionExtensionsTests
     {
         [Fact]
-        public void GetFullErrorMessage_ReturnsEmptyString_WhenExceptionIsNull()
+        public void GetFullErrorMessage_ThrowsArgumentNullException_WhenExceptionIsNull()
         {
             // Arrange
             var exception = null as HttpClientException;
 
-            // Act
-            var result = HttpClientExceptionExtensions.GetFullErrorMessage(exception);
-
-            // Assert
-            Assert.Empty(result);
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => HttpClientExceptionExtensions.GetFullErrorMessage(exception));
         }
 
         [Fact]

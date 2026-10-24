@@ -79,6 +79,11 @@ public sealed class CliCommandHandler
 
             return result;
         }
+        catch (ValidationException)
+        {
+            // Validation failures are reported to the caller, not converted into an execution failure result
+            throw;
+        }
         catch (Exception ex)
         {
             return new CommandExecutionResult

@@ -28,7 +28,7 @@ public sealed class DependencyInjectionExtensionsTests
 
         services.AddResiliencePipeline(builder => 
         {
-            builder.WithTimeout("test-timeout", TimeSpan.FromSeconds(1));
+            builder.AllowCustomOrder().WithTimeout("test-timeout", TimeSpan.FromSeconds(1));
         });
         
         var provider = services.BuildServiceProvider();
@@ -94,7 +94,7 @@ public sealed class DependencyInjectionExtensionsTests
 
         services.AddResiliencePipeline(config, (c, builder) => 
         {
-            builder.WithTimeout("test-timeout", TimeSpan.FromSeconds(1));
+            builder.AllowCustomOrder().WithTimeout("test-timeout", TimeSpan.FromSeconds(1));
         });
         
         var provider = services.BuildServiceProvider();

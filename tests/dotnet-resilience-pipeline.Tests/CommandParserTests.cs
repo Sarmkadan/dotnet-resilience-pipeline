@@ -44,7 +44,7 @@ public class CommandParserTests
         var options = parser.Parse();
 
         // Assert
-        options.Command.Should().BeNull();
+        options.Command.Should().BeEmpty();
         options.Subcommand.Should().BeNull();
     }
 

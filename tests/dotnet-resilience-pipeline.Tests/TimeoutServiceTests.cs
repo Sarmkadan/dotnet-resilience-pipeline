@@ -23,7 +23,7 @@ public sealed class TimeoutServiceTests
             ct => Task.FromResult("result"));
 
         await act.Should().ThrowAsync<ArgumentNullException>()
-            .WithParameterName("policy");
+            .WithParameterName("timeoutStrategy");
     }
 
     /// <summary>

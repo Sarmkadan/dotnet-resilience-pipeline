@@ -85,7 +85,7 @@ public sealed class FallbackPolicy : ResiliencyPolicy
     /// Initializes a new fallback policy.
     /// </summary>
     /// <param name="name">Optional policy name. Defaults to <c>FallbackPolicy</c>.</param>
-    public FallbackPolicy(string? name = null) : base(name)
+    public FallbackPolicy(string? name = null) : base(name ?? nameof(FallbackPolicy))
     {
     }
 

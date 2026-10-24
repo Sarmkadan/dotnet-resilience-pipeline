@@ -19,7 +19,7 @@ public static class CliCommandHandlerValidation
     public static IReadOnlyList<string> Validate(this CliCommandHandler? value)
     {
         ArgumentNullException.ThrowIfNull(value);
-        return Array.Empty<string>();
+        return new List<string>();
     }
 
     /// <summary>

@@ -39,7 +39,7 @@ public sealed class CliCommandValidator
 
     private void ValidateCommand(CommandOptions options)
     {
-        var validCommands = new[] { "policy", "pipeline", "metrics", "health", "help" };
+        var validCommands = new[] { "policy", "pipeline", "metrics", "health", "help", "dashboard", "inject", "export" };
 
         if (!validCommands.Contains(options.Command))
             _errors.Add($"Invalid command: {options.Command}");

@@ -91,8 +91,20 @@ public sealed class CircuitBreakerOpenException : ResiliencyException
     /// <param name="timeUntilRetry">The time span until the circuit breaker will transition to half-open state.</param>
     /// <param name="consecutiveFailures">The number of consecutive failures that caused the circuit breaker to open.</param>
     public CircuitBreakerOpenException(string policyName, TimeSpan timeUntilRetry, int consecutiveFailures)
+        : this(policyName, timeUntilRetry, consecutiveFailures, null)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CircuitBreakerOpenException"/> class with an inner exception.
+    /// </summary>
+    /// <param name="policyName">The name of the policy that threw this exception.</param>
+    /// <param name="timeUntilRetry">The time span until the circuit breaker will transition to half-open state.</param>
+    /// <param name="consecutiveFailures">The number of consecutive failures that caused the circuit breaker to open.</param>
+    /// <param name="innerException">The failure that tripped the circuit breaker, if any.</param>
+    public CircuitBreakerOpenException(string policyName, TimeSpan timeUntilRetry, int consecutiveFailures, Exception? innerException)
         : base($"Circuit breaker '{policyName}' is open. Retry after {timeUntilRetry.TotalSeconds:F2} seconds.",
-            policyName, "CircuitBreaker")
+            innerException, policyName, "CircuitBreaker")
     {
         TimeUntilRetry = timeUntilRetry;
         ConsecutiveFailures = consecutiveFailures;
@@ -272,7 +284,7 @@ public sealed class PipelineExecutionException : ResiliencyException
     /// <param name="executionId">The unique identifier for this pipeline execution.</param>
     /// <param name="appliedPolicies">The list of policies that were applied during execution.</param>
     public PipelineExecutionException(string message, string executionId, List<string>? appliedPolicies)
-        : base(message, appliedPolicies?.Any() == true ? appliedPolicies.First() : null, "Pipeline")
+        : base(message, "", "Pipeline")
     {
         ExecutionId = executionId;
         AppliedPolicies = appliedPolicies;
@@ -286,7 +298,7 @@ public sealed class PipelineExecutionException : ResiliencyException
     /// <param name="executionId">The unique identifier for this pipeline execution.</param>
     /// <param name="appliedPolicies">The list of policies that were applied during execution.</param>
     public PipelineExecutionException(string message, Exception innerException, string executionId, List<string>? appliedPolicies)
-        : base(message, innerException, appliedPolicies?.Any() == true ? appliedPolicies.First() : null, "Pipeline")
+        : base(message, innerException, "", "Pipeline")
     {
         ExecutionId = executionId;
         AppliedPolicies = appliedPolicies;

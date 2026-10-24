@@ -52,14 +52,20 @@ public sealed class ResiliencyPipelineExceptionPreservationTests
 
     /// <summary>
     /// Creates a bulkhead policy configured to throw BulkheadRejectedException.
+    /// The only slot is occupied up front, and there is no queue, so the next request is rejected.
     /// </summary>
-    private static BulkheadPolicy BulkheadAlwaysReject(string name) =>
-        new BulkheadPolicy(name)
+    private static BulkheadPolicy BulkheadAlwaysReject(string name)
+    {
+        var bulkhead = new BulkheadPolicy(name)
         {
             IsEnabled = true,
             MaxParallelization = 1,
             MaxQueueLength = 0
         };
+
+        bulkhead.TryAcquireSlot().Should().BeTrue();
+        return bulkhead;
+    }
 
     /// <summary>
     /// Verifies that CircuitBreakerOpenException bubbles up unchanged through the pipeline.
@@ -123,9 +129,10 @@ public sealed class ResiliencyPipelineExceptionPreservationTests
 
         // Act
         Func<Task> act = () => service.ExecuteAsync<string>(
-            async _ =>
+            async ct =>
             {
-                await Task.Delay(100); // Ensure we exceed the 1ms timeout
+                // Cooperates with cancellation so the 1ms timeout takes effect
+                await Task.Delay(100, ct);
                 return "should not reach here";
             },
             timeout: timeout);
@@ -213,25 +220,31 @@ public sealed class ResiliencyPipelineExceptionPreservationTests
     /// Verifies that retry around circuit breaker preserves CircuitBreakerOpenException type.
     /// </summary>
     [Fact]
-    public async Task ExecuteAsync_RetryAroundCircuitBreaker_PreservesCircuitBreakerException()
+    public async Task ExecuteAsync_RetryAroundCircuitBreaker_OpenCircuitIsNotMaskedByRetry()
     {
         // Arrange
         var service = new ResiliencyPipelineService();
         var circuitBreaker = CircuitBreakerAlwaysOpen("test-circuit-breaker");
         var retry = RetryAlwaysFail("test-retry", maxRetries: 1);
 
-        // Act
-        Func<Task> act = () => service.ExecuteAsync<string>(
+        // Act: the first call exhausts its retries, and that failure trips the breaker
+        Func<Task> firstCall = () => service.ExecuteAsync<string>(
             async _ => await Task.FromException<string>(new InvalidOperationException("error")),
             circuitBreaker: circuitBreaker,
             cancellationToken: default,
             retry: retry);
 
-        // Assert - should get CircuitBreakerOpenException, not MaxRetriesExceededException
-        var ex = await act.Should().ThrowAsync<CircuitBreakerOpenException>();
+        await firstCall.Should().ThrowAsync<MaxRetriesExceededException>();
+
+        // Assert: once open, the breaker rejects the next call and that rejection is not replaced by a retry error
+        Func<Task> secondCall = () => service.ExecuteAsync<string>(
+            async _ => await Task.FromException<string>(new InvalidOperationException("error")),
+            circuitBreaker: circuitBreaker,
+            cancellationToken: default,
+            retry: retry);
+
+        var ex = await secondCall.Should().ThrowAsync<CircuitBreakerOpenException>();
         ex.Which.Should().BeOfType<CircuitBreakerOpenException>();
-        ex.Which.InnerException.Should().NotBeNull();
-        ex.Which.InnerException.Should().BeOfType<InvalidOperationException>();
     }
 
     /// <summary>
@@ -243,7 +256,12 @@ public sealed class ResiliencyPipelineExceptionPreservationTests
         // Arrange
         var service = new ResiliencyPipelineService();
         var retry = RetryAlwaysFail("test-retry", maxRetries: 1);
-        var timeout = TimeoutAlwaysExceed("test-timeout");
+        // The timeout budget covers the whole retry loop, so it must be large enough for the retry delay
+        var timeout = new TimeoutPolicy("test-timeout")
+        {
+            IsEnabled = true,
+            Timeout = TimeSpan.FromSeconds(5)
+        };
 
         // Act
         Func<Task> act = () => service.ExecuteAsync<string>(

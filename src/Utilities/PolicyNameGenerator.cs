@@ -110,7 +110,8 @@ public sealed class PolicyNameGenerator
     /// </summary>
     public bool IsValidPolicyName(string name)
     {
-        ArgumentException.ThrowIfNullOrEmpty(name);
+        if (string.IsNullOrEmpty(name))
+            return false;
 
         if (name.Length < 3 || name.Length > 100)
             return false;

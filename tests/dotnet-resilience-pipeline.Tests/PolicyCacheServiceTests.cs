@@ -101,6 +101,7 @@ public class PolicyCacheServiceTests
         _service.Clear();
         _service.Set("valid", new { });
         _service.Set("expired", new { });
+        _service.Get("valid"); // one access so the hit rate is defined
 
         // Force expiration of one entry
         var expired = _service.Get("expired")!;

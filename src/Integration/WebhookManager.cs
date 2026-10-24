@@ -24,7 +24,21 @@ public sealed class WebhookManager
     private readonly ConcurrentDictionary<string, WebhookSubscription> _subscriptions = new();
     private readonly List<WebhookDelivery> _deliveryHistory = new();
     private readonly object _lockObj = new object();
+    private readonly HttpMessageHandler? _messageHandler;
+
     public int MaxHistoryEntries { get; set; } = DefaultMaxHistoryEntries;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WebhookManager"/> class.
+    /// </summary>
+    /// <param name="messageHandler">
+    /// Optional handler used for outgoing deliveries, for example to stub the remote endpoint in tests.
+    /// When <see langword="null"/>, deliveries use the default network handler.
+    /// </param>
+    public WebhookManager(HttpMessageHandler? messageHandler = null)
+    {
+        _messageHandler = messageHandler;
+    }
 
     /// <summary>
     /// Registers a webhook subscription.
@@ -44,7 +58,7 @@ public sealed class WebhookManager
 
         var subscription = new WebhookSubscription
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = $"wh-{Guid.NewGuid():N}",
             Url = url,
             Events = events.ToList(),
             CustomHeaders = headers ?? new(),
@@ -128,7 +142,9 @@ public sealed class WebhookManager
 
             try
             {
-                using var client = new HttpClient { Timeout = DeliveryTimeout };
+                using var client = _messageHandler is null
+                    ? new HttpClient { Timeout = DeliveryTimeout }
+                    : new HttpClient(_messageHandler, disposeHandler: false) { Timeout = DeliveryTimeout };
 
                 var payload = new
                 {

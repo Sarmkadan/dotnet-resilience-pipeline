@@ -19,11 +19,11 @@ var services = new ServiceCollection();
 services.AddResiliencePipeline(builder =>
 {
     builder
+        .WithFallback("graceful-fallback", p => p.FallbackOnAnyException = true)
         .WithCircuitBreaker("payment-circuit", p => { p.FailureThreshold = 5; p.OpenDuration = TimeSpan.FromSeconds(30); })
         .WithRetry("api-retry", p => { p.MaxRetries = 3; p.InitialDelay = TimeSpan.FromMilliseconds(100); })
-        .WithTimeout("operation-timeout", TimeSpan.FromSeconds(10))
         .WithBulkhead("resource-bulkhead", maxParallelization: 10)
-        .WithFallback("graceful-fallback", p => p.FallbackOnAnyException = true);
+        .WithTimeout("operation-timeout", TimeSpan.FromSeconds(10));
 });
 
 var provider = services.BuildServiceProvider();

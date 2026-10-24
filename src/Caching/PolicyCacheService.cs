@@ -91,7 +91,7 @@ public sealed class PolicyCacheService
             cached = loadFunc(policyName);
             if (cached is not null)
             {
-                Set(cached.PolicyName, cached.Config, cached.RemainingTtl);
+                Store(cached);
             }
 
             return cached;
@@ -115,22 +115,29 @@ public sealed class PolicyCacheService
         if (policyConfig is null)
             throw new ArgumentNullException(nameof(policyConfig));
 
+        var now = DateTime.UtcNow;
+        Store(new CachedPolicy
+        {
+            PolicyName = policyName,
+            Config = policyConfig,
+            CreatedAt = now,
+            ExpiresAt = now.Add(ttl ?? DefaultTtl),
+            AccessCount = 0
+        });
+    }
+
+    /// <summary>
+    /// Stores the given entry as-is, enforcing the cache size limit.
+    /// </summary>
+    private void Store(CachedPolicy entry)
+    {
         lock (_globalLockObj)
         {
             // Enforce size limit
             if (_cache.Count >= MaxCacheSize)
                 EvictLRU();
 
-            var cached = new CachedPolicy
-            {
-                PolicyName = policyName,
-                Config = policyConfig,
-                CreatedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.Add(ttl ?? DefaultTtl),
-                AccessCount = 1
-            };
-
-            _cache.AddOrUpdate(policyName, cached, (k, v) => cached);
+            _cache.AddOrUpdate(entry.PolicyName, entry, (k, v) => entry);
         }
     }
 
@@ -171,7 +178,7 @@ public sealed class PolicyCacheService
                 TotalEntries = _cache.Count,
                 ValidEntries = validEntries.Count,
                 ExpiredEntries = _cache.Count - validEntries.Count,
-                HitRate = validEntries.Count > 0
+                HitRate = validEntries.Sum(c => c.AccessCount) > 0
                     ? (validEntries.Sum(c => c.AccessCount) * 100.0) / validEntries.Sum(c => c.AccessCount)
                     : 0,
                 AverageTtl = validEntries.Count > 0

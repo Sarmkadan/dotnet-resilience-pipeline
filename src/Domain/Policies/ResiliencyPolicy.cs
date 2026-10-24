@@ -63,15 +63,15 @@ public abstract class ResiliencyPolicy
     public Dictionary<string, object> Metadata { get; set; } = new();
 
     /// <summary>
-    /// Initializes the policy. A null <paramref name="name"/> falls back to the policy type name.
+    /// Initializes the policy with the given name.
     /// </summary>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is empty or whitespace.</exception>
-    protected ResiliencyPolicy(string? name)
+    /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is null, empty or whitespace.</exception>
+    protected ResiliencyPolicy(string name)
     {
-        Name = name ?? GetType().Name;
-
-        if (string.IsNullOrWhiteSpace(Name))
+        if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Policy name cannot be empty", nameof(name));
+
+        Name = name;
     }
 
     /// <summary>
