@@ -4,6 +4,8 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Diagnostics;
+
 namespace DotNetResiliencePipeline.Domain.Policies;
 
     /// <summary>
