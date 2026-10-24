@@ -198,7 +198,8 @@ public sealed class FailureInjectionServiceTests
 
         for (var i = 0; i < 3; i++)
         {
-            try { await sut.ExecuteAsync("counter", _ => Task.FromResult(0)); }
+            try
+            { await sut.ExecuteAsync("counter", _ => Task.FromResult(0)); }
             catch (InjectedFaultException) { /* expected */ }
         }
 

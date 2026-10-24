@@ -123,7 +123,8 @@ public static class CommandOptionsValidation
         ArgumentNullException.ThrowIfNull(value);
 
         var errors = value.Validate();
-        if (errors.Count == 0) return;
+        if (errors.Count == 0)
+            return;
 
         throw new ArgumentException(
             "CommandOptions validation failed:\n" + string.Join("\n", errors),

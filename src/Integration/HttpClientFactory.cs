@@ -230,7 +230,8 @@ public sealed class HttpClientFactory : IDisposable
     /// </summary>
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+            return;
 
         lock (_lockObj)
         {

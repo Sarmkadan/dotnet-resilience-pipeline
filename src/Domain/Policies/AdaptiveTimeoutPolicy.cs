@@ -303,7 +303,8 @@ public sealed class AdaptiveTimeoutPolicy : ResiliencyPolicy, ITimeoutStrategy
     {
         var baseSnapshot = base.GetSnapshot();
         int windowCount;
-        lock (_lock) { windowCount = _responseWindow.Count; }
+        lock (_lock)
+        { windowCount = _responseWindow.Count; }
 
         baseSnapshot.Metadata = new Dictionary<string, object>
         {
@@ -352,8 +353,10 @@ public sealed class AdaptiveTimeoutPolicy : ResiliencyPolicy, ITimeoutStrategy
 
     private static TimeSpan Clamp(TimeSpan value, TimeSpan min, TimeSpan max)
     {
-        if (value < min) return min;
-        if (value > max) return max;
+        if (value < min)
+            return min;
+        if (value > max)
+            return max;
         return value;
     }
 }

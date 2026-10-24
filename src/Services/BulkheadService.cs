@@ -123,7 +123,8 @@ public sealed class BulkheadService
     /// </summary>
     public bool IsValidConfiguration(BulkheadPolicy policy, out string? error)
     {
-        if (policy is null) { error = null; return false; }
+        if (policy is null)
+        { error = null; return false; }
         return policy.IsValidConfiguration(out error);
     }
 }

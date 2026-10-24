@@ -1,8 +1,8 @@
 #nullable enable
-using DotNetResiliencePipeline.Events;
-using FluentAssertions;
 using System;
 using System.Threading.Tasks;
+using DotNetResiliencePipeline.Events;
+using FluentAssertions;
 using Xunit;
 
 /// <summary>

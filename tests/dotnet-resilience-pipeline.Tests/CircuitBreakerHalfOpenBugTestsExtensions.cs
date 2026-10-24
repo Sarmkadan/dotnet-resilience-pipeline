@@ -5,9 +5,9 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Globalization;
 using DotNetResiliencePipeline.Domain.Policies;
 using FluentAssertions;
-using System.Globalization;
 
 namespace DotNetResiliencePipeline.Tests;
 

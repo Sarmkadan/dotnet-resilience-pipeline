@@ -4,11 +4,11 @@
 // CTO & Software Architect
 // =============================================================================
 
-using DotNetResiliencePipeline.Services;
-using DotNetResiliencePipeline.Domain.Policies;
-using DotNetResiliencePipeline.Data;
-using DotNetResiliencePipeline.Formatters;
 using System.Text;
+using DotNetResiliencePipeline.Data;
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Formatters;
+using DotNetResiliencePipeline.Services;
 
 namespace DotNetResiliencePipeline.Api.Controllers;
 

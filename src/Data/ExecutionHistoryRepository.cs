@@ -168,7 +168,8 @@ public sealed class ExecutionHistoryRepository
     {
         lock (_lockObj)
         {
-            if (_history.Count == 0) return 0;
+            if (_history.Count == 0)
+                return 0;
 
             var successCount = _history.Count(r => r.IsSuccess);
             return (successCount * PercentageFactor) / _history.Count;

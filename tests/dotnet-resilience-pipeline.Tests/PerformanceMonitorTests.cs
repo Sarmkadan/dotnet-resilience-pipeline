@@ -1,5 +1,5 @@
-using Xunit;
 using DotNetResiliencePipeline.Utilities;
+using Xunit;
 
 namespace DotNetResiliencePipeline.Tests;
 

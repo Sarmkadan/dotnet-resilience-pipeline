@@ -4,8 +4,8 @@
 // CTO & Software Architect
 // =============================================================================
 
-using DotNetResiliencePipeline.Domain.Policies;
 using System.Text;
+using DotNetResiliencePipeline.Domain.Policies;
 
 namespace DotNetResiliencePipeline.Utilities;
 

@@ -1,9 +1,9 @@
 #nullable enable
 
-using DotNetResiliencePipeline.Domain.Policies;
-using FluentAssertions;
 using System;
 using System.Collections.Generic;
+using DotNetResiliencePipeline.Domain.Policies;
+using FluentAssertions;
 
 namespace DotNetResiliencePipeline.Tests;
 
@@ -124,7 +124,7 @@ public static class TimeoutPolicyTestsExtensions
     {
         ArgumentNullException.ThrowIfNull(policy);
 
-        policy.TimeoutCount.Should().Be(expectedTimeoutCount, 
+        policy.TimeoutCount.Should().Be(expectedTimeoutCount,
             $"Expected timeout count to be {expectedTimeoutCount}, but was {policy.TimeoutCount}");
     }
 

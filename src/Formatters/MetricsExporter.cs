@@ -31,7 +31,8 @@ public sealed class MetricsExporter
     /// </summary>
     public string ExportJson(PipelineMetricsSnapshot snapshot)
     {
-        if (snapshot is null) throw new ArgumentNullException(nameof(snapshot));
+        if (snapshot is null)
+            throw new ArgumentNullException(nameof(snapshot));
 
         var export = new MetricsExportPayload
         {
@@ -60,7 +61,8 @@ public sealed class MetricsExporter
     /// </summary>
     public string ExportCsv(PipelineMetricsSnapshot snapshot)
     {
-        if (snapshot is null) throw new ArgumentNullException(nameof(snapshot));
+        if (snapshot is null)
+            throw new ArgumentNullException(nameof(snapshot));
 
         var sb = new StringBuilder();
         sb.AppendLine("PolicyId,PolicyName,PolicyType,IsEnabled,TotalExecutions,SuccessfulExecutions,FailedExecutions,SuccessRate");
@@ -89,7 +91,8 @@ public sealed class MetricsExporter
     /// </summary>
     public string ExportPrometheus(PipelineMetricsSnapshot snapshot)
     {
-        if (snapshot is null) throw new ArgumentNullException(nameof(snapshot));
+        if (snapshot is null)
+            throw new ArgumentNullException(nameof(snapshot));
 
         var sb = new StringBuilder();
         var ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -154,8 +157,8 @@ public sealed class MetricsExporter
                 var stateValue = p.Metadata?.TryGetValue("CircuitState", out var stateObj) == true
                     ? stateObj?.ToString() switch
                     {
-                        "Closed"   => 0,
-                        "Open"     => 1,
+                        "Closed" => 0,
+                        "Open" => 1,
                         "HalfOpen" => 2,
                         _ => -1
                     }
@@ -198,7 +201,8 @@ public sealed class MetricsExporter
 
     private static string EscapeCsv(string? value)
     {
-        if (value is null) return string.Empty;
+        if (value is null)
+            return string.Empty;
         if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
             return $"\"{value.Replace("\"", "\"\"")}\"";
         return value;

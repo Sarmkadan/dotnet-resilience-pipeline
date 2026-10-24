@@ -7,26 +7,25 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace DotNetResiliencePipeline.Data
+namespace DotNetResiliencePipeline.Data;
+
+/// <summary>
+/// Extension methods for <see cref="LatencyPercentiles"/>.
+/// </summary>
+public static class LatencyPercentilesExtensions
 {
     /// <summary>
-    /// Extension methods for <see cref="LatencyPercentiles"/>.
+    /// Converts the latency percentiles to a read-only dictionary.
     /// </summary>
-    public static class LatencyPercentilesExtensions
+    /// <param name="percentiles">The latency percentiles to convert.</param>
+    /// <returns>A read-only dictionary containing the percentiles.</returns>
+    public static IReadOnlyDictionary<string, double> ToDictionary(this DotNetResiliencePipeline.Data.LatencyPercentiles percentiles)
     {
-        /// <summary>
-        /// Converts the latency percentiles to a read-only dictionary.
-        /// </summary>
-        /// <param name="percentiles">The latency percentiles to convert.</param>
-        /// <returns>A read-only dictionary containing the percentiles.</returns>
-        public static IReadOnlyDictionary<string, double> ToDictionary(this DotNetResiliencePipeline.Data.LatencyPercentiles percentiles)
+        return new ReadOnlyDictionary<string, double>(new Dictionary<string, double>
         {
-            return new ReadOnlyDictionary<string, double>(new Dictionary<string, double>
-            {
-                ["p50"] = percentiles.P50,
-                ["p90"] = percentiles.P90,
-                ["p99"] = percentiles.P99
-            });
-        }
+            ["p50"] = percentiles.P50,
+            ["p90"] = percentiles.P90,
+            ["p99"] = percentiles.P99
+        });
     }
 }

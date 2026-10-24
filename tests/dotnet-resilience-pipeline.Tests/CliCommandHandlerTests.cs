@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using FluentAssertions;
-using Xunit;
 using DotNetResiliencePipeline.Cli;
+using DotNetResiliencePipeline.Data;
 using DotNetResiliencePipeline.Domain.Policies;
 using DotNetResiliencePipeline.Exceptions;
 using DotNetResiliencePipeline.Services;
-using DotNetResiliencePipeline.Data;
+using FluentAssertions;
+using Xunit;
 
 namespace DotNetResiliencePipeline.Tests;
 

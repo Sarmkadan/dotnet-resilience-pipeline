@@ -178,7 +178,8 @@ public sealed class CircuitBreakerDashboardController
 
     private static string ComputeOverallHealth(List<CircuitBreakerStatusDto> breakers)
     {
-        if (breakers.Count == 0) return "Healthy";
+        if (breakers.Count == 0)
+            return "Healthy";
         var openRatio = (double)breakers.Count(b => b.State == "Open") / breakers.Count;
         return openRatio switch
         {

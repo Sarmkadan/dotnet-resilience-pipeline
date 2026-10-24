@@ -4,8 +4,8 @@
 // CTO & Software Architect
 // =====================================================================
 
-using DotNetResiliencePipeline.Services;
 using DotNetResiliencePipeline.Data;
+using DotNetResiliencePipeline.Services;
 using DotNetResiliencePipeline.Workers;
 
 namespace DotNetResiliencePipeline.Api.Controllers;

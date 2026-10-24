@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
+using DotNetResiliencePipeline.Cli;
+using DotNetResiliencePipeline.Data;
+using DotNetResiliencePipeline.Services;
 using FluentAssertions;
 using Xunit;
-using DotNetResiliencePipeline.Cli;
-using DotNetResiliencePipeline.Services;
-using DotNetResiliencePipeline.Data;
 
 namespace DotNetResiliencePipeline.Tests;
 

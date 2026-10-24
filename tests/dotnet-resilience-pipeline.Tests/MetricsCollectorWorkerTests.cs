@@ -32,7 +32,7 @@ public sealed class MetricsCollectorWorkerTests
     {
         _worker.Start();
         _worker.IsRunning.Should().BeTrue();
-        
+
         // Cleanup
         await _worker.StopAsync();
     }

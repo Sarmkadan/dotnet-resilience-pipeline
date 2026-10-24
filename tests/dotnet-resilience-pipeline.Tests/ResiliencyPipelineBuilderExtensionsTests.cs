@@ -1,7 +1,7 @@
 using System;
 using DotNetResiliencePipeline.Configuration;
-using Xunit;
 using FluentAssertions;
+using Xunit;
 
 namespace DotNetResiliencePipeline.Tests;
 

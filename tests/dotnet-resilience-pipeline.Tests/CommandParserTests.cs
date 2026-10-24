@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
+using DotNetResiliencePipeline.Cli;
 using FluentAssertions;
 using Xunit;
-using DotNetResiliencePipeline.Cli;
 
 namespace DotNetResiliencePipeline.Tests;
 

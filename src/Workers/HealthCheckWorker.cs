@@ -4,9 +4,9 @@
 // CTO & Software Architect
 // =====================================================================
 
-using DotNetResiliencePipeline.Services;
-using DotNetResiliencePipeline.Events;
 using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Events;
+using DotNetResiliencePipeline.Services;
 
 namespace DotNetResiliencePipeline.Workers;
 

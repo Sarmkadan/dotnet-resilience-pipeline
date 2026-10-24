@@ -9,9 +9,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using DotNetResiliencePipeline.Cli;
 using FluentAssertions;
 using Xunit;
-using DotNetResiliencePipeline.Cli;
 
 namespace DotNetResiliencePipeline.Tests;
 

@@ -1,7 +1,7 @@
-using DotNetResiliencePipeline.Integration;
-using DotNetResiliencePipeline.Services;
 using System.Net.Http;
 using System.Threading;
+using DotNetResiliencePipeline.Integration;
+using DotNetResiliencePipeline.Services;
 using Xunit;
 
 namespace DotNetResiliencePipeline.Tests;

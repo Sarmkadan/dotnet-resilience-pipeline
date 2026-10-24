@@ -104,8 +104,6 @@ public static class PolicyCacheServiceValidation
         }
 
         throw new ArgumentException(
-            $"PolicyCacheService is invalid. Problems:{Environment.NewLine} - {
-            string.Join($"{Environment.NewLine} - ", problems)
-            }");
+            $"PolicyCacheService is invalid. Problems:{Environment.NewLine} - {string.Join($"{Environment.NewLine} - ", problems)}");
     }
 }

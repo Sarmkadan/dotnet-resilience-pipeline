@@ -4,9 +4,9 @@
 // CTO & Software Architect
 // ====================================================================
 
+using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.ComponentModel.DataAnnotations;
 
 namespace DotNetResiliencePipeline.Services;
 
@@ -42,8 +42,10 @@ public sealed class FailureInjectionService
     /// </summary>
     public void AddRule(InjectionRule rule)
     {
-        if (rule is null) throw new ArgumentNullException(nameof(rule));
-        if (string.IsNullOrWhiteSpace(rule.Key)) throw new ArgumentException("Rule key cannot be empty", nameof(rule));
+        if (rule is null)
+            throw new ArgumentNullException(nameof(rule));
+        if (string.IsNullOrWhiteSpace(rule.Key))
+            throw new ArgumentException("Rule key cannot be empty", nameof(rule));
 
         _logger.LogInformation("Adding failure injection rule {Key} (type={Type})", rule.Key, rule.Type);
 
@@ -121,7 +123,8 @@ public sealed class FailureInjectionService
         _logger.LogInformation("Starting execution with rule key {RuleKey}", ruleKey);
         try
         {
-            if (operation is null) throw new ArgumentNullException(nameof(operation));
+            if (operation is null)
+                throw new ArgumentNullException(nameof(operation));
 
             InjectionRule? rule;
             lock (_lock)
@@ -135,7 +138,8 @@ public sealed class FailureInjectionService
                 return await operation(cancellationToken);
             }
 
-            lock (_lock) { TotalInjections++; }
+            lock (_lock)
+            { TotalInjections++; }
             rule.InjectionsPerformed++;
 
             _logger.LogWarning("Injecting {Type} failure for rule '{Key}'", rule.Type, rule.Key);
@@ -231,8 +235,10 @@ public sealed class FailureInjectionService
         if (!IsActiveAt(rule, DateTimeOffset.Now))
             return false;
 
-        if (rule.InjectionRate >= 1.0) return true;
-        if (rule.InjectionRate <= 0.0) return false;
+        if (rule.InjectionRate >= 1.0)
+            return true;
+        if (rule.InjectionRate <= 0.0)
+            return false;
         return Random.Shared.NextDouble() < rule.InjectionRate;
     }
 

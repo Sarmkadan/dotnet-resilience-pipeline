@@ -105,7 +105,8 @@ public sealed class EndToEndWorkflowTests
 
         for (int i = 0; i < 3; i++)
         {
-            try { await cbService.ExecuteAsync<string>(policy, _ => throw new InvalidOperationException("fail")); }
+            try
+            { await cbService.ExecuteAsync<string>(policy, _ => throw new InvalidOperationException("fail")); }
             catch (InvalidOperationException) { }
         }
 

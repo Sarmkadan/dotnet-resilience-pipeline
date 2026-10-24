@@ -1,7 +1,7 @@
-using DotNetResiliencePipeline.Formatters;
-using DotNetResiliencePipeline.Services;
 using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Formatters;
 using DotNetResiliencePipeline.Middleware;
+using DotNetResiliencePipeline.Services;
 using FluentAssertions;
 using Xunit;
 
@@ -66,7 +66,7 @@ public class CsvReportFormatterTests
     {
         var content = "test content";
         var filePath = "test_report.csv";
-        
+
         await _formatter.ExportToFileAsync(content, filePath);
 
         File.Exists(filePath).Should().BeTrue();
@@ -81,11 +81,11 @@ public class CsvReportFormatterTests
     {
         var logs = new List<LogEntry>
         {
-            new() { 
-                Timestamp = DateTime.UtcNow, 
-                PolicyName = "policy,name", 
-                OperationName = "op\"name", 
-                Success = true, 
+            new() {
+                Timestamp = DateTime.UtcNow,
+                PolicyName = "policy,name",
+                OperationName = "op\"name",
+                Success = true,
                 DurationMs = 50,
                 Message = "line\nbreak"
             }

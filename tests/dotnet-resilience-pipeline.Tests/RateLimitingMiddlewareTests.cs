@@ -14,7 +14,7 @@ public sealed class RateLimitingMiddlewareTests
     public void Constructor_InitializesCorrectly()
     {
         var middleware = new RateLimitingMiddleware();
-        
+
         middleware.Should().NotBeNull();
         middleware.GetAllStatus().Should().BeEmpty();
     }
@@ -24,10 +24,10 @@ public sealed class RateLimitingMiddlewareTests
     {
         var middleware = new RateLimitingMiddleware();
         middleware.ConfigureLimits(50, 2000);
-        
+
         // This will create a new limiter with these limits
         middleware.IsRequestAllowed("client1");
-        
+
         var status = middleware.GetStatus("client1");
         status.RequestsPerSecond.Should().Be(50);
         status.RequestsPerMinute.Should().Be(2000);
@@ -37,9 +37,9 @@ public sealed class RateLimitingMiddlewareTests
     public void IsRequestAllowed_ReturnsTrueForNewClient()
     {
         var middleware = new RateLimitingMiddleware();
-        
+
         var allowed = middleware.IsRequestAllowed("client1");
-        
+
         allowed.Should().BeTrue();
     }
 
@@ -48,9 +48,9 @@ public sealed class RateLimitingMiddlewareTests
     {
         var middleware = new RateLimitingMiddleware();
         middleware.ConfigureLimits(1, 10);
-        
+
         middleware.IsRequestAllowed("client1", 1);
-        
+
         var status = middleware.GetStatus("client1");
         status.RemainingTokensPerSecond.Should().Be(0);
     }
@@ -59,9 +59,9 @@ public sealed class RateLimitingMiddlewareTests
     public void GetStatus_ReturnsDefaultForUnknownClient()
     {
         var middleware = new RateLimitingMiddleware();
-        
+
         var status = middleware.GetStatus("unknown");
-        
+
         status.ClientId.Should().Be("unknown");
         status.RequestsPerSecond.Should().Be(100);
     }
@@ -71,9 +71,9 @@ public sealed class RateLimitingMiddlewareTests
     {
         var middleware = new RateLimitingMiddleware();
         middleware.IsRequestAllowed("client1");
-        
+
         middleware.ResetClient("client1");
-        
+
         middleware.GetAllStatus().Should().NotContainKey("client1");
     }
 
@@ -83,9 +83,9 @@ public sealed class RateLimitingMiddlewareTests
         var middleware = new RateLimitingMiddleware();
         middleware.IsRequestAllowed("client1");
         middleware.IsRequestAllowed("client2");
-        
+
         middleware.ClearAll();
-        
+
         middleware.GetAllStatus().Should().BeEmpty();
     }
 
@@ -94,10 +94,10 @@ public sealed class RateLimitingMiddlewareTests
     {
         var middleware = new RateLimitingMiddleware();
         middleware.ConfigureLimits(1, 10);
-        
+
         // Consume 1 token, 0 left per second
         middleware.IsRequestAllowed("client1", 1).Should().BeTrue();
-        
+
         // Try consuming another one, should fail
         middleware.IsRequestAllowed("client1", 1).Should().BeFalse();
     }

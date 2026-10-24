@@ -1,10 +1,10 @@
 #nullable enable
-using DotNetResiliencePipeline.Integration;
-using DotNetResiliencePipeline.Exceptions;
-using DotNetResiliencePipeline.Services;
-using FluentAssertions;
 using System.Net;
 using System.Text.Json;
+using DotNetResiliencePipeline.Exceptions;
+using DotNetResiliencePipeline.Integration;
+using DotNetResiliencePipeline.Services;
+using FluentAssertions;
 using Xunit;
 
 namespace DotNetResiliencePipeline.Integration.Tests;

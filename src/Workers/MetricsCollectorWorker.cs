@@ -4,11 +4,11 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Diagnostics;
 using DotNetResiliencePipeline.Services;
 using DotNetResiliencePipeline.Utilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Diagnostics;
 
 namespace DotNetResiliencePipeline.Workers;
 
