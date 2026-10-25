@@ -15,6 +15,16 @@ namespace DotNetResiliencePipeline.Events;
 /// </summary>
 public sealed class ResiliencyEventPublisher
 {
+    /// <summary>
+    /// Default maximum number of events retained in the in-memory history.
+    /// </summary>
+    public const int DefaultMaxHistorySize = 1000;
+
+    /// <summary>
+    /// Default number of events returned by <see cref="GetEventHistory"/> and <see cref="GetEvents{T}"/>.
+    /// </summary>
+    public const int DefaultEventLimit = 100;
+
     private readonly ConcurrentDictionary<string, List<Delegate>> _subscribers = new();
     private readonly List<ResiliencyEvent> _eventHistory = new();
     private readonly object _lockObj = new object();
@@ -29,7 +39,7 @@ public sealed class ResiliencyEventPublisher
     /// <summary>
     /// Gets or sets the maximum number of events retained in the in-memory history.
     /// </summary>
-    public int MaxHistorySize { get; set; } = 1000;
+    public int MaxHistorySize { get; set; } = DefaultMaxHistorySize;
 
     /// <summary>
     /// Subscribes to an event type.
@@ -155,7 +165,7 @@ public sealed class ResiliencyEventPublisher
     /// <summary>
     /// Gets event history.
     /// </summary>
-    public List<ResiliencyEvent> GetEventHistory(int limit = 100)
+    public List<ResiliencyEvent> GetEventHistory(int limit = DefaultEventLimit)
     {
         lock (_lockObj)
         {
@@ -166,7 +176,7 @@ public sealed class ResiliencyEventPublisher
     /// <summary>
     /// Gets events of a specific type.
     /// </summary>
-    public List<T> GetEvents<T>(int limit = 100) where T : ResiliencyEvent
+    public List<T> GetEvents<T>(int limit = DefaultEventLimit) where T : ResiliencyEvent
     {
         lock (_lockObj)
         {
