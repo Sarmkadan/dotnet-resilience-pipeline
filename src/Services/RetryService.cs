@@ -16,6 +16,21 @@ namespace DotNetResiliencePipeline.Services;
 /// </summary>
 public sealed class RetryService : IRetryService
 {
+    /// <summary>
+    /// Fallback base delay used by decorrelated jitter when the policy's InitialDelay is non-positive.
+    /// </summary>
+    private static readonly TimeSpan DefaultBaseDelay = TimeSpan.FromMilliseconds(100);
+
+    /// <summary>
+    /// Fallback maximum delay used by decorrelated jitter when the policy's MaxDelay is non-positive.
+    /// </summary>
+    private static readonly TimeSpan DefaultMaxDelay = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Factor applied to the previous delay to compute the upper bound of the next decorrelated jitter range.
+    /// </summary>
+    private const int DecorrelatedJitterMultiplier = 3;
+
     // Use Random.Shared for thread-safe random number generation across threads
     private static readonly Random _random = Random.Shared;
 
@@ -141,9 +156,9 @@ public sealed class RetryService : IRetryService
 
         // Guard against non‑positive values.
         if (baseDelay <= TimeSpan.Zero)
-            baseDelay = TimeSpan.FromMilliseconds(100);
+            baseDelay = DefaultBaseDelay;
         if (maxDelay <= TimeSpan.Zero)
-            maxDelay = TimeSpan.FromSeconds(30);
+            maxDelay = DefaultMaxDelay;
 
         // Determine the upper bound for the random range.
         TimeSpan upperBound;
@@ -153,7 +168,7 @@ public sealed class RetryService : IRetryService
         }
         else
         {
-            var calculated = TimeSpan.FromMilliseconds(previousDelay.TotalMilliseconds * 3);
+            var calculated = TimeSpan.FromMilliseconds(previousDelay.TotalMilliseconds * DecorrelatedJitterMultiplier);
             upperBound = calculated.Min(maxDelay);
         }
 
