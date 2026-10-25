@@ -12,6 +12,41 @@ namespace DotNetResiliencePipeline.Cli;
 /// </summary>
 public sealed class CliCommandValidator
 {
+    /// <summary>
+    /// Maximum allowed length of a policy name.
+    /// </summary>
+    private const int MaxPolicyNameLength = 100;
+
+    /// <summary>
+    /// MaxRetries value above which a production warning is emitted.
+    /// </summary>
+    private const int HighMaxRetriesThreshold = 100;
+
+    /// <summary>
+    /// FailureThreshold value above which a warning is emitted.
+    /// </summary>
+    private const int HighFailureThreshold = 1000;
+
+    /// <summary>
+    /// Smallest accepted timeout value.
+    /// </summary>
+    private static readonly TimeSpan MinTimeout = TimeSpan.FromMilliseconds(1);
+
+    /// <summary>
+    /// Timeout value above which a warning is emitted.
+    /// </summary>
+    private static readonly TimeSpan MaxTimeout = TimeSpan.FromHours(1);
+
+    /// <summary>
+    /// Smallest accepted circuit breaker open duration.
+    /// </summary>
+    private static readonly TimeSpan MinOpenDuration = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    /// Circuit breaker open duration above which a warning is emitted.
+    /// </summary>
+    private static readonly TimeSpan MaxOpenDuration = TimeSpan.FromHours(1);
+
     private readonly List<string> _errors = new();
     private readonly List<string> _warnings = new();
 
@@ -61,8 +96,8 @@ public sealed class CliCommandValidator
             if (options.PolicyName.Length < 2)
                 _errors.Add("Policy name must be at least 2 characters");
 
-            if (options.PolicyName.Length > 100)
-                _errors.Add("Policy name must not exceed 100 characters");
+            if (options.PolicyName.Length > MaxPolicyNameLength)
+                _errors.Add($"Policy name must not exceed {MaxPolicyNameLength} characters");
 
             if (!IsValidIdentifier(options.PolicyName))
                 _errors.Add("Policy name contains invalid characters. Use alphanumeric, dash, and underscore only");
@@ -80,14 +115,14 @@ public sealed class CliCommandValidator
         if (options.MaxRetries.HasValue && options.MaxRetries < 0)
             _errors.Add("MaxRetries cannot be negative");
 
-        if (options.MaxRetries.HasValue && options.MaxRetries > 100)
-            _warnings.Add("MaxRetries is very high (>100). Consider reducing for production.");
+        if (options.MaxRetries.HasValue && options.MaxRetries > HighMaxRetriesThreshold)
+            _warnings.Add($"MaxRetries is very high (>{HighMaxRetriesThreshold}). Consider reducing for production.");
 
         if (options.FailureThreshold.HasValue && options.FailureThreshold < 1)
             _errors.Add("FailureThreshold must be at least 1");
 
-        if (options.FailureThreshold.HasValue && options.FailureThreshold > 1000)
-            _warnings.Add("FailureThreshold is very high (>1000). Consider reducing.");
+        if (options.FailureThreshold.HasValue && options.FailureThreshold > HighFailureThreshold)
+            _warnings.Add($"FailureThreshold is very high (>{HighFailureThreshold}). Consider reducing.");
 
         if (options.MaxParallelization.HasValue && options.MaxParallelization < 1)
             _errors.Add("MaxParallelization must be at least 1");
@@ -98,19 +133,19 @@ public sealed class CliCommandValidator
         // Validate timeouts
         if (options.Timeout.HasValue)
         {
-            if (options.Timeout.Value < TimeSpan.FromMilliseconds(1))
+            if (options.Timeout.Value < MinTimeout)
                 _errors.Add("Timeout must be at least 1 millisecond");
 
-            if (options.Timeout.Value > TimeSpan.FromHours(1))
+            if (options.Timeout.Value > MaxTimeout)
                 _warnings.Add("Timeout exceeds 1 hour. Consider reducing.");
         }
 
         if (options.OpenDuration.HasValue)
         {
-            if (options.OpenDuration.Value < TimeSpan.FromSeconds(1))
+            if (options.OpenDuration.Value < MinOpenDuration)
                 _errors.Add("OpenDuration must be at least 1 second");
 
-            if (options.OpenDuration.Value > TimeSpan.FromHours(1))
+            if (options.OpenDuration.Value > MaxOpenDuration)
                 _warnings.Add("OpenDuration exceeds 1 hour. Might be too long for recovery.");
         }
 
