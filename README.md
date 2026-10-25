@@ -1595,6 +1595,55 @@ Where they are thrown:
 
 See [docs/exceptions-overview.md](docs/exceptions-overview.md) for per-exception properties and handling recommendations.
 
+## AdaptiveTimeoutService
+
+`src/Services/AdaptiveTimeoutService.cs` provides `AdaptiveTimeoutService`, the execution engine for `AdaptiveTimeoutPolicy`. The policy keeps a sliding window of the most recent execution times (`WindowSize`, default 100). After each recorded execution, once the window holds at least `MinSampleSize` observations (default 10) and `AdjustmentInterval` (default 30 s) has passed since the last change, the policy computes the nearest-rank `TargetPercentile` (default P95) of the window, multiplies it by `HeadroomFactor` (default 1.2), and clamps the result to `[MinTimeout, MaxTimeout]`. The result becomes `CurrentTimeout`, which is applied to the next execution. Until enough samples accumulate, the timeout stays at its initial value.
+
+Execution timing is fed automatically. `AdaptiveTimeoutService.ExecuteAsync` delegates to `TimeoutService`, which reads the timeout through the `ITimeoutStrategy` interface, then calls `RecordExecutionTime` on success or failure and `RecordTimeout` when the timeout elapses. Timed-out calls are recorded at their elapsed time, so they also count toward the window and the failure statistics. When `IsEnabled` is `false`, the operation runs without a timeout and nothing is recorded. `AdaptiveTimeoutPolicy` implements `ITimeoutStrategy` explicitly, so the strategy members are reached through the interface type.
+
+`GetCurrentTimeout` and `GetAdaptationSummary` expose the adaptation state for logs and dashboards. `ResetStatistics` clears the window and reverts `CurrentTimeout` to `InitialTimeout`.
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Services;
+using Microsoft.Extensions.Logging.Abstractions;
+
+var service = new AdaptiveTimeoutService(NullLogger<AdaptiveTimeoutService>.Instance);
+var policy = new AdaptiveTimeoutPolicy("catalog-timeout")
+{
+    MinTimeout = TimeSpan.FromMilliseconds(500),
+    MaxTimeout = TimeSpan.FromSeconds(30),
+    TargetPercentile = 95.0,
+    HeadroomFactor = 1.2,
+    WindowSize = 100,
+    MinSampleSize = 20,
+    AdjustmentInterval = TimeSpan.FromSeconds(30)
+};
+
+for (int i = 0; i < 50; i++)
+{
+    string body = await service.ExecuteAsync(
+        policy,
+        async cancellationToken =>
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(150), cancellationToken);
+            return "catalog page";
+        });
+    Console.WriteLine(body);
+}
+
+Console.WriteLine($"Current timeout: {service.GetCurrentTimeout(policy).TotalMilliseconds} ms");
+
+// Strategy view: the same policy seen through the ITimeoutStrategy interface.
+ITimeoutStrategy strategy = policy;
+TimeSpan nextTimeout = strategy.GetTimeout();
+double timeoutPercentage = strategy.GetTimeoutPercentage();
+Console.WriteLine($"Next timeout: {nextTimeout}; timeouts: {timeoutPercentage:F1}%");
+
+foreach (var (key, value) in service.GetAdaptationSummary(policy))
+    Console.WriteLine($"{key}: {value}");
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
