@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System.Diagnostics;
+using System.Globalization;
 
 namespace DotNetResiliencePipeline.Utilities;
 
@@ -262,6 +263,13 @@ public sealed class PerformanceMetrics
         int index = (int)((percentile / 100.0) * sorted.Count);
         return sorted[Math.Min(index, sorted.Count - 1)];
     }
+
+    /// <summary>
+    /// Returns a summary of the metrics: policy name, execution counts, rates, latency and percentiles.
+    /// </summary>
+    /// <returns>A string in the format PerformanceMetrics { PolicyName = ..., TotalExecutions = ..., ... }.</returns>
+    public override string ToString() =>
+        string.Create(CultureInfo.InvariantCulture, $"PerformanceMetrics {{ PolicyName = {PolicyName}, TotalExecutions = {TotalExecutions}, SuccessfulExecutions = {SuccessfulExecutions}, FailedExecutions = {FailedExecutions}, SuccessRate = {SuccessRate:F2}%, FailureRate = {FailureRate:F2}%, AverageDurationMs = {AverageDurationMs:F2}, TotalDurationMs = {TotalDurationMs}, ThroughputPerSecond = {ThroughputPerSecond:F2}, P50 = {P50}, P90 = {P90}, P95 = {P95}, P99 = {P99} }}");
 }
 
 /// <summary>
@@ -293,6 +301,13 @@ public sealed class PerformanceIssue
     /// Gets or sets the severity of the issue.
     /// </summary>
     public string Severity { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Returns a summary of the issue: policy name, issue type, severity and the measured value.
+    /// </summary>
+    /// <returns>A string in the format PerformanceIssue { PolicyName = ..., IssueType = ..., ... }.</returns>
+    public override string ToString() =>
+        string.Create(CultureInfo.InvariantCulture, $"PerformanceIssue {{ PolicyName = {PolicyName}, IssueType = {IssueType}, Severity = {Severity}, AverageDurationMs = {AverageDurationMs:F2}, FailureRate = {FailureRate:F2}% }}");
 }
 
 /// <summary>
@@ -319,4 +334,11 @@ public sealed class PerformanceComparison
     /// Gets or sets the success rate of the policy, as a percentage.
     /// </summary>
     public double SuccessRate { get; set; }
+
+    /// <summary>
+    /// Returns a summary of the comparison: policy name, average duration, share of the slowest policy and success rate.
+    /// </summary>
+    /// <returns>A string in the format PerformanceComparison { PolicyName = ..., AverageDurationMs = ..., ... }.</returns>
+    public override string ToString() =>
+        string.Create(CultureInfo.InvariantCulture, $"PerformanceComparison {{ PolicyName = {PolicyName}, AverageDurationMs = {AverageDurationMs:F2}, PercentageOfSlowest = {PercentageOfSlowest:F2}%, SuccessRate = {SuccessRate:F2}% }}");
 }
