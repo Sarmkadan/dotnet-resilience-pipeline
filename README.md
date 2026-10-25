@@ -1068,6 +1068,79 @@ foreach (var (name, s) in throttler.GetAllStatistics())
 throttler.ResetThrottle("ExternalApi");
 ```
 
+## CircuitBreakerDiagnostics
+
+`src/Utilities/CircuitBreakerDiagnostics.cs` is a static helper that inspects a `CircuitBreakerPolicy` and reports configuration problems and tuning advice. It does not change the policy and keeps no state.
+
+### GenerateDiagnosticReport
+
+`GenerateDiagnosticReport(CircuitBreakerPolicy policy)` returns a `CircuitBreakerDiagnosticReport` snapshot. `ArgumentNullException` if `policy` is null. The report copies these values from the policy at call time:
+
+| Property | Source |
+|----------|--------|
+| `PolicyId`, `PolicyName` | `policy.Id`, `policy.Name` |
+| `CurrentState` | `policy.CurrentState` |
+| `FailureThreshold` | `policy.FailureThreshold` |
+| `OpenDuration` | `policy.OpenDuration` |
+| `SuccessThreshold` | `policy.SuccessThresholdInHalfOpen` |
+| `GeneratedAt` | `DateTime.UtcNow` |
+
+`Issues` and `Recommendations` are `List<string>`. `HasIssues` is `true` when `Issues` is non-empty. The report's `ToString()` renders the header, the current values, and the issue and recommendation lists.
+
+### Issue detection
+
+Issues are configuration findings. Each one is a warning that the setting may be wrong:
+
+| Condition | Issue |
+|-----------|-------|
+| `FailureThreshold < 2` | Low failure threshold may cause unnecessary circuit opens |
+| `FailureThreshold > 100` | High failure threshold may allow too many failures before opening |
+| `OpenDuration < 10s` | Very short open duration may cause rapid state cycling |
+| `OpenDuration > 1h` | Very long open duration may prevent service recovery |
+| `SuccessThresholdInHalfOpen == 1` | Allowing single success in half-open may be risky |
+| `IsEnabled == false` | Circuit breaker is disabled and provides no protection |
+
+Recommendations are separate advice and are not issues. They are added when `FailureThreshold < 5`, `OpenDuration < 30s`, or `SuccessThresholdInHalfOpen < 3`. They also add a note for the current state when it is `Open` or `HalfOpen`.
+
+The policy defaults (`FailureThreshold = 5`, `OpenDuration = 30s`, `SuccessThresholdInHalfOpen = 3`, enabled) produce no issues and no configuration recommendations.
+
+### Other members
+
+- `AnalyzeEffectiveness(policy, totalExecutions, failedExecutions)` - returns a `CircuitBreakerEffectiveness` with `FailureRate` as a percentage (0 when `totalExecutions` is 0), an `EffectivenessRating` of `Excellent` (below 5%), `Good` (below 15%), `Fair` (below 30%), or `Poor`, and `IsProblematic` set for `Fair` and `Poor`. These inputs are supplied by the caller; the method does not read them from the policy.
+- `SuggestOptimalConfiguration(policyName, observedFailureRate, averageRecoveryTimeMs)` - returns a `CircuitBreakerConfiguration` with suggested values derived from the observed failure rate (percentage) and average recovery time (milliseconds). `ArgumentNullException` if `policyName` is null and `ArgumentException` if it is empty. The suggestions are heuristics, not measured optima.
+
+### Usage
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Utilities;
+
+var policy = new CircuitBreakerPolicy("PaymentsApi")
+{
+    FailureThreshold = 1,
+    OpenDuration = TimeSpan.FromSeconds(5),
+    SuccessThresholdInHalfOpen = 1
+};
+
+CircuitBreakerDiagnosticReport report = CircuitBreakerDiagnostics.GenerateDiagnosticReport(policy);
+
+if (report.HasIssues)
+{
+    foreach (string issue in report.Issues)
+    {
+        Console.WriteLine($"Issue: {issue}");
+    }
+}
+
+Console.WriteLine(report);
+
+CircuitBreakerEffectiveness effectiveness =
+    CircuitBreakerDiagnostics.AnalyzeEffectiveness(policy, totalExecutions: 1000, failedExecutions: 200);
+Console.WriteLine($"{effectiveness.EffectivenessRating} ({effectiveness.FailureRate:F2}%)"); // Fair (20.00%)
+```
+
+With the settings above, the report flags low failure threshold, short open duration, and single-success half-open. The `Fair` rating comes from 200 failures out of 1000 executions.
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
