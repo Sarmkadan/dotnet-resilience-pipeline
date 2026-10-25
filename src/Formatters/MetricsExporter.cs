@@ -226,6 +226,11 @@ public sealed class MetricsExportPayload
 
     /// <summary>Per-policy metrics.</summary>
     public List<PolicyExport> Policies { get; set; } = new();
+
+    /// <summary>Returns a short summary of the export payload.</summary>
+    public override string ToString() =>
+        string.Create(System.Globalization.CultureInfo.InvariantCulture,
+            $"MetricsExportPayload {{ ExportedAt = {ExportedAt:O}, Format = {Format}, Pipeline = {{ TotalExecutions = {Pipeline.TotalExecutions}, SuccessRate = {Pipeline.SuccessRate} }}, PolicyCount = {Policies.Count} }}");
 }
 
 /// <summary>Pipeline-level aggregated metrics for export.</summary>
@@ -251,6 +256,11 @@ public sealed class PipelineSummaryExport
 
     /// <summary>Total timeout events.</summary>
     public long TimeoutCount { get; set; }
+
+    /// <summary>Returns a short summary of the pipeline-level metrics.</summary>
+    public override string ToString() =>
+        string.Create(System.Globalization.CultureInfo.InvariantCulture,
+            $"PipelineSummaryExport {{ TotalExecutions = {TotalExecutions}, SuccessfulExecutions = {SuccessfulExecutions}, FailedExecutions = {FailedExecutions}, SuccessRate = {SuccessRate}, RetryCount = {RetryCount}, CircuitBreakerTrips = {CircuitBreakerTrips}, TimeoutCount = {TimeoutCount} }}");
 }
 
 /// <summary>Per-policy metrics for export.</summary>
@@ -285,4 +295,9 @@ public sealed class PolicyExport
 
     /// <summary>Additional policy-specific metadata.</summary>
     public Dictionary<string, object>? Metadata { get; set; }
+
+    /// <summary>Returns a short summary of the policy metrics.</summary>
+    public override string ToString() =>
+        string.Create(System.Globalization.CultureInfo.InvariantCulture,
+            $"PolicyExport {{ PolicyId = {PolicyId}, PolicyName = {PolicyName}, PolicyType = {PolicyType}, IsEnabled = {IsEnabled}, TotalExecutions = {TotalExecutions}, SuccessfulExecutions = {SuccessfulExecutions}, FailedExecutions = {FailedExecutions}, SuccessRate = {SuccessRate}, SnapshotTime = {SnapshotTime:O} }}");
 }
