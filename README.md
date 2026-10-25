@@ -1511,6 +1511,46 @@ health
 
 See [docs/cli.md](docs/cli.md) for the full parsing rules, handler behavior, and validation messages.
 
+## HTTP API
+
+Three controller classes in `src/Api/Controllers/` expose the pipeline over HTTP-style endpoints: `PoliciesController`, `MetricsController`, and `CircuitBreakerDashboardController`. They are plain `sealed` classes with no routing attributes, so the routes below come from each method's XML doc comment and are not mapped by anything in this repository. Each method returns an `ApiResponse<T>` (`Success`, `Data`, `Message`, `StatusCode`, `Timestamp`) and catches exceptions into `Success = false` rather than throwing, except where noted.
+
+### PoliciesController
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GetAllPoliciesAsync()` | `GET /api/policies` | Lists all registered policies as `PolicyDto` |
+| `GetPolicyAsync(id)` | `GET /api/policies/{id}` | Returns one policy, or `Policy not found` |
+| `CreatePolicyAsync(request)` | `POST /api/policies` | Validates a `CreatePolicyRequest`, registers the new policy, and saves it to `PolicyRepository` |
+| `UpdatePolicyAsync(id, request)` | `PUT /api/policies/{id}` | Applies `IsEnabled` and the optional circuit breaker or retry settings, then saves |
+| `DeletePolicyAsync(id)` | `DELETE /api/policies/{id}` | Removes the policy from the pipeline service |
+| `ClonePolicyAsync(name, newName)` | `POST /api/policies/{name}/clone` | Copies a policy under `newName`, resets its statistics, and saves it. Returns 404 if the source is missing and 409 if the target name exists |
+| `ValidatePolicyAsync(request)` | `POST /api/policies/validate` | Checks a `ValidatePolicyRequest` and returns `ValidationResultDto` with any errors, without registering anything |
+| `ExportPoliciesAsCsvAsync()` | `GET /api/policies/export/csv` | Returns all policies as a CSV string. This method does not wrap its result in `ApiResponse` |
+
+### MetricsController
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GetPipelineMetricsAsync()` | `GET /api/metrics/pipeline` | Pipeline execution counts, success rate, policy count, and average execution time |
+| `GetPoliciesMetricsAsync()` | `GET /api/metrics/policies` | Per-policy execution, success, and failure counts from the execution history |
+| `GetHealthStatusAsync()` | `GET /api/metrics/health` | `Healthy`, `Degraded`, or `Critical` status based on the pipeline success rate (95% and 80% thresholds) |
+| `GetHealthReportAsync()` | `GET /api/metrics/health/report` | Full health report with per-policy statuses and healthy, degraded, and unhealthy counts |
+| `GetExecutionHistoryAsync(limit = 100)` | `GET /api/metrics/history` | Latest execution records, newest first. A `limit` of 0 or less returns an error |
+| `ResetMetricsAsync()` | `POST /api/metrics/reset` | Resets the pipeline statistics |
+| `GetLatencyPercentilesAsync()` | `GET /api/metrics/percentiles` | P50, P90, and P99 latency from the execution history |
+
+### CircuitBreakerDashboardController
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GetDashboardAsync()` | `GET /api/dashboard/circuit-breakers` | Summary of all circuit breakers: counts by state, total trips, and an overall health value |
+| `GetBreakerStatusAsync(name)` | `GET /api/dashboard/circuit-breakers/{name}` | Status of one circuit breaker, looked up by policy name |
+| `ResetBreakerAsync(name)` | `POST /api/dashboard/circuit-breakers/{name}/reset` | Manually resets one circuit breaker to `Closed` |
+| `GetOpenBreakersAsync()` | `GET /api/dashboard/circuit-breakers/open` | Only the circuit breakers currently in the `Open` state |
+
+See [docs/api-reference.md](docs/api-reference.md) for the library API reference.
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
