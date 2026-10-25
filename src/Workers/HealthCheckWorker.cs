@@ -4,6 +4,7 @@
 // CTO & Software Architect
 // =====================================================================
 
+using System.Globalization;
 using DotNetResiliencePipeline.Domain.Policies;
 using DotNetResiliencePipeline.Events;
 using DotNetResiliencePipeline.Services;
@@ -270,6 +271,14 @@ public sealed class HealthCheckStatus
     /// Total executions performed by the pipeline.
     /// </summary>
     public long TotalExecutions { get; set; }
+
+    /// <summary>
+    /// Returns a concise string representation of the health check status.
+    /// </summary>
+    public override string ToString()
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"HealthCheckStatus {{ IsRunning = {IsRunning}, LastCheckTime = {LastCheckTime:O}, PipelineSuccessRate = {PipelineSuccessRate}, OverallHealth = {OverallHealth}, TotalPolicies = {TotalPolicies}, TotalExecutions = {TotalExecutions} }}");
+    }
 }
 
 /// <summary>
@@ -341,6 +350,14 @@ public sealed class HealthReport
     /// Additional metrics attached to the report, keyed by name.
     /// </summary>
     public Dictionary<string, object> AdditionalMetrics { get; set; } = new();
+
+    /// <summary>
+    /// Returns a concise string representation of the health report, without the per-policy entries.
+    /// </summary>
+    public override string ToString()
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"HealthReport {{ IsRunning = {IsRunning}, GeneratedAt = {GeneratedAt:O}, OverallStatus = {OverallStatus}, PipelineSuccessRate = {PipelineSuccessRate}, TotalExecutions = {TotalExecutions}, SuccessfulExecutions = {SuccessfulExecutions}, FailedExecutions = {FailedExecutions}, TotalPolicies = {TotalPolicies}, HealthyPolicies = {HealthyPolicies}, DegradedPolicies = {DegradedPolicies}, UnhealthyPolicies = {UnhealthyPolicies}, PolicyStatuses = {PolicyStatuses.Count}, AdditionalMetrics = {AdditionalMetrics.Count} }}");
+    }
 }
 
 /// <summary>
@@ -397,4 +414,12 @@ public sealed class PolicyHealthStatus
     /// UTC time of the health check that produced this status.
     /// </summary>
     public DateTime LastCheckTime { get; set; }
+
+    /// <summary>
+    /// Returns a concise string representation of the policy health status.
+    /// </summary>
+    public override string ToString()
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"PolicyHealthStatus {{ PolicyId = {PolicyId}, PolicyName = {PolicyName}, PolicyType = {PolicyType}, IsEnabled = {IsEnabled}, HealthStatus = {HealthStatus}, SuccessRate = {SuccessRate}, TotalExecutions = {TotalExecutions}, SuccessfulExecutions = {SuccessfulExecutions}, FailedExecutions = {FailedExecutions}, LastCheckTime = {LastCheckTime:O} }}");
+    }
 }
