@@ -1859,6 +1859,115 @@ using var observer = new PipelineEventObserver(publisher);
 
 For the full reference, including the handler lifecycle and the observer's dispatch behavior, see [docs/events.md](docs/events.md).
 
+## Configuration and Dependency Injection
+
+Configuration lives in `src/Configuration/`, split across four files:
+
+- `DotnetResiliencePipelineOptions.cs` - the root class `DotnetResiliencePipelineOptions` with the nested `CircuitBreaker`, `Retry`, `Timeout`, `Bulkhead` and `Fallback` options, plus `TimeWindow` (`FailureInjectionTimeWindowOptions`, `StartTime`/`EndTime` in `HH:mm`) for failure injection. Each nested options class has a `ToPolicy(name)` method that returns the matching policy from `src/Domain/Policies/`.
+- `DependencyInjectionExtensions.cs` - the `AddXxx` registration methods on `IServiceCollection`.
+- `ResiliencyPipelineBuilder.cs` - the fluent builder that checks policy order and names.
+- `DotnetResiliencePipelineOptionsValidator.cs` - an `IValidateOptions<DotnetResiliencePipelineOptions>` implementation. It enforces the ranges below and the rule that `Retry.MaxDelayMs` is at least `Retry.InitialDelayMs`.
+
+| Setting | Default | Allowed range |
+|---------|---------|---------------|
+| `CircuitBreaker.FailureThreshold` | 5 | 1 - 1000 |
+| `CircuitBreaker.OpenDurationSeconds` | 30 | 1 - 3600 |
+| `CircuitBreaker.SuccessThresholdInHalfOpen` | 3 | 1 - 100 |
+| `Retry.MaxRetries` | 3 | 0 - 20 |
+| `Retry.InitialDelayMs` | 100 | 1 - 10000 |
+| `Retry.Strategy` | `Exponential` | `Fixed`, `Linear`, `Exponential`, `ExponentialWithJitter`, `DecorrelatedJitter` |
+| `Retry.MaxDelayMs` | 30000 | 1 - 300000, and >= `InitialDelayMs` |
+| `Retry.BackoffMultiplier` | 2.0 | 1.0 - 10.0 |
+| `Retry.UseJitter` / `Retry.JitterFactor` | true / 1.0 | 0.0 - 1.0 |
+| `Timeout.TimeoutSeconds` | 10 | 1 - 300 |
+| `Bulkhead.MaxParallelization` | 10 | 1 - 1000 |
+| `Bulkhead.MaxQueueLength` | 50 | 0 - 10000 |
+| `Fallback.FallbackOnAnyException` | true | - |
+| `Fallback.FallbackTimeoutSeconds` | 5 | 1 - 60 |
+
+`Options.Validate(out results)` only checks the root object. It does not look inside the nested options, so it returns `true` for an out-of-range `CircuitBreaker.FailureThreshold`. The range checks take effect through `DotnetResiliencePipelineOptionsValidator`, which `AddResiliencePipelineWithOptions` registers. Use the validator, or resolve `IValidateOptions` yourself, when you need these checks.
+
+The DI extension methods:
+
+- `AddResiliencePipeline(configureBuilder)` - registers the repositories, the policy services, `MetricsExporter` and `CircuitBreakerDashboardController`, and builds a `ResiliencyPipelineService` from the builder action.
+- `AddResiliencePipelineWithOptions(configureOptions)` - binds `DotnetResiliencePipelineOptions`, registers the validator, and builds a default pipeline from the options. Its policies are named `default-fallback`, `default-circuit-breaker`, `default-retry`, `default-bulkhead` and `default-timeout`.
+- `AddResiliencePipeline<TConfig>(config, configureBuilder)` - registers your own config object as a singleton and builds the pipeline from it. It does not register `FailureInjectionService`, `MetricsExporter` or the dashboard controller.
+- `AddWebhookManager(configureOptions)` - binds `WebhookOptions` and registers `WebhookManager`.
+- `AddPolicy<TPolicy>(factory)` - registers a policy instance and passes it to `ResiliencyPipelineService.RegisterPolicy`. Register the pipeline before you use this method.
+
+`ResiliencyPipelineBuilder` adds the policies in the canonical order: Fallback, Circuit Breaker, Retry, Bulkhead, Timeout. `WithCircuitBreaker`, `WithRetry`, `WithBulkhead` and `WithTimeout` throw `InvalidPolicyConfigurationException` if a policy that should come before them is missing. Call `AllowCustomOrder()` first to lift that check. Each name must be unique within a builder. `Build()` throws if no policies were added. `WithFallbackAction<T>` requires `WithFallback` to be called first. The `Get*Policy()` methods return the configured policy instances.
+
+```csharp
+using DotNetResiliencePipeline.Configuration;
+
+var pipeline = new ResiliencyPipelineBuilder()
+    .WithFallback("orders-fallback", p => p.FallbackOnAnyException = true)
+    .WithCircuitBreaker("orders-circuit", p => p.FailureThreshold = 5)
+    .WithRetry("orders-retry", p => p.MaxRetries = 3)
+    .WithBulkhead("orders-bulkhead", maxParallelization: 10, maxQueueLength: 50)
+    .WithTimeout("orders-timeout", TimeSpan.FromSeconds(10))
+    .Build();
+```
+
+To load the settings from configuration, use the `DotnetResiliencePipeline` section of `appsettings.json`. The section has the same shape as `appsettings.example.json`:
+
+```json
+{
+  "DotnetResiliencePipeline": {
+    "CircuitBreaker": {
+      "FailureThreshold": 5,
+      "OpenDurationSeconds": 30,
+      "SuccessThresholdInHalfOpen": 3
+    },
+    "Retry": {
+      "MaxRetries": 3,
+      "InitialDelayMs": 100,
+      "Strategy": "Exponential",
+      "MaxDelayMs": 30000,
+      "BackoffMultiplier": 2.0,
+      "UseJitter": true,
+      "JitterFactor": 1.0
+    },
+    "Timeout": {
+      "TimeoutSeconds": 10
+    },
+    "Bulkhead": {
+      "MaxParallelization": 10,
+      "MaxQueueLength": 50
+    },
+    "Fallback": {
+      "FallbackOnAnyException": true,
+      "FallbackTimeoutSeconds": 5
+    }
+  }
+}
+```
+
+```csharp
+using DotNetResiliencePipeline.Configuration;
+using DotNetResiliencePipeline.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(AppContext.BaseDirectory)
+    .AddJsonFile("appsettings.json", optional: false)
+    .Build();
+
+var services = new ServiceCollection();
+
+// Bind the section into the options. The validator runs when IOptions<DotnetResiliencePipelineOptions> is resolved.
+services.AddResiliencePipelineWithOptions(options =>
+    configuration.GetSection("DotnetResiliencePipeline").Bind(options));
+
+var provider = services.BuildServiceProvider();
+var pipeline = provider.GetRequiredService<ResiliencyPipelineService>();
+```
+
+The `Bind` and `AddJsonFile` calls come from `Microsoft.Extensions.Configuration.Binder` and `Microsoft.Extensions.Configuration.Json`. The library references only `Microsoft.Extensions.Configuration.Abstractions`, so add those two packages to your application.
+
+For the full reference, see [docs/DotnetResiliencePipelineOptions.md](docs/DotnetResiliencePipelineOptions.md), [docs/DependencyInjectionExtensions.md](docs/DependencyInjectionExtensions.md), [docs/ResiliencyPipelineBuilder.md](docs/ResiliencyPipelineBuilder.md) and [docs/DotnetResiliencePipelineOptionsValidator.md](docs/DotnetResiliencePipelineOptionsValidator.md).
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
