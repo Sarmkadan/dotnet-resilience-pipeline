@@ -6,7 +6,9 @@
 
 using System.Collections.Concurrent;
 using System.Text.Json;
+using DotNetResiliencePipeline.Configuration;
 using DotNetResiliencePipeline.Exceptions;
+using Microsoft.Extensions.Options;
 
 namespace DotNetResiliencePipeline.Integration;
 
@@ -27,12 +29,13 @@ public sealed class WebhookManager
     public const int DefaultDeliveryHistoryLimit = 100;
 
     private const double PercentageMultiplier = 100.0;
-    private static readonly TimeSpan DeliveryTimeout = TimeSpan.FromSeconds(10);
 
     private readonly ConcurrentDictionary<string, WebhookSubscription> _subscriptions = new();
     private readonly List<WebhookDelivery> _deliveryHistory = new();
     private readonly object _lockObj = new object();
     private readonly HttpMessageHandler? _messageHandler;
+    private readonly WebhookOptions _options;
+    private readonly TimeSpan _deliveryTimeout;
 
     /// <summary>
     /// Gets or sets the maximum number of entries kept in the delivery history. The default is <see cref="DefaultMaxHistoryEntries"/>.
@@ -40,14 +43,40 @@ public sealed class WebhookManager
     public int MaxHistoryEntries { get; set; } = DefaultMaxHistoryEntries;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="WebhookManager"/> class.
+    /// Initializes a new instance of the <see cref="WebhookManager"/> class with default <see cref="WebhookOptions"/>.
     /// </summary>
     /// <param name="messageHandler">
     /// Optional handler used for outgoing deliveries, for example to stub the remote endpoint in tests.
     /// When <see langword="null"/>, deliveries use the default network handler.
     /// </param>
     public WebhookManager(HttpMessageHandler? messageHandler = null)
+        : this(Options.Create(new WebhookOptions()), messageHandler)
     {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WebhookManager"/> class with the supplied <see cref="WebhookOptions"/>.
+    /// </summary>
+    /// <param name="options">Retry and timeout settings used for deliveries.</param>
+    /// <param name="messageHandler">
+    /// Optional handler used for outgoing deliveries, for example to stub the remote endpoint in tests.
+    /// When <see langword="null"/>, deliveries use the default network handler.
+    /// </param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <see cref="WebhookOptions.MaxAttempts"/> or <see cref="WebhookOptions.DeliveryTimeoutSeconds"/> is less than 1,
+    /// or <see cref="WebhookOptions.BackoffBase"/> is less than 0.
+    /// </exception>
+    public WebhookManager(IOptions<WebhookOptions> options, HttpMessageHandler? messageHandler = null)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        _options = options.Value;
+        ArgumentOutOfRangeException.ThrowIfLessThan(_options.MaxAttempts, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(_options.DeliveryTimeoutSeconds, 1);
+        ArgumentOutOfRangeException.ThrowIfNegative(_options.BackoffBase);
+
+        _deliveryTimeout = TimeSpan.FromSeconds(_options.DeliveryTimeoutSeconds);
         _messageHandler = messageHandler;
     }
 
@@ -143,10 +172,9 @@ public sealed class WebhookManager
         };
 
         int attemptCount = 0;
-        const int maxAttempts = 3;
         Exception? lastException = null;
 
-        while (attemptCount < maxAttempts && !cancellationToken.IsCancellationRequested)
+        while (attemptCount < _options.MaxAttempts && !cancellationToken.IsCancellationRequested)
         {
             attemptCount++;
             delivery.AttemptCount = attemptCount;
@@ -154,8 +182,8 @@ public sealed class WebhookManager
             try
             {
                 using var client = _messageHandler is null
-                    ? new HttpClient { Timeout = DeliveryTimeout }
-                    : new HttpClient(_messageHandler, disposeHandler: false) { Timeout = DeliveryTimeout };
+                    ? new HttpClient { Timeout = _deliveryTimeout }
+                    : new HttpClient(_messageHandler, disposeHandler: false) { Timeout = _deliveryTimeout };
 
                 var payload = new
                 {
@@ -212,10 +240,10 @@ public sealed class WebhookManager
                 break;
             }
 
-            if (!delivery.Success && attemptCount < maxAttempts)
+            if (!delivery.Success && attemptCount < _options.MaxAttempts)
             {
                 // Exponential backoff
-                var delay = TimeSpan.FromSeconds(Math.Pow(2, attemptCount));
+                var delay = TimeSpan.FromSeconds(Math.Pow(_options.BackoffBase, attemptCount));
                 await Task.Delay(delay, cancellationToken);
             }
         }

@@ -8,6 +8,7 @@ using DotNetResiliencePipeline.Api.Controllers;
 using DotNetResiliencePipeline.Data;
 using DotNetResiliencePipeline.Domain.Policies;
 using DotNetResiliencePipeline.Formatters;
+using DotNetResiliencePipeline.Integration;
 using DotNetResiliencePipeline.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -194,6 +195,25 @@ public static class DependencyInjectionExtensions
             configureBuilder(config, builder);
             return builder.Build();
         });
+
+        return services;
+    }
+
+    /// <summary>
+    /// Adds the webhook manager and binds <see cref="WebhookOptions"/> for retry and timeout settings.
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+    /// <param name="configureOptions">Optional configuration action for the webhook options.</param>
+    /// <returns>The <see cref="IServiceCollection"/> so calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is <see langword="null"/>.</exception>
+    public static IServiceCollection AddWebhookManager(
+        this IServiceCollection services,
+        Action<WebhookOptions>? configureOptions = null)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.Configure<WebhookOptions>(options => configureOptions?.Invoke(options));
+        services.AddSingleton<WebhookManager>();
 
         return services;
     }
