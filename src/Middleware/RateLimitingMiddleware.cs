@@ -16,6 +16,16 @@ namespace DotNetResiliencePipeline.Middleware;
 /// </summary>
 public sealed class RateLimitingMiddleware
 {
+    /// <summary>
+    /// Default number of requests allowed per second for each client.
+    /// </summary>
+    public const int DefaultRequestsPerSecond = 100;
+
+    /// <summary>
+    /// Default number of requests allowed per minute for each client.
+    /// </summary>
+    public const int DefaultRequestsPerMinute = 5000;
+
     [JsonInclude]
     private readonly ConcurrentDictionary<string, RateLimiter> _limiters = new();
 
@@ -23,10 +33,10 @@ public sealed class RateLimitingMiddleware
     private readonly object _limitersLock = new object();
 
     [JsonInclude]
-    private int _defaultRequestsPerSecond = 100;
+    private int _defaultRequestsPerSecond = DefaultRequestsPerSecond;
 
     [JsonInclude]
-    private int _defaultRequestsPerMinute = 5000;
+    private int _defaultRequestsPerMinute = DefaultRequestsPerMinute;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RateLimitingMiddleware"/> class with default rate limits.
@@ -81,8 +91,8 @@ public sealed class RateLimitingMiddleware
                 RequestsPerMinute = _defaultRequestsPerMinute,
                 RemainingTokensPerSecond = _defaultRequestsPerSecond,
                 RemainingTokensPerMinute = _defaultRequestsPerMinute,
-                NextResetSecond = DateTime.UtcNow.AddSeconds(1),
-                NextResetMinute = DateTime.UtcNow.AddMinutes(1)
+                NextResetSecond = DateTime.UtcNow.AddSeconds(RateLimiter.RefillIntervalSeconds),
+                NextResetMinute = DateTime.UtcNow.AddMinutes(RateLimiter.RefillIntervalMinutes)
             };
         }
     }
@@ -136,6 +146,16 @@ public sealed class RateLimitingMiddleware
 /// </summary>
 public sealed class RateLimiter
 {
+    /// <summary>
+    /// Length of the per-second token refill window, in seconds.
+    /// </summary>
+    public const int RefillIntervalSeconds = 1;
+
+    /// <summary>
+    /// Length of the per-minute token refill window, in minutes.
+    /// </summary>
+    public const int RefillIntervalMinutes = 1;
+
     [JsonInclude]
     private readonly int _tokensPerSecond;
 
@@ -229,8 +249,8 @@ public sealed class RateLimiter
                 RequestsPerMinute = _tokensPerMinute,
                 RemainingTokensPerSecond = (int)Math.Min(_tokensSecond, _tokensPerSecond),
                 RemainingTokensPerMinute = (int)Math.Min(_tokensMinute, _tokensPerMinute),
-                NextResetSecond = _lastRefillSecond.AddSeconds(1),
-                NextResetMinute = _lastRefillMinute.AddMinutes(1)
+                NextResetSecond = _lastRefillSecond.AddSeconds(RefillIntervalSeconds),
+                NextResetMinute = _lastRefillMinute.AddMinutes(RefillIntervalMinutes)
             };
         }
     }
@@ -240,7 +260,7 @@ public sealed class RateLimiter
         var now = DateTime.UtcNow;
 
         // Refill per-second bucket
-        if ((now - _lastRefillSecond).TotalSeconds >= 1)
+        if ((now - _lastRefillSecond).TotalSeconds >= RefillIntervalSeconds)
         {
             var intervalsPassed = (int)(now - _lastRefillSecond).TotalSeconds;
             _tokensSecond = Math.Min(_tokensSecond + (_tokensPerSecond * intervalsPassed), _tokensPerSecond);
@@ -248,7 +268,7 @@ public sealed class RateLimiter
         }
 
         // Refill per-minute bucket
-        if ((now - _lastRefillMinute).TotalMinutes >= 1)
+        if ((now - _lastRefillMinute).TotalMinutes >= RefillIntervalMinutes)
         {
             var intervalsPassed = (int)(now - _lastRefillMinute).TotalMinutes;
             _tokensMinute = Math.Min(_tokensMinute + (_tokensPerMinute * intervalsPassed), _tokensPerMinute);
