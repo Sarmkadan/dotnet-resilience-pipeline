@@ -270,6 +270,15 @@ public abstract class ResiliencyEvent
     /// Gets or sets the name of the policy that produced the event.
     /// </summary>
     public string SourcePolicy { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Returns a one-line summary of the event.
+    /// </summary>
+    /// <returns>A string representation of the event.</returns>
+    public override string ToString()
+    {
+        return $"{GetType().Name} {{ Id = {Id}, Timestamp = {Timestamp}, SourcePolicy = {SourcePolicy} }}";
+    }
 }
 
 /// <summary>
@@ -291,6 +300,15 @@ public sealed class PolicyExecutedSuccessfullyEvent : ResiliencyEvent
     /// Gets or sets the attempt number on which the execution succeeded.
     /// </summary>
     public int AttemptNumber { get; set; }
+
+    /// <summary>
+    /// Returns a one-line summary of the event.
+    /// </summary>
+    /// <returns>A string representation of the event.</returns>
+    public override string ToString()
+    {
+        return $"PolicyExecutedSuccessfullyEvent {{ Id = {Id}, Timestamp = {Timestamp}, SourcePolicy = {SourcePolicy}, PolicyName = {PolicyName}, DurationMs = {DurationMs}, AttemptNumber = {AttemptNumber} }}";
+    }
 }
 
 /// <summary>
@@ -317,6 +335,15 @@ public sealed class PolicyExecutionFailedEvent : ResiliencyEvent
     /// Gets or sets the duration of the failed execution, in milliseconds.
     /// </summary>
     public long DurationMs { get; set; }
+
+    /// <summary>
+    /// Returns a one-line summary of the event.
+    /// </summary>
+    /// <returns>A string representation of the event.</returns>
+    public override string ToString()
+    {
+        return $"PolicyExecutionFailedEvent {{ Id = {Id}, Timestamp = {Timestamp}, SourcePolicy = {SourcePolicy}, PolicyName = {PolicyName}, ExceptionType = {ExceptionType}, ExceptionMessage = {ExceptionMessage}, DurationMs = {DurationMs} }}";
+    }
 }
 
 /// <summary>
@@ -378,6 +405,15 @@ public sealed class BulkheadRejectedEvent : ResiliencyEvent
     /// Gets or sets the number of requests waiting in the queue when the request was rejected.
     /// </summary>
     public int QueuedRequests { get; set; }
+
+    /// <summary>
+    /// Returns a one-line summary of the event.
+    /// </summary>
+    /// <returns>A string representation of the event.</returns>
+    public override string ToString()
+    {
+        return $"BulkheadRejectedEvent {{ Id = {Id}, Timestamp = {Timestamp}, SourcePolicy = {SourcePolicy}, PolicyName = {PolicyName}, ActiveExecutions = {ActiveExecutions}, MaxCapacity = {MaxCapacity}, QueuedRequests = {QueuedRequests} }}";
+    }
 }
 
 /// <summary>
@@ -399,6 +435,15 @@ public sealed class TimeoutOccurredEvent : ResiliencyEvent
     /// Gets or sets the actual duration of the operation, in milliseconds.
     /// </summary>
     public long ActualDurationMs { get; set; }
+
+    /// <summary>
+    /// Returns a one-line summary of the event.
+    /// </summary>
+    /// <returns>A string representation of the event.</returns>
+    public override string ToString()
+    {
+        return $"TimeoutOccurredEvent {{ Id = {Id}, Timestamp = {Timestamp}, SourcePolicy = {SourcePolicy}, PolicyName = {PolicyName}, TimeoutMs = {TimeoutMs}, ActualDurationMs = {ActualDurationMs} }}";
+    }
 }
 
 /// <summary>
@@ -420,6 +465,15 @@ public sealed class FallbackTriggeredEvent : ResiliencyEvent
     /// Gets or sets a value indicating whether the fallback produced a result successfully.
     /// </summary>
     public bool FallbackSucceeded { get; set; }
+
+    /// <summary>
+    /// Returns a one-line summary of the event.
+    /// </summary>
+    /// <returns>A string representation of the event.</returns>
+    public override string ToString()
+    {
+        return $"FallbackTriggeredEvent {{ Id = {Id}, Timestamp = {Timestamp}, SourcePolicy = {SourcePolicy}, PolicyName = {PolicyName}, Reason = {Reason}, FallbackSucceeded = {FallbackSucceeded} }}";
+    }
 }
 
 /// <summary>
@@ -446,4 +500,13 @@ public sealed class PolicyHealthChangedEvent : ResiliencyEvent
     /// Gets or sets the success rate, as a percentage, at the time of the change.
     /// </summary>
     public double SuccessRate { get; set; }
+
+    /// <summary>
+    /// Returns a one-line summary of the event.
+    /// </summary>
+    /// <returns>A string representation of the event.</returns>
+    public override string ToString()
+    {
+        return $"PolicyHealthChangedEvent {{ Id = {Id}, Timestamp = {Timestamp}, SourcePolicy = {SourcePolicy}, PolicyName = {PolicyName}, PreviousHealth = {PreviousHealth}, NewHealth = {NewHealth}, SuccessRate = {SuccessRate} }}";
+    }
 }
