@@ -29,6 +29,9 @@ public sealed class ExternalApiClient
     /// <summary>
     /// Initializes a new instance of the <see cref="ExternalApiClient"/> class.
     /// </summary>
+    /// <param name="httpClientFactory">Factory used to create the <see cref="HttpClient"/> instances for outgoing requests.</param>
+    /// <param name="pipelineService">Service that executes requests under the configured resilience policies.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="httpClientFactory"/> or <paramref name="pipelineService"/> is null.</exception>
     public ExternalApiClient(HttpClientFactory httpClientFactory, ResiliencyPipelineService pipelineService)
     {
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
