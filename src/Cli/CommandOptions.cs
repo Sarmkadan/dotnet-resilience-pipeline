@@ -23,12 +23,14 @@ public sealed class CommandOptions
     public string? Subcommand { get; set; }
 
     /// <summary>
-    /// Gets or sets the named arguments parsed from <c>--key value</c> pairs, keyed case-insensitively.
+    /// Gets or sets the named arguments parsed from <c>--key value</c> pairs.
+    /// Keys are matched case-insensitively, so <c>--Timeout</c> and <c>--timeout</c> refer to the same entry.
     /// </summary>
     public Dictionary<string, string> Arguments { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// Gets or sets the raw flags (for example, <c>--reset</c>) that were present on the command line.
+    /// Gets or sets the boolean switches (for example, <c>--reset</c>) that were present on the command line.
+    /// Each switch takes no value; its presence alone sets it. Query them with <see cref="HasFlag(string[])"/>.
     /// </summary>
     public List<string> Flags { get; set; } = new();
 
