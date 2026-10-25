@@ -861,6 +861,71 @@ Console.WriteLine($"Success rate: {summary.SuccessRate:F1}%, avg: {summary.Avera
 logger.Clear();
 ```
 
+## MetricsCollectorWorker
+
+`src/Workers/MetricsCollectorWorker.cs` provides a background worker that periodically samples `ResiliencyPipelineService` statistics and records them as `MetricsSnapshot` entries in a `MetricsAggregator`. The aggregator then serves the time-series data for windowed summaries, trend analysis and reports.
+
+### Constructor
+
+`MetricsCollectorWorker(ResiliencyPipelineService pipelineService, MetricsAggregator aggregator, ILogger<MetricsCollectorWorker>? logger = null)` - both the pipeline service and the aggregator are required (`ArgumentNullException` otherwise). Without a logger, a `NullLogger` is used.
+
+### CollectionInterval
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `CollectionInterval` | 10 s | Delay between consecutive collections. Read after every cycle, so a change made while running applies from the next delay onward. |
+
+### Lifecycle
+
+| Method | Description |
+|--------|-------------|
+| `Start()` | Begins the collection loop in a background task. No-op if already running. |
+| `StopAsync()` | Cancels the loop and awaits the background task. No-op if not running. |
+| `IsRunning` | `true` while the collection loop is active. |
+| `TotalCollections` | Number of collection cycles performed since the worker started. |
+
+### Integration with MetricsAggregator
+
+Each cycle calls `ResiliencyPipelineService.GetStatistics()`, builds a `MetricsSnapshot` (timestamp, total/successful/failed executions, success rate, active policy count) and passes it to `MetricsAggregator.RecordSnapshot`. The aggregator keeps at most `MaxSnapshots` snapshots (default 1000) and drops the oldest first. `AverageExecutionTimeMs` is currently always recorded as `0`.
+
+The worker exposes the aggregator's results directly:
+
+- `GetStatus()` returns a `MetricsCollectorStatus` (`IsRunning`, `TotalCollections`, `LastCollectionTime`, and `RecentMetrics`, an `AggregatedMetrics` over the last 5 minutes). `LastCollectionTime` is stamped with the time `GetStatus()` was called, not with the last collection.
+- `GetMetricsForTimeRange(TimeSpan)` - `AggregatedMetrics` for an arbitrary window.
+- `GetTrendAnalysis(TimeSpan)` - `MetricsTrend` for the `SuccessRate` metric.
+- `GenerateReport(TimeSpan)` - `PerformanceReport` for the window.
+
+Extension methods in `src/Workers/MetricsCollectorWorkerExtensions.cs` add `WithInterval(TimeSpan)` (fluent interval setter), `RestartAsync()` and `IsStale(TimeSpan)`.
+
+### Usage
+
+```csharp
+using DotNetResiliencePipeline.Services;
+using DotNetResiliencePipeline.Utilities;
+using DotNetResiliencePipeline.Workers;
+
+// Assume we have a ResiliencyPipelineService instance
+var pipeline = new ResiliencyPipelineService();
+var aggregator = new MetricsAggregator { MaxSnapshots = 500 };
+
+var collector = new MetricsCollectorWorker(pipeline, aggregator)
+{
+    CollectionInterval = TimeSpan.FromSeconds(15)
+};
+
+collector.Start();
+
+// Later: inspect the last 5 minutes and the trend
+MetricsCollectorStatus status = collector.GetStatus();
+Console.WriteLine($"Collections: {status.TotalCollections}, avg success: {status.RecentMetrics.AverageSuccessRate:F1}%");
+
+MetricsTrend trend = collector.GetTrendAnalysis(TimeSpan.FromHours(1));
+Console.WriteLine($"Trend: {trend.Direction} ({trend.ChangePercentage:F1}%)");
+
+// Shut down
+await collector.StopAsync();
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
