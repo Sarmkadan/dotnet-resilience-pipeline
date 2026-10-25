@@ -78,6 +78,10 @@ public sealed class ExecutionHistoryRepository
     /// The default number of minutes execution records are retained.
     /// </summary>
     public const int DefaultRetentionMinutes = 60;
+    /// <summary>
+    /// The interval, in minutes, between automatic cleanups of expired execution records.
+    /// </summary>
+    private const int CleanupIntervalMinutes = 5;
     private const int P50Rank = 50;
     private const int P90Rank = 90;
     private const int P99Rank = 99;
@@ -347,7 +351,7 @@ public sealed class ExecutionHistoryRepository
     private void _performCleanupIfNeeded()
     {
         // Cleanup every 5 minutes to avoid locking on every record
-        if ((DateTime.UtcNow - _lastCleanup).TotalMinutes >= 5)
+        if ((DateTime.UtcNow - _lastCleanup).TotalMinutes >= CleanupIntervalMinutes)
         {
             DeleteOldRecords();
             _lastCleanup = DateTime.UtcNow;
