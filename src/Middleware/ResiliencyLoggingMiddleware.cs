@@ -29,6 +29,7 @@ public sealed class ResiliencyLoggingMiddleware
     /// <param name="pipelineService">The pipeline service whose executions are logged.</param>
     public ResiliencyLoggingMiddleware(ResiliencyPipelineService pipelineService)
     {
+        ArgumentNullException.ThrowIfNull(pipelineService);
         _pipelineService = pipelineService;
     }
 
@@ -37,6 +38,9 @@ public sealed class ResiliencyLoggingMiddleware
     /// </summary>
     public void LogExecution(string policyName, string operationName, bool success, long durationMs, Exception? exception = null)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(operationName);
+
         var entry = new LogEntry
         {
             Id = Guid.NewGuid().ToString(),
@@ -69,6 +73,8 @@ public sealed class ResiliencyLoggingMiddleware
     /// </summary>
     public List<LogEntry> GetLogsByPolicy(string policyName)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
+
         lock (_lockObj)
         {
             return _logs.Where(l => l.PolicyName == policyName).ToList();
