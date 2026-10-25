@@ -15,6 +15,21 @@ namespace DotNetResiliencePipeline.Utilities;
 /// </summary>
 public sealed class PolicyNameGenerator
 {
+    /// <summary>
+    /// Maximum number of leading characters of an unknown policy type used as its name suffix.
+    /// </summary>
+    private const int PrefixLength = 3;
+
+    /// <summary>
+    /// Minimum length of a valid policy name.
+    /// </summary>
+    private const int MinNameLength = 3;
+
+    /// <summary>
+    /// Maximum length of a valid policy name.
+    /// </summary>
+    private const int MaxNameLength = 100;
+
     private readonly Dictionary<string, int> _nameCounters = new();
     private readonly HashSet<string> _usedNames = new();
     private readonly object _lockObj = new object();
@@ -54,7 +69,7 @@ public sealed class PolicyNameGenerator
             "timeout" => "timeout",
             "bulkhead" => "bulkhead",
             "fallback" => "fallback",
-            _ => policyType.Substring(0, Math.Min(3, policyType.Length)).ToLowerInvariant()
+            _ => policyType.Substring(0, Math.Min(PrefixLength, policyType.Length)).ToLowerInvariant()
         };
 
         lock (_lockObj)
@@ -113,7 +128,7 @@ public sealed class PolicyNameGenerator
         if (string.IsNullOrEmpty(name))
             return false;
 
-        if (name.Length < 3 || name.Length > 100)
+        if (name.Length < MinNameLength || name.Length > MaxNameLength)
             return false;
 
         // Allow alphanumeric, dash, underscore
