@@ -5,6 +5,7 @@
 // =====================================================================
 
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using DotNetResiliencePipeline.Domain.Policies;
 
 namespace DotNetResiliencePipeline.Configuration;
@@ -174,6 +175,15 @@ public sealed class DotnetResiliencePipelineOptions
                 JitterFactor = JitterFactor
             };
         }
+
+        /// <summary>
+        /// Returns a string representation of the RetryOptions.
+        /// </summary>
+        /// <returns>A string in the format: RetryOptions { MaxRetries = value, InitialDelayMs = value, Strategy = value, MaxDelayMs = value, BackoffMultiplier = value, UseJitter = value, JitterFactor = value }</returns>
+        public override string ToString()
+        {
+            return string.Create(CultureInfo.InvariantCulture, $"RetryOptions {{ MaxRetries = {MaxRetries}, InitialDelayMs = {InitialDelayMs}, Strategy = {Strategy}, MaxDelayMs = {MaxDelayMs}, BackoffMultiplier = {BackoffMultiplier}, UseJitter = {UseJitter}, JitterFactor = {JitterFactor} }}");
+        }
     }
 
     /// <summary>
@@ -198,6 +208,15 @@ public sealed class DotnetResiliencePipelineOptions
             {
                 Timeout = TimeSpan.FromSeconds(TimeoutSeconds)
             };
+        }
+
+        /// <summary>
+        /// Returns a string representation of the TimeoutOptions.
+        /// </summary>
+        /// <returns>A string in the format: TimeoutOptions { TimeoutSeconds = value }</returns>
+        public override string ToString()
+        {
+            return string.Create(CultureInfo.InvariantCulture, $"TimeoutOptions {{ TimeoutSeconds = {TimeoutSeconds} }}");
         }
     }
 
@@ -232,6 +251,15 @@ public sealed class DotnetResiliencePipelineOptions
                 MaxQueueLength = MaxQueueLength
             };
         }
+
+        /// <summary>
+        /// Returns a string representation of the BulkheadOptions.
+        /// </summary>
+        /// <returns>A string in the format: BulkheadOptions { MaxParallelization = value, MaxQueueLength = value }</returns>
+        public override string ToString()
+        {
+            return string.Create(CultureInfo.InvariantCulture, $"BulkheadOptions {{ MaxParallelization = {MaxParallelization}, MaxQueueLength = {MaxQueueLength} }}");
+        }
     }
 
     /// <summary>
@@ -263,6 +291,15 @@ public sealed class DotnetResiliencePipelineOptions
                 FallbackOnAnyException = FallbackOnAnyException,
                 FallbackTimeout = TimeSpan.FromSeconds(FallbackTimeoutSeconds)
             };
+        }
+
+        /// <summary>
+        /// Returns a string representation of the FallbackOptions.
+        /// </summary>
+        /// <returns>A string in the format: FallbackOptions { FallbackOnAnyException = value, FallbackTimeoutSeconds = value }</returns>
+        public override string ToString()
+        {
+            return string.Create(CultureInfo.InvariantCulture, $"FallbackOptions {{ FallbackOnAnyException = {FallbackOnAnyException}, FallbackTimeoutSeconds = {FallbackTimeoutSeconds} }}");
         }
     }
 
@@ -304,6 +341,15 @@ public sealed class DotnetResiliencePipelineOptions
             var end = new TimeOnly(endHour, endMinute);
 
             return (start, end);
+        }
+
+        /// <summary>
+        /// Returns a string representation of the FailureInjectionTimeWindowOptions.
+        /// </summary>
+        /// <returns>A string in the format: FailureInjectionTimeWindowOptions { StartTime = value, EndTime = value }</returns>
+        public override string ToString()
+        {
+            return string.Create(CultureInfo.InvariantCulture, $"FailureInjectionTimeWindowOptions {{ StartTime = {StartTime}, EndTime = {EndTime} }}");
         }
     }
 }
