@@ -33,6 +33,9 @@ public sealed class MetricsController
     /// <param name="historyRepository">The repository that stores execution history.</param>
     public MetricsController(ResiliencyPipelineService pipelineService, ExecutionHistoryRepository historyRepository)
     {
+        ArgumentNullException.ThrowIfNull(pipelineService);
+        ArgumentNullException.ThrowIfNull(historyRepository);
+
         _pipelineService = pipelineService;
         _historyRepository = historyRepository;
     }
