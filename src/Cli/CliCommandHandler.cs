@@ -413,4 +413,10 @@ public sealed class CommandExecutionResult
     /// Gets or sets the process exit code for the command.
     /// </summary>
     public int ExitCode { get; set; }
+
+    /// <summary>
+    /// Returns a single-line summary of the command result.
+    /// </summary>
+    /// <returns>A string describing the success flag, message, error, and exit code.</returns>
+    public override string ToString() => $"CommandExecutionResult {{ Success = {Success}, Message = {Message}, Error = {Error?.Message ?? "null"}, ExitCode = {ExitCode} }}";
 }
