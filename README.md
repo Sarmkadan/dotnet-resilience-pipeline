@@ -1718,6 +1718,99 @@ foreach (var (key, count) in errorHandler.GetMostCommonErrors(top: 5))
 errorHandler.Clear();
 ```
 
+## ExternalApiClient and HttpClientFactory
+
+`src/Integration/ExternalApiClient.cs` provides `ExternalApiClient`, a JSON wrapper for calls to named external APIs, and `ApiConfiguration`, the settings for one API. `src/Integration/HttpClientFactory.cs` provides `HttpClientFactory`, which creates and caches one `HttpClient` per client name. Both take a `ResiliencyPipelineService` in their constructors. `ExternalApiClient` also takes an `HttpClientFactory`.
+
+### ApiConfiguration
+
+- `BaseUrl`: required absolute URL. Request endpoints are appended to it. `RegisterApi` throws `ConfigurationException` when it is empty or not absolute.
+- `ApiKey`: sent as the `X-API-Key` header when not empty.
+- `BearerToken`: sent as `Authorization: Bearer <token>` when not empty.
+- `Timeout`: per-request timeout. The default is 30 seconds.
+- `DefaultHeaders`: added to every request.
+- `MaxRetries` (default 3) and `RetryDelay` (default 100 ms): stored on the configuration but not read by `ExternalApiClient`. Retries come from the `RetryPolicy` you pass to the pipeline (see below).
+
+### Making calls
+
+`GetAsync<T>` and `PostAsync<T>` take the API name, an endpoint, optional per-call headers, and a cancellation token. `PostAsync` also takes the payload object, which is serialized as JSON. A successful call returns `ApiResponse<T>` with `Success = true`, the deserialized `Data`, and the response `Headers`. Failures throw:
+
+- A non-2xx status throws `HttpResponseException`, which exposes `StatusCode`.
+- A response body that does not deserialize throws `HttpResponseException` with the first 200 characters of the content.
+- A network error throws `HttpClientException`. The same applies to a `Timeout` expiry, because `HttpClient` raises it without your token being cancelled.
+- `HttpTimeoutException` is thrown only when the token you passed is cancelled.
+
+`GetRegisteredApis` returns the names of the registered APIs.
+
+### Resilient calls through the pipeline
+
+`ExternalApiClient` does not run requests through the pipeline itself. `GetAsync` and `PostAsync` send the request directly. To apply retries, circuit breaking, timeouts, or bulkheads, wrap the call in `ResiliencyPipelineService.ExecuteAsync` and pass the policies. Because the client throws on failure, the pipeline sees each failed attempt.
+
+`HttpClientFactory.GetAsync` and `PostAsync` accept a `policyName` and look it up, but they do not apply it yet. These methods also behave differently: they return `ResilientHttpResponse` with `Success = false` for non-2xx responses instead of throwing. Wrap them the same way if you need pipeline execution.
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Integration;
+using DotNetResiliencePipeline.Services;
+
+var pipeline = new ResiliencyPipelineService();
+var retry = new RetryPolicy("catalog-retry") { MaxRetries = 3 };
+pipeline.RegisterPolicy(retry);
+
+using var httpFactory = new HttpClientFactory(pipeline);
+var api = new ExternalApiClient(httpFactory, pipeline);
+
+api.RegisterApi("catalog", new ApiConfiguration
+{
+    BaseUrl = "https://api.example.com/v2",
+    BearerToken = Environment.GetEnvironmentVariable("CATALOG_TOKEN"),
+    Timeout = TimeSpan.FromSeconds(10)
+});
+
+// Each attempt runs through the retry policy; a failed attempt throws and is retried.
+// Product is your own DTO.
+PolicyResult<ApiResponse<Product>> result = await pipeline.ExecuteAsync(
+    ct => api.GetAsync<Product>("catalog", "products/42", cancellationToken: ct),
+    retry: retry);
+
+if (result.IsSuccess)
+    Console.WriteLine(result.Data?.Data?.Name);
+else
+    Console.WriteLine($"Failed after {result.AttemptCount} attempt(s): {result.Exception?.Message}");
+```
+
+### Health checks
+
+`TestConnectionAsync(apiName, cancellationToken)` sends a GET to `BaseUrl` with a fixed 5-second timeout. It returns `true` for a 2xx response and `false` when the request fails at the network level or returns a non-2xx status. It throws `ConfigurationException` for an unregistered name. It is a connectivity probe, not an `IHealthCheck`, and it does not feed into `ResiliencePipelineHealthCheck`. To report it through ASP.NET Core health checks, wrap it in your own `IHealthCheck`:
+
+```csharp
+using DotNetResiliencePipeline.Integration;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+
+public sealed class CatalogApiHealthCheck(ExternalApiClient api) : IHealthCheck
+{
+    public async Task<HealthCheckResult> CheckHealthAsync(
+        HealthCheckContext context,
+        CancellationToken cancellationToken = default)
+    {
+        bool reachable = await api.TestConnectionAsync("catalog", cancellationToken);
+        return reachable
+            ? HealthCheckResult.Healthy("catalog API reachable")
+            : HealthCheckResult.Unhealthy("catalog API unreachable or returned a non-success status");
+    }
+}
+
+// In Program.cs:
+services.AddSingleton(api);
+services.AddHealthChecks()
+    .AddCheck<CatalogApiHealthCheck>("catalog_api", failureStatus: HealthStatus.Degraded);
+```
+
+### Notes
+
+- `HttpClient` instances are cached per API name, and the cache ignores later changes. The `Timeout` in effect is the one from whichever call created the client first. This includes `TestConnectionAsync`, which uses a 5-second timeout. If it runs before any request for the same name, later requests inherit that 5-second timeout. Make a request for each API before running the health check.
+- `ApiConfiguration.ToString()` includes `ApiKey` and `BearerToken` in plain text. Do not log it.
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
