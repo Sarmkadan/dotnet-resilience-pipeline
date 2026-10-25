@@ -116,7 +116,7 @@ public sealed class HttpClientFactory : IDisposable
 
         try
         {
-            var response = await client.GetAsync(url, cancellationToken);
+            using var response = await client.GetAsync(url, cancellationToken);
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
             return new ResilientHttpResponse
@@ -182,7 +182,7 @@ public sealed class HttpClientFactory : IDisposable
 
         try
         {
-            var response = await client.PostAsync(url, content, cancellationToken);
+            using var response = await client.PostAsync(url, content, cancellationToken);
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
             return new ResilientHttpResponse

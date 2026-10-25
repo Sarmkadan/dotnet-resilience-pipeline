@@ -171,6 +171,11 @@ public sealed class WebhookManager
             Timestamp = DateTime.UtcNow
         };
 
+        // One client per delivery, shared by all attempts, so retries reuse the connection pool.
+        using var client = _messageHandler is null
+            ? new HttpClient { Timeout = _deliveryTimeout }
+            : new HttpClient(_messageHandler, disposeHandler: false) { Timeout = _deliveryTimeout };
+
         int attemptCount = 0;
         Exception? lastException = null;
 
@@ -181,10 +186,6 @@ public sealed class WebhookManager
 
             try
             {
-                using var client = _messageHandler is null
-                    ? new HttpClient { Timeout = _deliveryTimeout }
-                    : new HttpClient(_messageHandler, disposeHandler: false) { Timeout = _deliveryTimeout };
-
                 var payload = new
                 {
                     id = delivery.Id,
@@ -196,11 +197,12 @@ public sealed class WebhookManager
                 var json = JsonSerializer.Serialize(payload);
                 var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                // Apply custom headers
+                // Custom headers go on the per-request message so they are not accumulated across attempts
+                using var request = new HttpRequestMessage(HttpMethod.Post, webhook.Url) { Content = content };
                 foreach (var header in webhook.CustomHeaders)
-                    client.DefaultRequestHeaders.Add(header.Key, header.Value);
+                    request.Headers.Add(header.Key, header.Value);
 
-                var response = await client.PostAsync(webhook.Url, content, cancellationToken);
+                using var response = await client.SendAsync(request, cancellationToken);
                 delivery.StatusCode = response.StatusCode;
                 delivery.Success = response.IsSuccessStatusCode;
 
