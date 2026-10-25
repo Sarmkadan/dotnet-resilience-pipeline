@@ -16,6 +16,16 @@ namespace DotNetResiliencePipeline.Services;
 /// </summary>
 public sealed class FailureInjectionService
 {
+    /// <summary>
+    /// Latency added by a <see cref="InjectionType.Latency"/> rule when <see cref="InjectionRule.LatencyDelay"/> is not set.
+    /// </summary>
+    private static readonly TimeSpan DefaultLatencyDelay = TimeSpan.FromMilliseconds(500);
+
+    /// <summary>
+    /// Simulated hang duration for an <see cref="InjectionType.Timeout"/> rule when <see cref="InjectionRule.TimeoutDuration"/> is not set.
+    /// </summary>
+    private static readonly TimeSpan DefaultTimeoutDuration = TimeSpan.FromSeconds(30);
+
     private readonly ILogger<FailureInjectionService> _logger;
     private readonly Dictionary<string, InjectionRule> _rules = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _lock = new();
@@ -257,14 +267,14 @@ public sealed class FailureInjectionService
         Func<CancellationToken, Task<T>> operation,
         CancellationToken cancellationToken)
     {
-        var delay = rule.LatencyDelay ?? TimeSpan.FromMilliseconds(500);
+        var delay = rule.LatencyDelay ?? DefaultLatencyDelay;
         await Task.Delay(delay, cancellationToken);
         return await operation(cancellationToken);
     }
 
     private static async Task<T> InjectTimeoutAsync<T>(InjectionRule rule, CancellationToken cancellationToken)
     {
-        var delay = rule.TimeoutDuration ?? TimeSpan.FromSeconds(30);
+        var delay = rule.TimeoutDuration ?? DefaultTimeoutDuration;
         await Task.Delay(delay, cancellationToken);
         throw new OperationCanceledException($"Injected timeout after {delay.TotalSeconds}s for rule '{rule.Key}'");
     }
@@ -290,6 +300,9 @@ public enum InjectionType
 /// </summary>
 public sealed class InjectionRule
 {
+    /// <summary>Regular expression for a 24-hour <c>HH:mm</c> time of day (used by the time-window properties).</summary>
+    private const string TimeOfDayPattern = "^([01]?[0-9]|2[0-3]):([0-5][0-9])$";
+
     /// <summary>Unique key identifying this rule (e.g. "payment-service").</summary>
     public string Key { get; set; } = string.Empty;
 
@@ -324,7 +337,7 @@ public sealed class InjectionRule
     /// Start time of the active window (inclusive).
     /// Format: HH:mm (24-hour format). Default: null (always active).
     /// </summary>
-    [RegularExpression("^([01]?[0-9]|2[0-3]):([0-5][0-9])$",
+    [RegularExpression(TimeOfDayPattern,
         ErrorMessage = "StartTime must be in HH:mm format (24-hour clock)")]
     public string? StartTime { get; set; }
 
@@ -332,7 +345,7 @@ public sealed class InjectionRule
     /// End time of the active window (inclusive).
     /// Format: HH:mm (24-hour format). Default: null (always active).
     /// </summary>
-    [RegularExpression("^([01]?[0-9]|2[0-3]):([0-5][0-9])$",
+    [RegularExpression(TimeOfDayPattern,
         ErrorMessage = "EndTime must be in HH:mm format (24-hour clock)")]
     public string? EndTime { get; set; }
 
