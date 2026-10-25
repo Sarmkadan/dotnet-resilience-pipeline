@@ -54,6 +54,9 @@ public sealed class HealthCheckWorker
     /// <param name="eventPublisher">The publisher used to emit health events.</param>
     public HealthCheckWorker(ResiliencyPipelineService pipelineService, ResiliencyEventPublisher eventPublisher)
     {
+        ArgumentNullException.ThrowIfNull(pipelineService);
+        ArgumentNullException.ThrowIfNull(eventPublisher);
+
         _pipelineService = pipelineService;
         _eventPublisher = eventPublisher;
     }
