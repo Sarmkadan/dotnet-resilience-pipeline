@@ -17,6 +17,11 @@ namespace DotNetResiliencePipeline.Integration;
 /// </summary>
 public sealed class ExternalApiClient
 {
+    /// <summary>
+    /// Timeout applied to a connectivity test request made by <see cref="TestConnectionAsync"/>.
+    /// </summary>
+    private static readonly TimeSpan HealthCheckTimeout = TimeSpan.FromSeconds(5);
+
     private readonly HttpClientFactory _httpClientFactory;
     private readonly ResiliencyPipelineService _pipelineService;
     private readonly Dictionary<string, ApiConfiguration> _apiConfigs = new();
@@ -246,7 +251,7 @@ public sealed class ExternalApiClient
 
         try
         {
-            var client = _httpClientFactory.CreateClient(apiName, config.BaseUrl, timeout: TimeSpan.FromSeconds(5));
+            var client = _httpClientFactory.CreateClient(apiName, config.BaseUrl, timeout: HealthCheckTimeout);
             using var response = await client.GetAsync(config.BaseUrl, cancellationToken);
             return response.IsSuccessStatusCode;
         }
@@ -254,7 +259,7 @@ public sealed class ExternalApiClient
         {
             throw new HttpTimeoutException(
                 $"Connection test to {apiName} was cancelled",
-                TimeSpan.FromSeconds(5),
+                HealthCheckTimeout,
                 ex,
                 apiName,
                 config.BaseUrl);
@@ -313,6 +318,21 @@ public sealed class ExternalApiClient
 public sealed class ApiConfiguration
 {
     /// <summary>
+    /// Default per-request timeout used when <see cref="Timeout"/> is not set explicitly.
+    /// </summary>
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Default number of retry attempts used when <see cref="MaxRetries"/> is not set explicitly.
+    /// </summary>
+    private const int DefaultMaxRetries = 3;
+
+    /// <summary>
+    /// Default delay between retry attempts used when <see cref="RetryDelay"/> is not set explicitly.
+    /// </summary>
+    private static readonly TimeSpan DefaultRetryDelay = TimeSpan.FromMilliseconds(100);
+
+    /// <summary>
     /// Gets or sets the base URL that request paths are resolved against.
     /// </summary>
     public string BaseUrl { get; set; } = string.Empty;
@@ -330,7 +350,7 @@ public sealed class ApiConfiguration
     /// <summary>
     /// Gets or sets the timeout applied to each request. The default is 30 seconds.
     /// </summary>
-    public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
+    public TimeSpan Timeout { get; set; } = DefaultTimeout;
 
     /// <summary>
     /// Gets or sets headers that are added to every request.
@@ -340,12 +360,12 @@ public sealed class ApiConfiguration
     /// <summary>
     /// Gets or sets the maximum number of retry attempts for a failed request. The default is 3.
     /// </summary>
-    public int MaxRetries { get; set; } = 3;
+    public int MaxRetries { get; set; } = DefaultMaxRetries;
 
     /// <summary>
     /// Gets or sets the delay between retry attempts. The default is 100 milliseconds.
     /// </summary>
-    public TimeSpan RetryDelay { get; set; } = TimeSpan.FromMilliseconds(100);
+    public TimeSpan RetryDelay { get; set; } = DefaultRetryDelay;
 
     /// <summary>
     /// Returns a string representation of the API configuration.
