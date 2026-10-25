@@ -255,6 +255,17 @@ public sealed class RateLimiter
         }
     }
 
+    /// <summary>
+    /// Returns a concise, informative representation of the limiter's current token state.
+    /// </summary>
+    public override string ToString()
+    {
+        lock (_lockObj)
+        {
+            return $"RateLimiter {{ RequestsPerSecond = {_tokensPerSecond}, RequestsPerMinute = {_tokensPerMinute}, RemainingTokensPerSecond = {_tokensSecond}, RemainingTokensPerMinute = {_tokensMinute}, LastRefillSecond = {_lastRefillSecond:O}, LastRefillMinute = {_lastRefillMinute:O} }}";
+        }
+    }
+
     private void RefillTokens()
     {
         var now = DateTime.UtcNow;
@@ -330,4 +341,10 @@ public sealed class RateLimitStatus
     public RateLimitStatus()
     {
     }
+
+    /// <summary>
+    /// Returns a concise, informative representation of the rate limit status.
+    /// </summary>
+    public override string ToString() =>
+        $"RateLimitStatus {{ ClientId = {ClientId}, RequestsPerSecond = {RequestsPerSecond}, RequestsPerMinute = {RequestsPerMinute}, RemainingTokensPerSecond = {RemainingTokensPerSecond}, RemainingTokensPerMinute = {RemainingTokensPerMinute}, NextResetSecond = {NextResetSecond:O}, NextResetMinute = {NextResetMinute:O}, IsLimited = {IsLimited} }}";
 }
