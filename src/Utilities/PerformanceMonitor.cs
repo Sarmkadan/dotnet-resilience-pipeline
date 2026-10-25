@@ -234,22 +234,22 @@ public sealed class PerformanceMetrics
     public List<long> AllDurations { get; set; } = new();
 
     /// <summary>
-    /// Gets the 50th percentile (median) execution duration, in milliseconds.
+    /// Gets the 50th percentile (median) latency, in milliseconds, computed from <see cref="AllDurations"/>.
     /// </summary>
     public long P50 => CalculatePercentile(50);
 
     /// <summary>
-    /// Gets the 90th percentile execution duration, in milliseconds.
+    /// Gets the 90th percentile latency, in milliseconds, computed from <see cref="AllDurations"/>.
     /// </summary>
     public long P90 => CalculatePercentile(90);
 
     /// <summary>
-    /// Gets the 95th percentile execution duration, in milliseconds.
+    /// Gets the 95th percentile latency, in milliseconds, computed from <see cref="AllDurations"/>.
     /// </summary>
     public long P95 => CalculatePercentile(95);
 
     /// <summary>
-    /// Gets the 99th percentile execution duration, in milliseconds.
+    /// Gets the 99th percentile latency, in milliseconds, computed from <see cref="AllDurations"/>.
     /// </summary>
     public long P99 => CalculatePercentile(99);
 
