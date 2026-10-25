@@ -1811,6 +1811,54 @@ services.AddHealthChecks()
 - `HttpClient` instances are cached per API name, and the cache ignores later changes. The `Timeout` in effect is the one from whichever call created the client first. This includes `TestConnectionAsync`, which uses a 5-second timeout. If it runs before any request for the same name, later requests inherit that 5-second timeout. Make a request for each API before running the health check.
 - `ApiConfiguration.ToString()` includes `ApiKey` and `BearerToken` in plain text. Do not log it.
 
+## Events
+
+`src/Events/ResiliencyEventPublisher.cs` provides `ResiliencyEventPublisher`, an in-process pub-sub hub for resilience events. Every event derives from `ResiliencyEvent` (`Id`, `Timestamp`, `SourcePolicy`) and is one of seven types:
+
+- `PolicyExecutedSuccessfullyEvent` - `PolicyName`, `DurationMs`, `AttemptNumber`
+- `PolicyExecutionFailedEvent` - `PolicyName`, `ExceptionType`, `ExceptionMessage`, `DurationMs`
+- `CircuitBreakerStateChangedEvent` - `PolicyName`, `PreviousState`, `NewState`, `ConsecutiveFailures`
+- `BulkheadRejectedEvent` - `PolicyName`, `ActiveExecutions`, `MaxCapacity`, `QueuedRequests`
+- `TimeoutOccurredEvent` - `PolicyName`, `TimeoutMs`, `ActualDurationMs`
+- `FallbackTriggeredEvent` - `PolicyName`, `Reason`, `FallbackSucceeded`
+- `PolicyHealthChangedEvent` - `PolicyName`, `PreviousHealth`, `NewHealth`, `SuccessRate`
+
+`PublishAsync` overwrites `Timestamp` with the current UTC time, updates the atomic counters, appends the event to an in-memory history, and then calls the subscribers for that event type. Subscribers are matched by the event class name (`nameof(...)`), so the `eventType` string in `Subscribe` must match the class name and the type argument must be the same event type. Handlers run synchronously on the publishing thread. An exception thrown by a handler is written to the console and does not stop the other handlers.
+
+The history holds at most `MaxHistorySize` events (default `DefaultMaxHistorySize`, 1000). `GetEventHistory(limit)` returns the most recent events of any type, and `GetEvents<T>(limit)` returns the most recent events of one type; `limit` defaults to `DefaultEventLimit` (100). Both return copies. `ClearHistory` empties the history, and `ClearSubscribers` removes all handlers.
+
+`src/Events/PipelineEventObserver.cs` provides `PipelineEventObserver`, which wraps a publisher. Its constructor subscribes a default handler for each of the seven event types, and those handlers write a one-line summary to the console. `RegisterHandler` adds named handlers, and `UnregisterHandler` and `SetHandlerActive` manage them. `GetStatistics` returns the publisher's counters as an `EventStatistics` value. `EventStatistics` exposes one counter per event type, `TotalEventsEmitted`, `FailureRate`, and `SuccessRate`. `RecordEvent` queues an event for console logging only: it does not update the counters or the history. Dispose the observer when you are done with it.
+
+```csharp
+using DotNetResiliencePipeline.Events;
+
+var publisher = new ResiliencyEventPublisher { MaxHistorySize = 500 };
+
+// Subscribe to one event type. The first argument must be the event class name.
+publisher.Subscribe<CircuitBreakerStateChangedEvent>(
+    nameof(CircuitBreakerStateChangedEvent),
+    evt => Console.WriteLine($"{evt.PolicyName}: {evt.PreviousState} -> {evt.NewState}"));
+
+await publisher.PublishAsync(new CircuitBreakerStateChangedEvent
+{
+    PolicyName = "orders-cb",
+    PreviousState = "Closed",
+    NewState = "Open",
+    ConsecutiveFailures = 5
+});
+
+// Recent history and counters.
+List<ResiliencyEvent> recent = publisher.GetEventHistory(limit: 20);
+List<TimeoutOccurredEvent> timeouts = publisher.GetEvents<TimeoutOccurredEvent>();
+EventStatistics stats = publisher.GetStatistics();
+Console.WriteLine($"Failure rate: {stats.FailureRate:F1}%");
+
+// Console logging for every event type, plus statistics through the observer.
+using var observer = new PipelineEventObserver(publisher);
+```
+
+For the full reference, including the handler lifecycle and the observer's dispatch behavior, see [docs/events.md](docs/events.md).
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
