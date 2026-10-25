@@ -4,6 +4,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Globalization;
 using System.Text.Json;
 using DotNetResiliencePipeline.Domain.Policies;
 
@@ -265,5 +266,32 @@ public sealed class PolicyJson
             "FallbackPolicy" => new FallbackPolicy(Name) { Id = Id, IsEnabled = IsEnabled },
             _ => null
         };
+    }
+
+    /// <summary>
+    /// Returns a summary of the policy: its name, type and the numeric settings that are set.
+    /// </summary>
+    /// <returns>A string in the format PolicyJson { Name = ..., Type = ..., ... }; unset settings are omitted.</returns>
+    public override string ToString()
+    {
+        var parts = new List<string> { $"Name = {Name}", $"Type = {Type}" };
+        AddIfSet(parts, nameof(FailureThreshold), FailureThreshold);
+        AddIfSet(parts, nameof(OpenDurationSeconds), OpenDurationSeconds);
+        AddIfSet(parts, nameof(SuccessThreshold), SuccessThreshold);
+        AddIfSet(parts, nameof(MaxRetries), MaxRetries);
+        AddIfSet(parts, nameof(InitialDelayMs), InitialDelayMs);
+        AddIfSet(parts, nameof(BackoffMultiplier), BackoffMultiplier);
+        AddIfSet(parts, nameof(TimeoutSeconds), TimeoutSeconds);
+        AddIfSet(parts, nameof(MaxParallelization), MaxParallelization);
+        AddIfSet(parts, nameof(MaxQueueLength), MaxQueueLength);
+        return string.Create(CultureInfo.InvariantCulture, $"PolicyJson {{ {string.Join(", ", parts)} }}");
+    }
+
+    private static void AddIfSet<T>(List<string> parts, string key, T? value) where T : struct, IFormattable
+    {
+        if (value.HasValue)
+        {
+            parts.Add(string.Create(CultureInfo.InvariantCulture, $"{key} = {value.Value}"));
+        }
     }
 }
