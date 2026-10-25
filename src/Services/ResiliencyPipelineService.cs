@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.ExceptionServices;
 using DotNetResiliencePipeline.Domain;
 using DotNetResiliencePipeline.Domain.Policies;
@@ -527,4 +528,16 @@ public sealed class PipelineStatistics
     /// Snapshots of the policies registered with the pipeline.
     /// </summary>
     public List<PolicySnapshot> RegisteredPolicies { get; set; } = new();
+
+    /// <summary>
+    /// Returns a single-line summary of the pipeline statistics.
+    /// </summary>
+    /// <returns>A summary such as <c>PipelineId=abc, Total=10, Succeeded=9, Failed=1, SuccessRate=90.00%</c>.</returns>
+    public override string ToString()
+    {
+        return $"PipelineId={PipelineId}, Total={TotalExecutions.ToString(CultureInfo.InvariantCulture)}, " +
+               $"Succeeded={SuccessfulExecutions.ToString(CultureInfo.InvariantCulture)}, " +
+               $"Failed={FailedExecutions.ToString(CultureInfo.InvariantCulture)}, " +
+               $"SuccessRate={SuccessRate.ToString("F2", CultureInfo.InvariantCulture)}%";
+    }
 }
