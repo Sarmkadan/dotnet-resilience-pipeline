@@ -16,6 +16,12 @@ namespace DotNetResiliencePipeline.Exceptions;
 public static class ResiliencyExceptionExtensions
 {
     /// <summary>
+    /// Maximum number of attempt exceptions listed individually in a detailed error report.
+    /// Any remaining attempt exceptions are summarized as a count.
+    /// </summary>
+    private const int MaxAttemptExceptionsDisplayed = 5;
+
+    /// <summary>
     /// Creates a detailed error message that includes all available exception information.
     /// </summary>
     /// <param name="exception">The resilience exception to format.</param>
@@ -77,14 +83,14 @@ public static class ResiliencyExceptionExtensions
                 if (mrEx.AttemptExceptions?.Count > 0)
                 {
                     builder.AppendLine($"Failed Attempts: {mrEx.AttemptExceptions.Count}");
-                    for (int i = 0; i < Math.Min(mrEx.AttemptExceptions.Count, 5); i++)
+                    for (int i = 0; i < Math.Min(mrEx.AttemptExceptions.Count, MaxAttemptExceptionsDisplayed); i++)
                     {
                         var ex = mrEx.AttemptExceptions[i];
                         builder.AppendLine($" Attempt {i + 1}: {ex.GetType().Name} - {ex.Message}");
                     }
-                    if (mrEx.AttemptExceptions.Count > 5)
+                    if (mrEx.AttemptExceptions.Count > MaxAttemptExceptionsDisplayed)
                     {
-                        builder.AppendLine($" ... and {mrEx.AttemptExceptions.Count - 5} more exceptions");
+                        builder.AppendLine($" ... and {mrEx.AttemptExceptions.Count - MaxAttemptExceptionsDisplayed} more exceptions");
                     }
                 }
                 break;
