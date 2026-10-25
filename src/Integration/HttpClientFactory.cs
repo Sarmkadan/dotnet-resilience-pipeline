@@ -17,6 +17,11 @@ namespace DotNetResiliencePipeline.Integration;
 /// </summary>
 public sealed class HttpClientFactory : IDisposable
 {
+    /// <summary>
+    /// Default request timeout applied to clients created without an explicit timeout.
+    /// </summary>
+    public static readonly TimeSpan DefaultClientTimeout = TimeSpan.FromSeconds(30);
+
     private readonly ConcurrentDictionary<string, HttpClient> _clients = new();
     private readonly ResiliencyPipelineService _pipelineService;
     private readonly object _lockObj = new object();
@@ -54,7 +59,7 @@ public sealed class HttpClientFactory : IDisposable
             if (!string.IsNullOrEmpty(baseAddress))
                 client.BaseAddress = new Uri(baseAddress);
 
-            client.Timeout = timeout ?? TimeSpan.FromSeconds(30);
+            client.Timeout = timeout ?? DefaultClientTimeout;
 
             return client;
         });
