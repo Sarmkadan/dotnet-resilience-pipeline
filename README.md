@@ -1414,6 +1414,103 @@ LatencyPercentiles latency = history.GetLatencyPercentiles();
 Console.WriteLine($"P50={latency.P50}ms P90={latency.P90}ms P99={latency.P99}ms");
 ```
 
+## Command Line Interface
+
+`src/Cli/` contains a command layer that a host application can wire to its own `args`. The demo `Program.cs` does not call it, so the `dotnet run -- ...` lines in the built-in help text do not reach it as shipped. Four types make up the flow:
+
+| Type | Role |
+|------|------|
+| `CommandParser` | Turns a `string[]` into a `CommandOptions`. `GetHelpText()` returns the help screen. |
+| `CommandOptions` | Holds the command, subcommand, typed policy settings, `Arguments` (unrecognized `--key value` pairs), and `Flags` (value-less switches). |
+| `CliCommandValidator` | Checks policy names and types, numeric ranges, timeouts, and file paths. `Validate()` returns a `ValidationResult`: errors block execution, warnings do not. |
+| `CliCommandHandler` | Validates the options, routes them to a command, and returns a `CommandExecutionResult` with `Success`, `Message`, and `ExitCode`. |
+
+```csharp
+var options = new CommandParser(args).Parse();
+var handler = new CliCommandHandler(pipelineService, policyRepository, historyRepository);
+
+try
+{
+    var result = await handler.ExecuteAsync(options);
+    Console.WriteLine(result.Message);
+    return result.ExitCode;
+}
+catch (ValidationException ex)
+{
+    // Validation errors are thrown, not returned as a result
+    Console.Error.WriteLine(ex.Message);
+    return 1;
+}
+```
+
+Parsing accepts `command subcommand --name value`, `--name=value`, `-o value`, and bare switches such as `--reset`. A value is consumed only when the next token does not start with `-`.
+
+### Commands
+
+| Command | Subcommands | Required options |
+|---------|-------------|------------------|
+| `help` | none | none |
+| `policy` | `create`, `list`, `get`, `delete`, `validate` | `create` needs `--name` and `--type`; `get`, `delete`, and `validate` need `--name`; `list` needs nothing |
+| `pipeline` | none | none |
+| `metrics` | none | none |
+| `health` | none | none |
+
+`policy create` applies these defaults when an option is omitted:
+
+| `--type` | Options used | Default |
+|----------|--------------|---------|
+| `circuitbreaker` | `--threshold`, `--duration` | 5 failures, 00:00:30 open |
+| `retry` | `--max-retries` | 3 retries |
+| `timeout` | `--timeout` | 00:00:10 |
+| `bulkhead` | `--parallelization` | 10 parallel calls |
+| `fallback` | none | none |
+
+### Options
+
+| Option | Meaning |
+|--------|---------|
+| `--name` | Policy name (2 to 100 characters: letters, digits, `-`, `_`, `.`) |
+| `--type` | `circuitbreaker`, `retry`, `timeout`, `bulkhead`, or `fallback` |
+| `--max-retries`, `--maxretries` | Retry count; must not be negative |
+| `--threshold` | Circuit breaker failure threshold; must be at least 1 |
+| `--duration`, `--open-duration` | Circuit breaker open duration; at least 1 second |
+| `--timeout` | Timeout as a `TimeSpan` (for example `00:00:10`); at least 1 millisecond |
+| `--parallelization`, `--max-parallel` | Bulkhead concurrency; at least 1 |
+| `--config`, `-c` | Configuration file path; must exist |
+| `--output`, `-o` | Output file path; its directory must exist |
+| `--verbose`, `-v`, `--json`, `-j` | Parsed into `Verbose` and `JsonOutput` only when given a value. `CliCommandHandler` does not read them |
+
+The validator also emits warnings for large values (for example `--max-retries` above 100, a timeout above one hour). Warnings are not returned by `ExecuteAsync`; call `CliCommandValidator.Validate()` directly to see them.
+
+### Example invocations
+
+These are the argument arrays a host passes to `CommandParser`:
+
+```bash
+help
+policy create --name payment --type circuitbreaker --threshold 5 --duration 00:00:30
+policy create --name catalog-retry --type retry --max-retries 3
+policy create --name inventory-timeout --type timeout --timeout 00:00:10
+policy create --name orders-bulkhead --type bulkhead --parallelization 20
+policy create --name cache-fallback --type fallback
+policy create --name payment-timeout --type timeout --timeout=00:00:05
+policy list
+policy get --name payment
+policy validate --name payment
+policy delete --name payment
+pipeline
+metrics
+health
+```
+
+### Limitations
+
+- `dashboard`, `inject`, and `export` have handler code but the validator rejects them as unknown commands, so `ExecuteAsync` throws for them today.
+- `policy delete` removes the policy from the pipeline service only; it does not delete it from `PolicyRepository`.
+- `--help` and `-h` are parsed as bare flags with no effect. Use the `help` command.
+
+See [docs/cli.md](docs/cli.md) for the full parsing rules, handler behavior, and validation messages.
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
