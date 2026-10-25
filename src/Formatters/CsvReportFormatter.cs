@@ -4,6 +4,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Globalization;
 using System.Text;
 using DotNetResiliencePipeline.Services;
 using DotNetResiliencePipeline.Utilities;
@@ -226,4 +227,19 @@ public sealed class ExecutionRecord
     /// Gets or sets the total execution time, in milliseconds.
     /// </summary>
     public long ExecutionTimeMs { get; set; }
+
+    /// <summary>
+    /// Returns a culture-invariant summary of this execution record.
+    /// </summary>
+    /// <returns>A string containing the timestamp, policy name, outcome, and execution time.</returns>
+    public override string ToString()
+    {
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            "{0:O} {1} success={2} executionTimeMs={3}",
+            Timestamp,
+            PolicyName,
+            IsSuccess,
+            ExecutionTimeMs);
+    }
 }
