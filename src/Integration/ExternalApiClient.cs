@@ -80,7 +80,7 @@ public sealed class ExternalApiClient
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             ApplyHeaders(request, headers, config);
 
-            var response = await client.SendAsync(request, cancellationToken);
+            using var response = await client.SendAsync(request, cancellationToken);
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (response.IsSuccessStatusCode)
@@ -169,7 +169,7 @@ public sealed class ExternalApiClient
             var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
             ApplyHeaders(request, headers, config);
 
-            var response = await client.SendAsync(request, cancellationToken);
+            using var response = await client.SendAsync(request, cancellationToken);
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (response.IsSuccessStatusCode)
@@ -247,7 +247,7 @@ public sealed class ExternalApiClient
         try
         {
             var client = _httpClientFactory.CreateClient(apiName, config.BaseUrl, timeout: TimeSpan.FromSeconds(5));
-            var response = await client.GetAsync(config.BaseUrl, cancellationToken);
+            using var response = await client.GetAsync(config.BaseUrl, cancellationToken);
             return response.IsSuccessStatusCode;
         }
         catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
