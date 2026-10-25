@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Threading.Channels;
 
 namespace DotNetResiliencePipeline.Events;
@@ -349,6 +350,15 @@ public sealed class PipelineEventHandler
 
     /// <summary>Gets or sets the last used timestamp.</summary>
     public DateTime LastUsed { get; set; }
+
+    /// <summary>
+    /// Returns a string representation of the handler.
+    /// </summary>
+    /// <returns>A string in the format PipelineEventHandler { ... }</returns>
+    public override string ToString()
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"PipelineEventHandler {{ Id = {Id}, EventType = {EventType}, IsActive = {IsActive}, HandlerCount = {HandlerCount} }}");
+    }
 }
 
 /// <summary>
