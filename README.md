@@ -926,6 +926,71 @@ Console.WriteLine($"Trend: {trend.Direction} ({trend.ChangePercentage:F1}%)");
 await collector.StopAsync();
 ```
 
+## PerformanceMonitor
+
+`src/Utilities/PerformanceMonitor.cs` tracks execution time and outcome per policy name. It is thread-safe (all access is guarded by a single lock) and keeps no external state.
+
+### Recording executions
+
+- `RecordExecution(policyName, durationMs, success)` - adds one execution to the policy's counters. `ArgumentNullException` if `policyName` is null. Measurements with `durationMs <= 0` are ignored (treated as clock skew).
+- `GetMetrics(policyName)` - returns a `PerformanceMetrics` snapshot for one policy. Unknown policies return an empty instance.
+- `GetAllMetrics()` - returns a `List<PerformanceMetrics>` for every tracked policy.
+- `Clear()` - removes all tracked policies.
+
+Each policy keeps at most the last 1000 durations (`AllDurations`); older values are dropped first. Counters (`TotalExecutions`, `SuccessfulExecutions`, `FailedExecutions`, `TotalDurationMs`) are not affected by this limit.
+
+### PerformanceMetrics
+
+| Property | Description |
+|----------|-------------|
+| `TotalExecutions`, `SuccessfulExecutions`, `FailedExecutions` | Execution counts |
+| `TotalDurationMs` | Sum of all recorded durations, in milliseconds |
+| `AverageDurationMs` | `TotalDurationMs / TotalExecutions` |
+| `SuccessRate`, `FailureRate` | Percentages in the range 0-100 |
+| `ThroughputPerSecond` | `TotalExecutions` per second of recorded execution time (`TotalDurationMs`), not wall-clock time |
+| `P50`, `P90`, `P95`, `P99` | Latency percentiles in milliseconds, computed from `AllDurations` |
+
+Percentiles use the nearest-rank index `floor(p / 100 * n)`, clamped to the last element. They return `0` when there are no durations.
+
+> `GetMetrics` returns a copy that does not include `AllDurations`, so its `P50`-`P99` values are `0`. Use `GetAllMetrics()` when you need percentiles.
+
+### IdentifyPerformanceIssues
+
+`IdentifyPerformanceIssues(long slowThresholdMs = 1000)` returns a `List<PerformanceIssue>` with two issue types:
+
+- `SlowExecution` - the policy's `AverageDurationMs` is above `slowThresholdMs`. Severity is `Critical` when it is above five times the threshold, otherwise `Warning`.
+- `HighFailureRate` - the policy's `FailureRate` is above `0.5`. Severity is `Warning`. Because `FailureRate` is a percentage, this triggers at a failure rate above 0.5%, not 50%.
+
+`PerformanceIssue` carries `PolicyName`, `IssueType`, `Severity`, and the measured value (`AverageDurationMs` or `FailureRate`).
+
+### Usage
+
+```csharp
+using DotNetResiliencePipeline.Utilities;
+
+var monitor = new PerformanceMonitor();
+
+// Record executions (typically called from your own wrapper around ExecuteAsync)
+monitor.RecordExecution("Retry", durationMs: 120, success: true);
+monitor.RecordExecution("Retry", durationMs: 480, success: true);
+monitor.RecordExecution("CircuitBreaker", durationMs: 4500, success: false);
+
+// Percentiles require GetAllMetrics(), not GetMetrics()
+foreach (PerformanceMetrics m in monitor.GetAllMetrics())
+{
+    Console.WriteLine($"{m.PolicyName}: avg {m.AverageDurationMs:F1}ms, " +
+                      $"P50 {m.P50}ms, P95 {m.P95}ms, P99 {m.P99}ms, success {m.SuccessRate:F1}%");
+}
+
+// Flag slow policies (average above 1 second) and high failure rates
+foreach (PerformanceIssue issue in monitor.IdentifyPerformanceIssues(slowThresholdMs: 1000))
+{
+    Console.WriteLine(issue); // e.g. PerformanceIssue { PolicyName = CircuitBreaker, IssueType = SlowExecution, Severity = Warning, ... }
+}
+
+monitor.Clear();
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
