@@ -381,6 +381,15 @@ public sealed class WebhookSubscription
     /// Gets or sets a value indicating whether the subscription is active and receives events.
     /// </summary>
     public bool IsActive { get; set; }
+
+    /// <summary>
+    /// Returns a summary of the subscription. Custom header values are omitted; only their count is shown.
+    /// </summary>
+    /// <returns>A string describing the subscription's identifier, URL, events, headers, creation time and state.</returns>
+    public override string ToString()
+    {
+        return $"WebhookSubscription {{ Id = {Id}, Url = {Url}, Events = [{string.Join(", ", Events)}], CustomHeaders = {CustomHeaders.Count}, CreatedAt = {CreatedAt:O}, IsActive = {IsActive} }}";
+    }
 }
 
 /// <summary>
@@ -432,6 +441,15 @@ public sealed class WebhookDelivery
     /// Gets or sets the number of attempts made to deliver the payload.
     /// </summary>
     public int AttemptCount { get; set; }
+
+    /// <summary>
+    /// Returns a summary of the delivery attempt, including status code and error message when present.
+    /// </summary>
+    /// <returns>A string describing the delivery's identifier, subscription, event, URL, outcome and attempt count.</returns>
+    public override string ToString()
+    {
+        return $"WebhookDelivery {{ Id = {Id}, WebhookId = {WebhookId}, EventType = {EventType}, Url = {Url}, Timestamp = {Timestamp:O}, Success = {Success}, StatusCode = {StatusCode?.ToString() ?? "<none>"}, ErrorMessage = {ErrorMessage ?? "<none>"}, AttemptCount = {AttemptCount} }}";
+    }
 }
 
 /// <summary>
@@ -463,4 +481,13 @@ public sealed class WebhookStatistics
     /// Gets or sets the number of currently active subscriptions.
     /// </summary>
     public int ActiveSubscriptions { get; set; }
+
+    /// <summary>
+    /// Returns a summary of the delivery statistics.
+    /// </summary>
+    /// <returns>A string describing the delivery totals, success rate and active subscription count.</returns>
+    public override string ToString()
+    {
+        return $"WebhookStatistics {{ TotalDeliveries = {TotalDeliveries}, SuccessfulDeliveries = {SuccessfulDeliveries}, FailedDeliveries = {FailedDeliveries}, SuccessRate = {SuccessRate:F2}, ActiveSubscriptions = {ActiveSubscriptions} }}";
+    }
 }
