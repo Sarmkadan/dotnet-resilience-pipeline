@@ -1678,6 +1678,46 @@ foreach (var (id, status) in rateLimiter.GetAllStatus())
 rateLimiter.ResetClient(clientId);
 ```
 
+## ErrorHandlingMiddleware
+
+`src/Middleware/ErrorHandlingMiddleware.cs` provides `ErrorHandlingMiddleware`, which records every exception you pass to `HandleException` and keeps running error statistics. Each call builds an `ErrorContext` with a new `Id`, a UTC `Timestamp`, the short exception type name (`ExceptionType`), the exception message, the `PolicyName` and `OperationName` you supply, an `IsRecoverable` flag, and a `RecoveryRecommendation` string. The method returns the context, so you can log it or act on it immediately. `null` exceptions and empty policy or operation names throw.
+
+Recoverability is classified by exception type. Only `InvalidOperationException` (and subclasses) is marked non-recoverable; every other type, including the `ResiliencyException` subclasses, is treated as recoverable. Recommendations are chosen per type: circuit breaker, bulkhead, timeout, and retry-exhaustion exceptions each get specific advice, and anything else gets a generic "check logs" message.
+
+Contexts are kept in memory in arrival order. `MaxContexts` (default `DefaultMaxContexts`, 500) caps how many are retained; when a new context pushes the count over the limit, the oldest are dropped. Lowering `MaxContexts` takes effect on the next `HandleException` call. `GetErrorContexts` returns a copy of all retained contexts, and `GetErrorsForPolicy` returns the retained contexts for one policy.
+
+Statistics are kept separately from contexts and are not affected by `MaxContexts`. They are keyed by `"{policyName}:{ExceptionType}"`, and each `ErrorStatistics` value holds a `Count`, the `LastOccurrence` time, and a `Frequency` property. `GetErrorStatistics` returns a dictionary of these entries. `GetMostCommonErrors(top)` returns up to `top` `(Error, Count)` pairs sorted by count descending, where `Error` is that same `"{policyName}:{ExceptionType}"` key; `top` defaults to `DefaultTopErrorsCount` (10). `Clear` removes all contexts and statistics.
+
+```csharp
+using DotNetResiliencePipeline.Middleware;
+
+var errorHandler = new ErrorHandlingMiddleware { MaxContexts = 200 };
+
+try
+{
+    // Execute an operation through a resilience policy here.
+}
+catch (Exception ex)
+{
+    ErrorContext context = errorHandler.HandleException(ex, "http-retry", "GetOrders");
+    Console.WriteLine(context); // [timestamp] Type: message (Policy: http-retry)
+
+    if (!context.IsRecoverable)
+        throw;
+}
+
+// Recent failures for one policy.
+foreach (ErrorContext c in errorHandler.GetErrorsForPolicy("http-retry"))
+    Console.WriteLine($"{c.OperationName}: {c.RecoveryRecommendation}");
+
+// Top five policy/exception-type pairs by count.
+foreach (var (key, count) in errorHandler.GetMostCommonErrors(top: 5))
+    Console.WriteLine($"{key} x{count}");
+
+// Reset collected data, for example after a deployment.
+errorHandler.Clear();
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
