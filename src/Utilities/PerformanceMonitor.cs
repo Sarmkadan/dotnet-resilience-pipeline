@@ -15,6 +15,22 @@ namespace DotNetResiliencePipeline.Utilities;
 /// </summary>
 public sealed class PerformanceMonitor
 {
+    /// <summary>
+    /// Maximum number of execution durations retained per policy for percentile calculations.
+    /// Older durations are discarded first.
+    /// </summary>
+    private const int MaxRetainedDurations = 1000;
+
+    /// <summary>
+    /// Default latency threshold, in milliseconds, above which a policy is reported as slow.
+    /// </summary>
+    private const long DefaultSlowThresholdMs = 1000;
+
+    /// <summary>
+    /// Multiplier for a percentage value, used to convert ratios into percentages.
+    /// </summary>
+    private const double PercentFactor = 100.0;
+
     private readonly Dictionary<string, PerformanceMetrics> _metrics = new();
     private readonly object _lockObj = new object();
 
@@ -45,7 +61,7 @@ public sealed class PerformanceMonitor
 
             // Track percentiles
             metrics.AllDurations.Add(durationMs);
-            if (metrics.AllDurations.Count > 1000)
+            if (metrics.AllDurations.Count > MaxRetainedDurations)
                 metrics.AllDurations.RemoveAt(0); // Keep bounded
         }
     }
@@ -87,7 +103,7 @@ public sealed class PerformanceMonitor
     /// <summary>
     /// Identifies slow-running policies.
     /// </summary>
-    public List<PerformanceIssue> IdentifyPerformanceIssues(long slowThresholdMs = 1000)
+    public List<PerformanceIssue> IdentifyPerformanceIssues(long slowThresholdMs = DefaultSlowThresholdMs)
     {
         lock (_lockObj)
         {
@@ -149,7 +165,7 @@ public sealed class PerformanceMonitor
             {
                 PolicyName = m.PolicyName,
                 AverageDurationMs = m.AverageDurationMs,
-                PercentageOfSlowest = slowest.AverageDurationMs > 0 ? (m.AverageDurationMs * 100.0) / slowest.AverageDurationMs : 0,
+                PercentageOfSlowest = slowest.AverageDurationMs > 0 ? (m.AverageDurationMs * PercentFactor) / slowest.AverageDurationMs : 0,
                 SuccessRate = m.SuccessRate
             }).OrderByDescending(c => c.AverageDurationMs).ToList();
 
@@ -180,6 +196,31 @@ public sealed class PerformanceMonitor
 /// </summary>
 public sealed class PerformanceMetrics
 {
+    /// <summary>
+    /// Multiplier for a percentage value, used to convert ratios into percentages.
+    /// </summary>
+    private const double PercentFactor = 100.0;
+
+    /// <summary>
+    /// Percentile rank of the median (50th percentile) latency.
+    /// </summary>
+    private const int P50Rank = 50;
+
+    /// <summary>
+    /// Percentile rank of the 90th percentile latency.
+    /// </summary>
+    private const int P90Rank = 90;
+
+    /// <summary>
+    /// Percentile rank of the 95th percentile latency.
+    /// </summary>
+    private const int P95Rank = 95;
+
+    /// <summary>
+    /// Percentile rank of the 99th percentile latency.
+    /// </summary>
+    private const int P99Rank = 99;
+
     /// <summary>
     /// Gets or sets the name of the policy these metrics describe.
     /// </summary>
@@ -215,13 +256,13 @@ public sealed class PerformanceMetrics
     /// Gets the success rate, as a percentage.
     /// </summary>
     public double SuccessRate =>
-        TotalExecutions > 0 ? (SuccessfulExecutions * 100.0) / TotalExecutions : 0;
+        TotalExecutions > 0 ? (SuccessfulExecutions * PercentFactor) / TotalExecutions : 0;
 
     /// <summary>
     /// Gets the failure rate, as a percentage.
     /// </summary>
     public double FailureRate =>
-        TotalExecutions > 0 ? (FailedExecutions * 100.0) / TotalExecutions : 0;
+        TotalExecutions > 0 ? (FailedExecutions * PercentFactor) / TotalExecutions : 0;
 
     /// <summary>
     /// Gets the throughput, in executions per second.
@@ -237,22 +278,22 @@ public sealed class PerformanceMetrics
     /// <summary>
     /// Gets the 50th percentile (median) latency, in milliseconds, computed from <see cref="AllDurations"/>.
     /// </summary>
-    public long P50 => CalculatePercentile(50);
+    public long P50 => CalculatePercentile(P50Rank);
 
     /// <summary>
     /// Gets the 90th percentile latency, in milliseconds, computed from <see cref="AllDurations"/>.
     /// </summary>
-    public long P90 => CalculatePercentile(90);
+    public long P90 => CalculatePercentile(P90Rank);
 
     /// <summary>
     /// Gets the 95th percentile latency, in milliseconds, computed from <see cref="AllDurations"/>.
     /// </summary>
-    public long P95 => CalculatePercentile(95);
+    public long P95 => CalculatePercentile(P95Rank);
 
     /// <summary>
     /// Gets the 99th percentile latency, in milliseconds, computed from <see cref="AllDurations"/>.
     /// </summary>
-    public long P99 => CalculatePercentile(99);
+    public long P99 => CalculatePercentile(P99Rank);
 
     private long CalculatePercentile(int percentile)
     {
@@ -260,7 +301,7 @@ public sealed class PerformanceMetrics
             return 0;
 
         var sorted = AllDurations.OrderBy(x => x).ToList();
-        int index = (int)((percentile / 100.0) * sorted.Count);
+        int index = (int)((percentile / PercentFactor) * sorted.Count);
         return sorted[Math.Min(index, sorted.Count - 1)];
     }
 
