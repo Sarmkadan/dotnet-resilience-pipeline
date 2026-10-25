@@ -1551,6 +1551,50 @@ Three controller classes in `src/Api/Controllers/` expose the pipeline over HTTP
 
 See [docs/api-reference.md](docs/api-reference.md) for the library API reference.
 
+## Exception Hierarchy
+
+All exceptions live in `src/Exceptions/` (namespace `DotNetResiliencePipeline.Exceptions`). Resilience failures derive from `ResiliencyException`, which carries `PolicyName`, `PolicyType` and `OccurredAt`. Library configuration and validation errors derive from `DotnetResiliencePipelineException`.
+
+```
+System.Exception
+├── DotnetResiliencePipelineException (abstract)
+│   ├── ConfigurationException          - invalid or missing configuration (e.g. unregistered API name, bad base URL)
+│   └── ValidationException             - input or policy validation failed; lists ValidationErrors
+└── ResiliencyException
+    ├── CircuitBreakerOpenException     - circuit is Open and the call was rejected without executing
+    ├── BulkheadRejectedException       - bulkhead has no free slot and its queue is full (or the wait times out)
+    ├── OperationTimeoutException       - TimeoutPolicy (or adaptive timeout) elapsed before the operation finished
+    ├── MaxRetriesExceededException     - RetryPolicy exhausted all attempts; AttemptExceptions holds each failure
+    ├── FallbackFailedException         - primary and fallback both failed; PrimaryException and FallbackException set
+    ├── InvalidPolicyConfigurationException - policy failed validation during pipeline setup
+    ├── PipelineExecutionException      - unrecoverable error inside the pipeline engine; ExecutionId, AppliedPolicies
+    ├── HttpClientException             - base for HTTP client failures; ClientName, RequestUrl
+    │   ├── InvalidHttpRequestException - request configuration is invalid (HttpMethod)
+    │   ├── HttpResponseException       - response had an error status code (StatusCode)
+    │   └── HttpTimeoutException        - HTTP operation timed out (Timeout)
+    └── WebhookException                - base for webhook failures; WebhookId, WebhookUrl
+        ├── WebhookDeliveryFailedException - delivery failed after all retries (AttemptCount, EventType)
+        ├── WebhookRegistrationException   - subscription could not be registered (e.g. invalid URL)
+        └── InvalidWebhookException        - subscription is invalid (e.g. missing URL)
+```
+
+Where they are thrown:
+
+- `CircuitBreakerOpenException` - `CircuitBreakerService` and `ResiliencyPipelineService` while the breaker is open (`TimeUntilRetry`, `ConsecutiveFailures`).
+- `BulkheadRejectedException` - `BulkheadPolicy` when the queue is full or the wait for a slot times out.
+- `OperationTimeoutException` - `TimeoutService` and `AdaptiveTimeoutServiceExtensions` when the operation exceeds its limit.
+- `MaxRetriesExceededException` - `RetryService` after the last attempt fails.
+- `FallbackFailedException` - `FallbackService` when the fallback also fails.
+- `InvalidPolicyConfigurationException` - `RetryService`, `TimeoutService` and `FallbackService` when a policy is invalid.
+- `ValidationException` - policy validation helpers (`PolicyValidationHelperExtensions`).
+- `ConfigurationException` - `ExternalApiClient` and `HttpClientFactory` for missing or malformed API configuration.
+- `HttpClientException` / `HttpTimeoutException` / `HttpResponseException` - `ExternalApiClient` and `HttpClientFactory` for HTTP failures.
+- `WebhookRegistrationException`, `InvalidWebhookException`, `WebhookDeliveryFailedException` - `WebhookManager`.
+
+`PipelineExecutionException` is part of the public API but no code in `src/` currently throws it; catch it via `ResiliencyException` if you need to handle it.
+
+See [docs/exceptions-overview.md](docs/exceptions-overview.md) for per-exception properties and handling recommendations.
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
