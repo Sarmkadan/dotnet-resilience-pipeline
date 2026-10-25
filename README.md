@@ -1644,6 +1644,40 @@ foreach (var (key, value) in service.GetAdaptationSummary(policy))
     Console.WriteLine($"{key}: {value}");
 ```
 
+## RateLimitingMiddleware
+
+`src/Middleware/RateLimitingMiddleware.cs` provides `RateLimitingMiddleware`, which throttles requests per client identifier with a token bucket. Each client gets its own `RateLimiter` holding two buckets: a per-second bucket (`DefaultRequestsPerSecond`, 100) and a per-minute bucket (`DefaultRequestsPerMinute`, 5000). A request is allowed only when both buckets hold enough tokens; a successful call consumes `tokensRequired` (default 1) from both. `ConfigureLimits` sets the defaults applied to clients created afterwards. Buckets refill in whole one-second and one-minute intervals, capped at their limits.
+
+`IsRequestAllowed` is the entry point and returns `false` instead of throwing when a client is over its limit. `GetStatus` returns a `RateLimitStatus` snapshot for one client, and `GetAllStatus` returns snapshots for every tracked client. For an unknown client, `GetStatus` reports the default limits with full buckets without creating a limiter. `ResetClient` removes one client's state, and `ClearAll` removes all of it. Both `IsRequestAllowed` and `GetStatus` throw `ArgumentNullException` for a `null` client identifier.
+
+`RateLimitStatus` exposes the configured `RequestsPerSecond` and `RequestsPerMinute`, the `RemainingTokensPerSecond` and `RemainingTokensPerMinute` left in each window, and the `NextResetSecond` and `NextResetMinute` times at which those windows refill. Its `IsLimited` property is `true` when either remaining count is zero. Use the status to back off before a request is rejected, for example to set a `Retry-After` header.
+
+```csharp
+using DotNetResiliencePipeline.Middleware;
+
+var rateLimiter = new RateLimitingMiddleware();
+rateLimiter.ConfigureLimits(requestsPerSecond: 10, requestsPerMinute: 300);
+
+string clientId = "tenant-42";
+
+if (rateLimiter.IsRequestAllowed(clientId))
+{
+    // Process the request.
+}
+else
+{
+    RateLimitStatus status = rateLimiter.GetStatus(clientId);
+    TimeSpan retryAfter = status.NextResetSecond - DateTime.UtcNow;
+    Console.WriteLine($"Client {clientId} is limited; retry in {retryAfter.TotalSeconds:F1} s.");
+}
+
+// Inspect every tracked client, then forget one client's state.
+foreach (var (id, status) in rateLimiter.GetAllStatus())
+    Console.WriteLine($"{id}: {status.RemainingTokensPerSecond}/{status.RequestsPerSecond} per second left");
+
+rateLimiter.ResetClient(clientId);
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
