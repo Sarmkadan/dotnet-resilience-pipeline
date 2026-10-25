@@ -1141,6 +1141,96 @@ Console.WriteLine($"{effectiveness.EffectivenessRating} ({effectiveness.FailureR
 
 With the settings above, the report flags low failure threshold, short open duration, and single-success half-open. The `Fair` rating comes from 200 failures out of 1000 executions.
 
+## MetricsAggregator
+
+`src/Utilities/MetricsAggregator.cs` keeps a bounded history of `MetricsSnapshot` values and computes windowed aggregates, trends, period comparisons, and latency percentiles over them. History is held in memory and guarded by a lock, so `RecordSnapshot` and the query methods can be called from multiple threads. `MaxSnapshots` (default 1000) caps the history; the oldest snapshot is dropped when the cap is exceeded.
+
+This section covers the three data types that describe what you record and what you get back. `MetricsAggregator` itself exposes `RecordSnapshot`, `GetAggregatedMetrics`, `AnalyzeTrend`, `ComparePeriods`, `GenerateReport`, `GetLatencyPercentiles`, and `Clear`.
+
+### MetricsSnapshot
+
+A point-in-time record that you build from pipeline metrics and pass to `RecordSnapshot`. All properties are settable.
+
+| Property | Meaning |
+|----------|---------|
+| `Timestamp` | UTC time of the snapshot (defaults to `DateTime.UtcNow`) |
+| `TotalExecutions`, `SuccessfulExecutions`, `FailedExecutions` | Execution counters at snapshot time |
+| `SuccessRate` | Success rate as a percentage (0-100). The aggregator does not compute it; pass the value you want recorded |
+| `AverageExecutionTimeMs` | Average execution time in milliseconds |
+| `ActivePolicies` | Number of policies active at snapshot time |
+
+`RecordSnapshot` throws `ArgumentNullException` for a null snapshot.
+
+### AggregatedMetrics
+
+Returned by `GetAggregatedMetrics(TimeSpan timeWindow)`. Only snapshots with `Timestamp >= UtcNow - timeWindow` are included.
+
+| Property | Meaning |
+|----------|---------|
+| `TimeWindow`, `SnapshotCount` | The requested window and the number of snapshots in it |
+| `AverageSuccessRate`, `AverageExecutionTimeMs` | Mean of the snapshot values |
+| `MinSuccessRate`, `MaxSuccessRate` | Lowest and highest success rate in the window |
+| `TotalExecutions` | Sum of `TotalExecutions` across the snapshots |
+| `PeakExecutions` | Largest `TotalExecutions` value in a single snapshot |
+
+When no snapshots fall in the window, the method returns an `AggregatedMetrics` with every value at its default (zero), including `SnapshotCount = 0`.
+
+### PerformanceReport
+
+Returned by `GenerateReport(TimeSpan timeWindow)`. It combines the `AggregatedMetrics` for the window, a `MetricsTrend` for `SuccessRate`, and a health label:
+
+| `HealthStatus` | Average success rate |
+|----------------|----------------------|
+| `Healthy` | 95 or higher |
+| `Acceptable` | 85 up to 95 |
+| `Degraded` | 70 up to 85 |
+| `Critical` | Below 70 (also the result when the window is empty, because the average is 0) |
+
+`Trend.Direction` is `Increasing` or `Decreasing` only when the window holds at least two snapshots; otherwise it stays empty. `Trend.IsAnomaly` is set when the change between the first and second half of the window exceeds 20%.
+
+`GenerateReport` does not fill `Recommendations`. It is an empty `List<string>` that your code can populate. `GeneratedAt` is the UTC time the report was created.
+
+### Usage
+
+```csharp
+using DotNetResiliencePipeline.Utilities;
+
+var aggregator = new MetricsAggregator { MaxSnapshots = 500 };
+
+aggregator.RecordSnapshot(new MetricsSnapshot
+{
+    TotalExecutions = 100,
+    SuccessfulExecutions = 97,
+    FailedExecutions = 3,
+    SuccessRate = 97.0,
+    AverageExecutionTimeMs = 110.0,
+    ActivePolicies = 3
+});
+
+aggregator.RecordSnapshot(new MetricsSnapshot
+{
+    TotalExecutions = 120,
+    SuccessfulExecutions = 92,
+    FailedExecutions = 28,
+    SuccessRate = 92.0,
+    AverageExecutionTimeMs = 140.0,
+    ActivePolicies = 3
+});
+
+AggregatedMetrics metrics = aggregator.GetAggregatedMetrics(TimeSpan.FromHours(1));
+Console.WriteLine($"Snapshots: {metrics.SnapshotCount}, average success: {metrics.AverageSuccessRate:F1}%");
+
+PerformanceReport report = aggregator.GenerateReport(TimeSpan.FromHours(1));
+Console.WriteLine($"Health: {report.HealthStatus}, trend: {report.Trend.Direction}");
+
+if (report.HealthStatus != "Healthy")
+{
+    report.Recommendations.Add("Review failing policies and retry settings");
+}
+```
+
+With the two snapshots above, the average success rate is 94.5%, so `HealthStatus` is `Acceptable`. The second half of the window is lower than the first, so `Trend.Direction` is `Decreasing`.
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
