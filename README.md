@@ -1357,6 +1357,63 @@ var history = new List<ExecutionRecord>
 await csv.ExportToFileAsync(csv.FormatExecutionHistory(history), "execution-history.csv");
 ```
 
+## Repositories
+
+The `src/Data/` folder holds the in-memory stores for policies and execution history. Nothing is written to disk.
+
+- `src/Data/IRepository.cs` - generic CRUD contract `IRepository<T>` (`where T : class`): `Create`, `Read`, `Update`, `Delete`, `GetAll`, `Count`, `Clear`, `Exists`. `Read` returns `null` for an unknown ID.
+- `src/Data/PolicyRepository.cs` - `sealed` implementation of `IRepository<ResiliencyPolicy>`, keyed by `ResiliencyPolicy.Id`. Adds `GetByType<T>()`, `GetByName(name)`, `GetByTag(tag)`, and `SaveAsync(policy)` (upsert).
+- `src/Data/ExecutionHistoryRepository.cs` - `sealed` log of `ExecutionRecord` entries. It does not implement `IRepository<T>`.
+
+### PolicyRepository
+
+Every member takes an internal lock, so one instance can be shared across threads. Errors come from the input, not from the store:
+
+| Member | Behavior |
+|--------|----------|
+| `Create(policy)` | Stores a new policy. `InvalidOperationException` if the ID already exists |
+| `Update(policy)` | Replaces a stored policy. `KeyNotFoundException` if the ID is unknown |
+| `SaveAsync(policy)` | Creates or replaces without the checks above. Returns a completed `Task` |
+| `Read(id)` / `Delete(id)` | `ArgumentException` for null or empty `id`. `Delete` of an unknown ID does nothing |
+| `GetByName(name)` / `GetByTag(tag)` | First policy with that name, or all policies containing that tag. `ArgumentException` for empty input |
+
+### ExecutionHistoryRepository
+
+`ExecutionRecord` describes one run of a policy: `PolicyId`, `PolicyName`, `IsSuccess`, `ExecutionTimeMs`, `AttemptCount`, `ErrorType`, `ErrorMessage`, `ExecutedAt` (UTC), and a `Metadata` dictionary. `ExecutionId` defaults to a new GUID.
+
+- The constructor takes `maxRetentionMinutes`, which defaults to `ExecutionHistoryRepository.DefaultRetentionMinutes` (60).
+- `Record(record)` validates the input: `ArgumentNullException` for null, `ValidationException` when `PolicyName` or `PolicyId` is blank or `ExecutionTimeMs` is negative.
+- Expired records are removed automatically. `Record` runs a cleanup at most every 5 minutes. `DeleteOldRecords()` runs it on demand and returns the number of records removed.
+- Query methods: `GetAll`, `GetByPolicyId`, `GetByTimeRange`, `GetFailedExecutions`, `GetSuccessfulExecutions`, `GetLatest(count)`, `GetByPolicy`, `GetErrorStatistics`, `GetAverageExecutionTime`, `GetSuccessRate`, and `Count`.
+- `GetLatencyPercentiles()` returns a `LatencyPercentiles` struct with `P50`, `P90`, and `P99` in milliseconds. It uses the nearest-rank method over all retained records. With no records, all three values are `0`.
+
+### Usage
+
+```csharp
+using DotNetResiliencePipeline.Data;
+using DotNetResiliencePipeline.Domain.Policies;
+
+var policies = new PolicyRepository();
+var retry = new RetryPolicy("ExternalApi") { MaxRetries = 5, Tags = new List<string> { "http" } };
+policies.Create(retry);
+
+policies.GetByName("ExternalApi");   // retry
+policies.GetByTag("http");           // [retry]
+
+var history = new ExecutionHistoryRepository(maxRetentionMinutes: 120);
+history.Record(new ExecutionRecord
+{
+    PolicyId = retry.Id,
+    PolicyName = retry.Name,
+    IsSuccess = true,
+    ExecutionTimeMs = 42,
+    AttemptCount = 1
+});
+
+LatencyPercentiles latency = history.GetLatencyPercentiles();
+Console.WriteLine($"P50={latency.P50}ms P90={latency.P90}ms P99={latency.P99}ms");
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
