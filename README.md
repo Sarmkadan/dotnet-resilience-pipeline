@@ -1231,6 +1231,132 @@ if (report.HealthStatus != "Healthy")
 
 With the two snapshots above, the average success rate is 94.5%, so `HealthStatus` is `Acceptable`. The second half of the window is lower than the first, so `Trend.Direction` is `Decreasing`.
 
+## Serialization and Reports
+
+Three classes in `src/Formatters/` turn policies and metrics into text: `JsonPolicySerializer` for policy configuration, `CsvReportFormatter` for spreadsheet-ready CSV, and `MetricsFormatter` for console output. All three are `sealed`, hold no state between calls, and return strings. Only the `ExportToFileAsync` and `ImportFromFileAsync` methods touch the disk.
+
+### JsonPolicySerializer
+
+`src/Formatters/JsonPolicySerializer.cs` also contains the `PolicyJson` DTO. The serializer writes indented, camelCase JSON and omits properties that are `null`.
+
+| Member | Behavior |
+|--------|----------|
+| `Serialize(policy)` | One policy as a JSON object. `ArgumentNullException` for null |
+| `SerializeMultiple(policies)` | A JSON array of policies |
+| `Deserialize(json)` | One policy from a JSON object, or `null` when `type` is not recognized. `ArgumentException` for null or empty input |
+| `SerializeMetrics(metrics)` | Any object, written with the same options |
+| `ExportToFileAsync(policies, path)` / `ImportFromFileAsync(path)` | Write or read a JSON array. Unrecognized entries are skipped on import |
+
+`PolicyJson` carries the fields shared by every policy (`id`, `name`, `type`, `isEnabled`, `createdAt`) plus one set of nullable settings per policy type. `type` is the C# class name (for example `CircuitBreakerPolicy`), and `createdAt` is the UTC time of serialization. When a setting is missing on read, `ToPolicy()` uses these defaults:
+
+| Policy type | Settings written | Defaults on read |
+|-------------|------------------|------------------|
+| `CircuitBreakerPolicy` | `failureThreshold`, `openDurationSeconds`, `successThreshold` | 5, 30, 2 |
+| `RetryPolicy` | `maxRetries`, `initialDelayMs`, `strategy`, `backoffMultiplier` | 3, 100 (`strategy` and `backoffMultiplier` are not read back) |
+| `TimeoutPolicy` | `timeoutSeconds` | 10 |
+| `BulkheadPolicy` | `maxParallelization`, `maxQueueLength` | 10, 50 |
+| `FallbackPolicy` | none | none |
+
+Round-trip (`Serialize` then `Deserialize`) restores `Id`, `Name`, `IsEnabled`, and the settings in the table above. It does not restore these values:
+
+- `createdAt` is set to the serialization time, not to the policy's own creation time.
+- `RetryPolicy.Strategy` and `BackoffMultiplier` come back as the `RetryPolicy` defaults.
+- `OpenDuration` and `TimeoutPolicy.Timeout` are written as whole seconds, so fractional seconds are dropped.
+
+### Usage
+
+```csharp
+using DotNetResiliencePipeline.Domain.Policies;
+using DotNetResiliencePipeline.Formatters;
+
+var serializer = new JsonPolicySerializer();
+
+var retry = new RetryPolicy("ExternalApi") { MaxRetries = 5, InitialDelay = TimeSpan.FromMilliseconds(250) };
+var breaker = new CircuitBreakerPolicy("ExternalApi") { FailureThreshold = 3, OpenDuration = TimeSpan.FromSeconds(60) };
+
+string json = serializer.Serialize(breaker);
+// {
+//   "id": "...",
+//   "name": "ExternalApi",
+//   "type": "CircuitBreakerPolicy",
+//   "isEnabled": true,
+//   "createdAt": "...",
+//   "failureThreshold": 3,
+//   "openDurationSeconds": 60,
+//   "successThreshold": 3
+// }
+
+if (serializer.Deserialize(json) is CircuitBreakerPolicy restored)
+{
+    Console.WriteLine($"{restored.Name}: threshold {restored.FailureThreshold}"); // ExternalApi: threshold 3
+}
+
+await serializer.ExportToFileAsync(new List<ResiliencyPolicy> { retry, breaker }, "policies.json");
+List<ResiliencyPolicy> imported = await serializer.ImportFromFileAsync("policies.json");
+```
+
+### CsvReportFormatter
+
+`src/Formatters/CsvReportFormatter.cs` builds CSV text with a header row and one row per item. Fields that contain a comma, a quote, or a line feed are wrapped in quotes with embedded quotes doubled. Timestamps use the ISO 8601 `O` format.
+
+| Method | Input | Columns |
+|--------|-------|---------|
+| `FormatPipelineMetrics(stats)` | `PipelineStatistics` | `Metric,Value` rows (counters and success rate) |
+| `FormatPolicies(policies)` | `List<ResiliencyPolicy>` | `Policy Name,Type,ID,Enabled,Created At` |
+| `FormatExecutionHistory(records)` | `List<ExecutionRecord>` (`Formatters` namespace) | `Timestamp,Policy Name,Success,Duration Ms,Status` |
+| `FormatPerformanceMetrics(metrics)` | `List<PerformanceMetrics>` | Counts, success rate, average, P50/P90/P99, throughput |
+| `FormatLogs(logs)` | `List<LogEntry>` | Timestamp, policy, operation, success, duration, exception, message |
+| `FormatErrors(errors)` | `List<ErrorContext>` | Timestamp, policy, exception type, recoverable flag, message, recommendation |
+| `ExportToFileAsync(content, path)` | CSV text | Writes UTF-8 |
+
+`FormatPolicies` stamps every row with the export time, because policies do not record their creation time. Each method throws `ArgumentNullException` for a null argument.
+
+### MetricsFormatter
+
+`src/Formatters/MetricsFormatter.cs` produces human-readable text for the console or logs: box-drawn headers, `✓`/`✗`/`⚠` markers, and a 20-character success-rate bar. The output is meant for people to read, not for parsing. Use `CsvReportFormatter` or the JSON serializer for machine-readable output.
+
+| Method | Output |
+|--------|--------|
+| `FormatMetricsTable(metrics)` | A block per `PerformanceMetrics` entry: executions, success rate with bar, average, percentiles, throughput |
+| `FormatAggregatedMetrics(metrics)` | Time window, snapshot count, success-rate and execution-time summaries |
+| `FormatTrend(trend)` | Direction, change percentage, previous and current values, anomaly marker |
+| `FormatHealthStatus(status, successRate, totalExecutions)` | Status line with an icon. `Healthy`, `Degraded`, and `Critical` have their own icons and messages; any other status shows `?` |
+| `FormatComparison(comparison)` | Both periods side by side, with arrows for the change in success rate and execution time |
+
+`FormatHealthStatus` throws `ArgumentException` for a null or empty status. The other methods throw `ArgumentNullException` for a null argument.
+
+### Usage
+
+```csharp
+using DotNetResiliencePipeline.Formatters;
+using DotNetResiliencePipeline.Utilities;
+
+var aggregator = new MetricsAggregator();
+aggregator.RecordSnapshot(new MetricsSnapshot
+{
+    TotalExecutions = 100,
+    SuccessfulExecutions = 97,
+    FailedExecutions = 3,
+    SuccessRate = 97.0,
+    AverageExecutionTimeMs = 110.0,
+    ActivePolicies = 3
+});
+
+AggregatedMetrics metrics = aggregator.GetAggregatedMetrics(TimeSpan.FromHours(1));
+
+var formatter = new MetricsFormatter();
+Console.WriteLine(formatter.FormatAggregatedMetrics(metrics));
+Console.WriteLine(formatter.FormatHealthStatus("Healthy", metrics.AverageSuccessRate, metrics.TotalExecutions));
+
+var csv = new CsvReportFormatter();
+var history = new List<ExecutionRecord>
+{
+    new() { PolicyName = "ExternalApi", IsSuccess = true, ExecutionTimeMs = 120 },
+    new() { PolicyName = "ExternalApi", IsSuccess = false, ExecutionTimeMs = 2004 }
+};
+await csv.ExportToFileAsync(csv.FormatExecutionHistory(history), "execution-history.csv");
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
