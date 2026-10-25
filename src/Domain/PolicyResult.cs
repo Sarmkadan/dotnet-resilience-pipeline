@@ -145,6 +145,14 @@ public sealed class PolicyResult<T>
 
         return PolicyResult<TNew>.Success(mapper(Data), PolicyName, ExecutionTimeMs, AttemptCount);
     }
+
+    /// <summary>
+    /// Returns a short summary of the result: status, policy, timing, exception type and data presence.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"PolicyResult<{typeof(T).Name}> {{ IsSuccess: {IsSuccess}, PolicyName: {PolicyName}, ExecutionTimeMs: {ExecutionTimeMs}, Exception: {Exception?.GetType().Name ?? "none"}, HasValue: {Data is not null} }}";
+    }
 }
 
 /// <summary>
@@ -221,5 +229,13 @@ public sealed class PolicyResult
             AttemptCount = attempts,
             Exception = exception
         };
+    }
+
+    /// <summary>
+    /// Returns a short summary of the result: status, policy, timing and exception type.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"PolicyResult {{ IsSuccess: {IsSuccess}, PolicyName: {PolicyName}, ExecutionTimeMs: {ExecutionTimeMs}, Exception: {Exception?.GetType().Name ?? "none"} }}";
     }
 }
