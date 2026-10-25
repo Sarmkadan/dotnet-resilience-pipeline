@@ -4,6 +4,8 @@
 // CTO & Software Architect
 // =====================================================================
 
+using System.Globalization;
+
 namespace DotNetResiliencePipeline.Utilities;
 
 /// <summary>
@@ -265,6 +267,14 @@ public readonly struct LatencyPercentiles
     /// Gets the 99th percentile execution time, in milliseconds.
     /// </summary>
     public double P99 { get; init; }
+
+    /// <summary>
+    /// Returns a concise string representation of the latency percentiles.
+    /// </summary>
+    public override string ToString()
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"LatencyPercentiles {{ P50 = {P50}ms, P90 = {P90}ms, P99 = {P99}ms }}");
+    }
 }
 
 /// <summary>
@@ -306,6 +316,14 @@ public sealed class MetricsSnapshot
     /// Gets or sets the number of policies active at snapshot time.
     /// </summary>
     public int ActivePolicies { get; set; }
+
+    /// <summary>
+    /// Returns a concise string representation of the snapshot.
+    /// </summary>
+    public override string ToString()
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"MetricsSnapshot {{ Timestamp = {Timestamp:u}, TotalExecutions = {TotalExecutions}, SuccessfulExecutions = {SuccessfulExecutions}, FailedExecutions = {FailedExecutions}, SuccessRate = {SuccessRate}, AverageExecutionTimeMs = {AverageExecutionTimeMs}, ActivePolicies = {ActivePolicies} }}");
+    }
 }
 
 /// <summary>
@@ -352,6 +370,14 @@ public sealed class AggregatedMetrics
     /// Gets or sets the highest success rate observed, as a percentage.
     /// </summary>
     public double MaxSuccessRate { get; set; }
+
+    /// <summary>
+    /// Returns a concise string representation of the aggregated metrics.
+    /// </summary>
+    public override string ToString()
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"AggregatedMetrics {{ TimeWindow = {TimeWindow}, SnapshotCount = {SnapshotCount}, AverageSuccessRate = {AverageSuccessRate}, AverageExecutionTimeMs = {AverageExecutionTimeMs}, TotalExecutions = {TotalExecutions}, PeakExecutions = {PeakExecutions}, MinSuccessRate = {MinSuccessRate}, MaxSuccessRate = {MaxSuccessRate} }}");
+    }
 }
 
 /// <summary>
@@ -398,6 +424,14 @@ public sealed class MetricsTrend
     /// Gets or sets a value indicating whether the change is considered anomalous.
     /// </summary>
     public bool IsAnomaly { get; set; }
+
+    /// <summary>
+    /// Returns a concise string representation of the trend.
+    /// </summary>
+    public override string ToString()
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"MetricsTrend {{ MetricType = {MetricType}, TimeWindow = {TimeWindow}, DataPoints = {DataPoints}, Direction = {Direction}, ChangePercentage = {ChangePercentage}, Current = {Current}, Previous = {Previous}, IsAnomaly = {IsAnomaly} }}");
+    }
 }
 
 /// <summary>
@@ -439,6 +473,14 @@ public sealed class PeriodComparison
     /// Gets or sets a value indicating whether the second period shows improvement over the first.
     /// </summary>
     public bool IsImproving { get; set; }
+
+    /// <summary>
+    /// Returns a concise string representation of the period comparison.
+    /// </summary>
+    public override string ToString()
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"PeriodComparison {{ Period1 = {Period1}, Period2 = {Period2}, SuccessRateDifference = {SuccessRateDifference}, ExecutionTimeDifference = {ExecutionTimeDifference}, IsImproving = {IsImproving} }}");
+    }
 }
 
 /// <summary>
@@ -475,4 +517,12 @@ public sealed class PerformanceReport
     /// Gets or sets the suggested actions derived from the report.
     /// </summary>
     public List<string> Recommendations { get; set; } = new();
+
+    /// <summary>
+    /// Returns a concise string representation of the performance report.
+    /// </summary>
+    public override string ToString()
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"PerformanceReport {{ TimeWindow = {TimeWindow}, GeneratedAt = {GeneratedAt:u}, HealthStatus = {HealthStatus}, AverageSuccessRate = {AggregatedMetrics.AverageSuccessRate}, TrendDirection = {Trend.Direction}, Recommendations = {Recommendations.Count} }}");
+    }
 }
