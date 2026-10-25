@@ -991,6 +991,83 @@ foreach (PerformanceIssue issue in monitor.IdentifyPerformanceIssues(slowThresho
 monitor.Clear();
 ```
 
+## ThrottlingHelper
+
+`src/Utilities/ThrottlingHelper.cs` provides named, per-policy request throttling. It is thread-safe: the throttle table is a `ConcurrentDictionary`, and each `Throttle` guards its bucket with a lock.
+
+### Throttling strategy
+
+The only algorithm implemented is a token bucket, held by the `Throttle` class (one per policy name):
+
+- The bucket refills continuously at `maxRequestsPerSecond` tokens per second, up to `burstSize` tokens.
+- Each request consumes `cost` tokens (default `1`). If the bucket holds fewer tokens than `cost`, the request is throttled and no tokens are taken.
+- `burstSize <= 0` (the default) means the burst capacity equals `maxRequestsPerSecond`.
+- The bucket starts full.
+
+> `Throttle`'s XML summary mentions a leaky bucket and a sliding window, but only the token bucket described above is implemented.
+
+`ThrottlingHelper` keeps up to `MaxThrottles` throttles (default `1000`). When the limit is exceeded, the least recently used throttle is evicted.
+
+### ThrottlingHelper members
+
+- `GetOrCreateThrottle(policyName, maxRequestsPerSecond, burstSize = 0)` - returns the `Throttle` for a policy, creating it on first use. The rate and burst are fixed when the throttle is created; later calls for the same name return the existing throttle and ignore the new values. `ArgumentException` if `policyName` is null or whitespace.
+- `ShouldThrottle(policyName, cost = 1)` - returns `true` if the request is throttled. If the request is allowed, it consumes `cost` tokens, so each call counts as a request. A policy that has not been created with `GetOrCreateThrottle` is never throttled and returns `false`.
+- `ExecuteWithThrottlingAsync(policyName, operation, retryDelay = null)` - an extension method on `ThrottlingHelper`, with overloads for `Func<Task<T>>` and `Func<Task>`. It checks the throttle up to 3 times, waiting `retryDelay` (default 100 ms) between checks. It runs `operation` on the first allowed check. If all 3 checks are throttled, it throws `InvalidOperationException`. For an unknown policy, the operation runs immediately.
+- `GetStatistics(policyName)` - returns a `ThrottleStatistics` snapshot. For an unknown policy it returns an empty snapshot with `PolicyName` set.
+- `GetAllStatistics()` - returns a `Dictionary<string, ThrottleStatistics>` keyed by policy name.
+- `ResetThrottle(policyName)` - removes the throttle for one policy. The next `GetOrCreateThrottle` call creates a fresh one with a full bucket.
+- `Clear()` - removes all throttles.
+- `CleanupExpired()` - always returns `0`. Throttles do not track expiry, so nothing is removed.
+
+### ThrottleStatistics
+
+| Property | Description |
+|----------|-------------|
+| `PolicyName` | Policy name. Only set for unknown policies in `GetStatistics`; statistics from an existing throttle leave it `null` |
+| `MaxRate` | Sustained rate, in requests per second |
+| `TotalRequests`, `AllowedRequests`, `ThrottledRequests` | Request counts. Every `ShouldThrottle` check (and each attempt inside `ExecuteWithThrottlingAsync`) is counted |
+| `ThrottleRate` | `ThrottledRequests / TotalRequests` as a percentage (0-100) |
+| `AvailableTokens` | Tokens in the bucket at the time of the snapshot, truncated to an integer |
+| `BurstCapacity` | Maximum tokens the bucket can hold |
+| `IsThrottling` | `true` once at least one request has been throttled |
+
+### Usage
+
+```csharp
+using DotNetResiliencePipeline.Utilities;
+
+var throttler = new ThrottlingHelper();
+
+// Sustained 5 requests/second, bursts of up to 10
+throttler.GetOrCreateThrottle("ExternalApi", maxRequestsPerSecond: 5, burstSize: 10);
+
+// Manual check: ShouldThrottle consumes a token when the request is allowed
+if (throttler.ShouldThrottle("ExternalApi"))
+{
+    Console.WriteLine("Throttled, skip or queue the call");
+}
+else
+{
+    Console.WriteLine(await CallExternalApiAsync());
+}
+
+// Wrapper: retries the check up to 3 times, 250 ms apart
+string result = await throttler.ExecuteWithThrottlingAsync(
+    "ExternalApi",
+    () => CallExternalApiAsync(),
+    retryDelay: TimeSpan.FromMilliseconds(250));
+
+ThrottleStatistics stats = throttler.GetStatistics("ExternalApi");
+Console.WriteLine(stats); // e.g. ThrottleStatistics { PolicyName = , MaxRate = 5, TotalRequests = 2, AllowedRequests = 2, ... }
+
+foreach (var (name, s) in throttler.GetAllStatistics())
+{
+    Console.WriteLine($"{name}: {s.ThrottleRate:F1}% throttled, tokens {s.AvailableTokens}/{s.BurstCapacity}");
+}
+
+throttler.ResetThrottle("ExternalApi");
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
