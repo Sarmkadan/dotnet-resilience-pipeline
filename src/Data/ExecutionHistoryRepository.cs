@@ -4,6 +4,7 @@
 // CTO & Software Architect
 // ====================================================================
 
+using System.Globalization;
 using DotNetResiliencePipeline.Exceptions;
 
 namespace DotNetResiliencePipeline.Data;
@@ -62,6 +63,21 @@ public sealed class ExecutionRecord
     /// Gets or sets additional key-value metadata associated with the execution.
     /// </summary>
     public Dictionary<string, object> Metadata { get; set; } = new();
+
+    /// <summary>
+    /// Returns a culture-invariant summary of this execution record.
+    /// </summary>
+    /// <returns>A string containing the policy name, success flag, execution time, and timestamp.</returns>
+    public override string ToString()
+    {
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            "PolicyName={0}, IsSuccess={1}, ExecutionTimeMs={2}, ExecutedAt={3:O}",
+            PolicyName,
+            IsSuccess,
+            ExecutionTimeMs,
+            ExecutedAt);
+    }
 }
 
 /// <summary>
@@ -378,4 +394,18 @@ public readonly struct LatencyPercentiles
     /// Gets the 99th percentile execution time, in milliseconds.
     /// </summary>
     public double P99 { get; init; }
+
+    /// <summary>
+    /// Returns a culture-invariant summary of the P50, P90, and P99 latency values, in milliseconds.
+    /// </summary>
+    /// <returns>A string containing the P50, P90, and P99 values.</returns>
+    public override string ToString()
+    {
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            "P50={0:F2}ms, P90={1:F2}ms, P99={2:F2}ms",
+            P50,
+            P90,
+            P99);
+    }
 }
