@@ -815,6 +815,52 @@ Console.WriteLine($"Overall: {report.OverallStatus}, policies: {report.TotalPoli
 await worker.StopAsync();
 ```
 
+## ResiliencyLoggingMiddleware
+
+The `ResiliencyLoggingMiddleware` class in `src/Middleware/ResiliencyLoggingMiddleware.cs` records pipeline operations in memory and exposes them for inspection. Each call to `LogExecution` stores a `LogEntry` (id, UTC timestamp, policy name, operation name, success flag, duration, and the exception type and message on failure).
+
+- `LogExecution(policyName, operationName, success, durationMs, exception?)` - appends an entry.
+- `MaxLogEntries` (default `1000`) - bounds the in-memory buffer. When the limit is exceeded, the oldest entries are dropped.
+- `GetLogs()`, `GetLogsByPolicy(policyName)`, `GetLogsBetween(startTime, endTime)`, `GetFailedLogs()` - query the stored entries.
+- `GetSummary()` - returns a `LogSummary` with total, successful and failed counts, `SuccessRate` (0-100), `AverageDurationMs`, and the oldest and newest timestamps.
+- `Clear()` - removes all entries.
+
+Example usage:
+
+```csharp
+using DotNetResiliencePipeline.Middleware;
+using DotNetResiliencePipeline.Services;
+
+// Assume we have a ResiliencyPipelineService instance
+var pipeline = provider.GetRequiredService<ResiliencyPipelineService>();
+
+var logger = new ResiliencyLoggingMiddleware(pipeline)
+{
+    MaxLogEntries = 500
+};
+
+// Record an execution (typically called from your own wrapper around ExecuteAsync)
+logger.LogExecution("Retry", "GetOrders", success: true, durationMs: 42);
+logger.LogExecution("CircuitBreaker", "GetOrders", success: false, durationMs: 3,
+    exception: new InvalidOperationException("Circuit is open"));
+
+// Query entries
+var retryLogs = logger.GetLogsByPolicy("Retry");
+var lastHour = logger.GetLogsBetween(DateTime.UtcNow.AddHours(-1), DateTime.UtcNow);
+var failures = logger.GetFailedLogs();
+
+foreach (var entry in failures)
+{
+    Console.WriteLine(entry); // e.g. [2026-10-25T10:00:00.0000000Z] ✗ CircuitBreaker.GetOrders (3ms)
+}
+
+// Summarize
+LogSummary summary = logger.GetSummary();
+Console.WriteLine($"Success rate: {summary.SuccessRate:F1}%, avg: {summary.AverageDurationMs:F1}ms");
+
+logger.Clear();
+```
+
 ## Project Layout
 
 - `src/Domain/Policies/` - policy configuration types (data + counters)
