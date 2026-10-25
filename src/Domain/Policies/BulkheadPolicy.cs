@@ -200,6 +200,9 @@ public sealed class BulkheadPolicy : ResiliencyPolicy
     /// </summary>
     public async Task<bool> TryAcquireSlotAsync(TimeSpan timeout)
     {
+        if (timeout < TimeSpan.Zero && timeout != Timeout.InfiniteTimeSpan)
+            throw new ArgumentOutOfRangeException(nameof(timeout), timeout, "Timeout cannot be negative (use Timeout.InfiniteTimeSpan to wait indefinitely)");
+
         if (TryTakeSlot())
         {
             return true;

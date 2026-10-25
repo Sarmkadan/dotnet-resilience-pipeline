@@ -133,6 +133,8 @@ public sealed class FallbackPolicy : ResiliencyPolicy
     /// </summary>
     public void RecordFailedFallback(Exception fallbackException, long executionTimeMs)
     {
+        ArgumentNullException.ThrowIfNull(fallbackException);
+
         if (executionTimeMs < 0)
             throw new ArgumentException("Execution time cannot be negative", nameof(executionTimeMs));
 
@@ -176,8 +178,7 @@ public sealed class FallbackPolicy : ResiliencyPolicy
     /// </summary>
     public void AddFallbackTrigger(Type exceptionType)
     {
-        if (exceptionType is null)
-            throw new ArgumentNullException(nameof(exceptionType));
+        ArgumentNullException.ThrowIfNull(exceptionType);
 
         if (!typeof(Exception).IsAssignableFrom(exceptionType))
             throw new ArgumentException($"{exceptionType.Name} is not an Exception type", nameof(exceptionType));
@@ -193,6 +194,8 @@ public sealed class FallbackPolicy : ResiliencyPolicy
     /// </summary>
     public void RemoveFallbackTrigger(Type exceptionType)
     {
+        ArgumentNullException.ThrowIfNull(exceptionType);
+
         FallbackTriggerExceptions.Remove(exceptionType);
     }
 
